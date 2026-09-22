@@ -1,0 +1,45 @@
+"""AI Service bilan ichki API kontrakt: POST /predict → {plant, ai_label, confidence, is_valid_image}."""
+from dataclasses import dataclass
+
+import httpx
+
+from app.core.config import settings
+
+
+@dataclass
+class Prediction:
+    plant: str | None
+    ai_label: str | None
+    confidence: float
+    is_valid_image: bool
+    reason: str | None = None
+
+
+class AIServiceError(Exception):
+    pass
+
+
+class AIClient:
+    async def predict(self, image: bytes, filename: str, content_type: str) -> Prediction:
+        try:
+            async with httpx.AsyncClient(base_url=settings.AI_SERVICE_URL, timeout=30) as client:
+                resp = await client.post("/predict", files={"image": (filename, image, content_type)})
+        except httpx.HTTPError as exc:  # pragma: no cover - tarmoq xatosi
+            raise AIServiceError(str(exc)) from exc
+        if resp.status_code != 200:
+            raise AIServiceError(f"AI service {resp.status_code}")
+        data = resp.json()
+        return Prediction(
+            plant=data.get("plant"),
+            ai_label=data.get("ai_label"),
+            confidence=float(data.get("confidence") or 0),
+            is_valid_image=bool(data.get("is_valid_image")),
+            reason=data.get("reason"),
+        )
+
+
+_client: AIClient = AIClient()
+
+
+def get_ai_client() -> AIClient:
+    return _client

@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: {POSTGRES_USER: agro, POSTGRES_PASSWORD: agro, POSTGRES_DB: agroyordam}
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+    defaults: {run: {working-directory: backend}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - run: pip install -r requirements-dev.txt
+      - name: Alembic migratsiyasi (PostgreSQL)
+        run: alembic upgrade head && alembic check
+        env: {DATABASE_URL: "postgresql+asyncpg://agro:agro@localhost:5432/agroyordam"}
+      - name: Testlar (coverage ≥70%)
+        run: pytest --cov=app --cov-fail-under=70
+
+  ai-service:
+    runs-on: ubuntu-latest
+    defaults: {run: {working-directory: ai-service}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - run: pip install -r requirements.txt pytest httpx
+      - run: pytest -q
+
+  mobile:
+    runs-on: ubuntu-latest
+    defaults: {run: {working-directory: mobile}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: {flutter-version: "3.35.4", channel: stable}
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build web --release

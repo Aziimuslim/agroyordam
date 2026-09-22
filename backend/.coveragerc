@@ -1,0 +1,6 @@
+[run]
+concurrency = greenlet,thread
+source = app
+
+[report]
+fail_under = 70

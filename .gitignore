@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+*.db
+backend/media/
+.env
+
+# Flutter
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/**/Flutter/ephemeral/
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/ios/Pods/
+*.iml
+.idea/
+
+# AI
+ai-service/models/*.onnx
+ai-service/data/
+best.pt

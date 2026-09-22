@@ -1,0 +1,6 @@
+__pycache__
+*.db
+media
+.pytest_cache
+.coverage
+tests
