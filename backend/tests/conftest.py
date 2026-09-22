@@ -32,7 +32,8 @@ class FakeAI:
     def __init__(self):
         self.next = Prediction("Pomidor", "Tomato_Late_blight", 91.5, True)
 
-    async def predict(self, image, filename, content_type):
+    async def predict(self, image, filename, content_type, plant_hint=None):
+        self.last_hint = plant_hint
         return self.next
 
 

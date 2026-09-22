@@ -74,3 +74,8 @@ def test_no_plant():
 def test_not_an_image():
     r = client.post("/predict", files={"image": ("x.png", b"hello", "image/png")}).json()
     assert r["is_valid_image"] is False
+
+
+def test_plant_hint_is_respected():
+    r = client.post("/predict", files={"image": ("x.png", leaf_image(True), "image/png")}, data={"plant_hint": "Pomidor"}).json()
+    assert r["plant"] == "Pomidor" and r["ai_label"].startswith("Tomato_")

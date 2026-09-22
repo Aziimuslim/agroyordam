@@ -64,7 +64,8 @@ async def share_diagnosis(diag_id: uuid.UUID, body: ShareIn | None = None,
         if disease else "AI tahlili bo'yicha o'simligim sog'lom."
     )
     post = Post(user_id=user.id, diagnosis_id=d.id, title=body.title or default_title,
-                content=body.content or default_content, image_url=d.image_url, category="disease")
+                content=body.content or default_content, image_url=d.image_url,
+                category="disease" if disease else "experience")
     db.add(post)
     await db.commit()
     await db.refresh(post)

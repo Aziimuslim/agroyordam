@@ -1,0 +1,35 @@
+{
+    "name": "AgroYordam",
+    "short_name": "AgroYordam",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#FBF1E0",
+    "theme_color": "#B25A28",
+    "description": "AgroYordam — AI yordamida ekin kasalliklarini tashxislash",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

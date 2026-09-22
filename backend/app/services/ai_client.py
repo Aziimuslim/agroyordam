@@ -20,10 +20,11 @@ class AIServiceError(Exception):
 
 
 class AIClient:
-    async def predict(self, image: bytes, filename: str, content_type: str) -> Prediction:
+    async def predict(self, image: bytes, filename: str, content_type: str, plant_hint: str | None = None) -> Prediction:
         try:
             async with httpx.AsyncClient(base_url=settings.AI_SERVICE_URL, timeout=30) as client:
-                resp = await client.post("/predict", files={"image": (filename, image, content_type)})
+                resp = await client.post("/predict", files={"image": (filename, image, content_type)},
+                                         data={"plant_hint": plant_hint} if plant_hint else None)
         except httpx.HTTPError as exc:  # pragma: no cover - tarmoq xatosi
             raise AIServiceError(str(exc)) from exc
         if resp.status_code != 200:

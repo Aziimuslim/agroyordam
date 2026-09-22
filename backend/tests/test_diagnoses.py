@@ -7,9 +7,12 @@ def files():
 
 
 async def test_diagnosis_full_pipeline(client, user_headers, fake_ai):
-    crop = (await client.post("/api/v1/crops", json={"name": "Pomidorlarim"}, headers=user_headers)).json()
+    plants = (await client.get("/api/v1/plants")).json()
+    tomato = next(p for p in plants if p["name"] == "Pomidor")
+    crop = (await client.post("/api/v1/crops", json={"name": "Pomidorlarim", "plant_id": tomato["id"]}, headers=user_headers)).json()
     r = await client.post("/api/v1/diagnoses", files=files(), data={"crop_id": crop["id"]}, headers=user_headers)
     assert r.status_code == 201, r.text
+    assert fake_ai.last_hint == "Pomidor"
     d = r.json()
     assert d["disease_name"].startswith("Fitoftoroz") and d["risk_level"] == "high"
     assert d["medicines"] and d["treatment"] and not d["low_confidence"]
@@ -58,7 +61,7 @@ async def test_ai_service_down(client, user_headers, monkeypatch):
     from app.services.ai_client import AIServiceError
 
     class Down:
-        async def predict(self, *a):
+        async def predict(self, *a, **k):
             raise AIServiceError("down")
 
     monkeypatch.setattr(ai_client, "_client", Down())

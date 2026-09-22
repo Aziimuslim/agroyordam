@@ -42,8 +42,10 @@ async def run_diagnosis(db: AsyncSession, user: User, upload: UploadFile, crop_i
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Ekin topilmadi")
 
     data, ext = await read_image(upload)
+    hint_plant = await db.get(Plant, crop.plant_id) if crop and crop.plant_id else None
     try:
-        pred = await get_ai_client().predict(data, f"upload.{ext}", CONTENT_TYPES[ext])
+        pred = await get_ai_client().predict(data, f"upload.{ext}", CONTENT_TYPES[ext],
+                                             plant_hint=hint_plant.name if hint_plant else None)
     except AIServiceError as exc:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "AI xizmati vaqtincha ishlamayapti") from exc
 

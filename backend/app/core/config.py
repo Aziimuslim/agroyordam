@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     CLICK_SECRET_KEY: str = "click-sandbox-secret"
     UZUM_MERCHANT_ID: str = ""
     UZUM_SECRET_KEY: str = "uzum-sandbox-secret"
-    PAYMENT_RETURN_URL: str = "http://localhost:8080/#/premium"
+    PAYMENT_RETURN_URL: str = "http://localhost:8080/premium"
 
     FCM_SERVER_KEY: str | None = None
     ENABLE_SCHEDULER: bool = True

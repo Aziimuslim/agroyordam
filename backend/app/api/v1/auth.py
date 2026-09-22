@@ -34,7 +34,7 @@ async def issue_tokens(db: AsyncSession, user: User) -> TokenPair:
 
 @router.post("/register", response_model=TokenPair, status_code=201)
 async def register(body: RegisterIn, request: Request, db: AsyncSession = Depends(get_db)):
-    enforce(f"register:{client_ip(request)}", 10)
+    await enforce(f"register:{client_ip(request)}", 10)
     repo = UserRepository(db)
     email = body.email.lower() if body.email else None
     taken = await repo.exists(username=body.username, email=email, phone=body.phone)
@@ -50,7 +50,7 @@ async def register(body: RegisterIn, request: Request, db: AsyncSession = Depend
 
 @router.post("/login", response_model=TokenPair)
 async def login(body: LoginIn, request: Request, db: AsyncSession = Depends(get_db)):
-    enforce(f"login:{client_ip(request)}", settings.LOGIN_RATE_LIMIT_PER_MINUTE)
+    await enforce(f"login:{client_ip(request)}", settings.LOGIN_RATE_LIMIT_PER_MINUTE)
     user = await UserRepository(db).by_login(body.login)
     if user is None or not verify_password(body.password, user.password_hash):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Login yoki parol noto'g'ri")
@@ -89,7 +89,7 @@ def _reset_token(user: User) -> str:
 
 @router.post("/forgot-password")
 async def forgot_password(body: ForgotPasswordIn, request: Request, db: AsyncSession = Depends(get_db)):
-    enforce(f"forgot:{client_ip(request)}", 5)
+    await enforce(f"forgot:{client_ip(request)}", 5)
     user = await UserRepository(db).by_login(body.login)
     resp: dict = {"detail": "Agar hisob mavjud bo'lsa, tiklash havolasi yuborildi"}
     if user is not None:

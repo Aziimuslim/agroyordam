@@ -8,7 +8,6 @@ from app.core.database import SessionLocal
 from app.core.security import utcnow
 from app.models import User
 from app.tasks.scheduler import expire_subscriptions, send_due_reminders
-from tests.conftest import auth, register
 
 
 async def test_reminders_crud(client, user_headers):

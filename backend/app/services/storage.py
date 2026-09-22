@@ -1,3 +1,4 @@
+import json
 import os
 import secrets
 from pathlib import Path
@@ -67,6 +68,13 @@ class S3Storage:
             self.client.head_bucket(Bucket=self.bucket)
         except Exception:
             self.client.create_bucket(Bucket=self.bucket)
+            # Rasmlar ilovada to'g'ridan-to'g'ri ko'rsatiladi — faqat o'qish uchun ochiq
+            policy = {
+                "Version": "2012-10-17",
+                "Statement": [{"Effect": "Allow", "Principal": {"AWS": ["*"]}, "Action": ["s3:GetObject"],
+                               "Resource": [f"arn:aws:s3:::{self.bucket}/*"]}],
+            }
+            self.client.put_bucket_policy(Bucket=self.bucket, Policy=json.dumps(policy))
 
     def save(self, data: bytes, ext: str, folder: str) -> str:
         key = f"{folder}/{secrets.token_hex(16)}.{ext}"

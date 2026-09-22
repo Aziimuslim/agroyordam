@@ -1,7 +1,7 @@
 """AgroYordam AI Service — ichki mikroservis (tashqariga yopiq)."""
 import io
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from PIL import Image, UnidentifiedImageError
 
 from app.inference.classifier import load_classifier
@@ -20,7 +20,8 @@ async def health():
 
 
 @app.post("/predict", response_model=PredictResponse)
-async def predict(image: UploadFile = File(...)) -> PredictResponse:
+async def predict(image: UploadFile = File(...), plant_hint: str | None = Form(default=None)) -> PredictResponse:
+    """plant_hint — ixtiyoriy: foydalanuvchi tanlagan ekin turi (stub undan foydalanadi, real model e'tiborsiz qoldiradi)."""
     raw = await image.read(MAX_BYTES + 1)
     if len(raw) > MAX_BYTES:
         raise HTTPException(413, "Fayl juda katta")
@@ -34,5 +35,5 @@ async def predict(image: UploadFile = File(...)) -> PredictResponse:
     if not check.ok:
         return PredictResponse(plant=None, ai_label=None, confidence=0, is_valid_image=False, reason=check.reason)
 
-    plant, label, conf = classifier.predict(img, raw)
+    plant, label, conf = classifier.predict(img, raw, plant_hint)
     return PredictResponse(plant=plant, ai_label=label, confidence=conf, is_valid_image=True)
