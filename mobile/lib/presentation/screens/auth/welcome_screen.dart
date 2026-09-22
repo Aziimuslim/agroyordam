@@ -1,29 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/config.dart';
 import '../../../core/widgets/widgets.dart';
+import 'server_settings.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     return PageShell(
       padBottom: false,
       scroll: false,
       child: LayoutBuilder(
         builder: (context, box) => SingleChildScrollView(
-          // Kichik ekranlarda ham sig'adi: kamida 640px balandlik, ortig'i scroll bo'ladi
-          child: SizedBox(height: box.maxHeight < 640 ? 640 : box.maxHeight, child: _content(context, c)),
+          // Kichik ekranlarda ham sig'adi: kamida 700px balandlik, ortig'i scroll bo'ladi
+          child: SizedBox(height: box.maxHeight < 700 ? 700 : box.maxHeight, child: _content(context, ref, c)),
         ),
       ),
     );
   }
 
-  Widget _content(BuildContext context, AppColors c) {
+  Widget _content(BuildContext context, WidgetRef ref, AppColors c) {
     return Column(
       children: [
         Expanded(
@@ -86,6 +89,11 @@ class WelcomeScreen extends StatelessWidget {
           'Davom etish orqali siz Foydalanish shartlari va Maxfiylik siyosatiga rozilik bildirasiz',
           textAlign: TextAlign.center,
           style: TextStyle(color: c.muted, fontSize: 12.5, height: 1.4),
+        ),
+        TextButton.icon(
+          onPressed: () => showServerSettings(context, ref),
+          icon: Icon(Icons.dns_outlined, size: 16, color: c.muted),
+          label: Text('Server: ${AppConfig.apiUrl}', style: TextStyle(color: c.muted, fontSize: 12)),
         ),
         const SizedBox(height: 6),
       ],

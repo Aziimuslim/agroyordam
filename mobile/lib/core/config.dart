@@ -5,12 +5,17 @@ class AppConfig {
   static const version = '0.1.0';
 
   static const _apiOverride = String.fromEnvironment('API_URL');
+  static const prefsKey = 'agro_server_url';
+
+  /// Foydalanuvchi ilova ichida kiritgan server manzili (masalan, telefonda http://192.168.1.10:8000).
+  static String? runtimeOverride;
 
   /// Backend manzili:
   /// - `--dart-define=API_URL=...` berilsa — o'sha;
   /// - web release (nginx orqasida) — joriy origin;
   /// - Android emulyator — 10.0.2.2; boshqa hollarda — localhost.
   static String get apiUrl {
+    if (runtimeOverride != null && runtimeOverride!.isNotEmpty) return runtimeOverride!;
     if (_apiOverride.isNotEmpty) return _apiOverride;
     if (kIsWeb) return kReleaseMode ? Uri.base.origin : 'http://localhost:8000';
     if (defaultTargetPlatform == TargetPlatform.android) return 'http://10.0.2.2:8000';

@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 
 import 'app.dart';
+import 'core/config.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    AppConfig.runtimeOverride = (await SharedPreferences.getInstance()).getString(AppConfig.prefsKey);
+  } catch (_) {}
   usePathUrlStrategy();
   // Web: push() bilan ochilgan sahifalar ham manzil satrida ko'rinadi (yangilanganda saqlanadi)
   GoRouter.optionURLReflectsImperativeAPIs = true;

@@ -1,0 +1,44 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    paths: ["mobile/**", ".github/workflows/android-apk.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults: {run: {working-directory: mobile}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: "17"}
+      - uses: subosito/flutter-action@v2
+        with: {flutter-version: "3.35.4", channel: stable, cache: true}
+      - run: flutter pub get
+      - name: APK yig'ish (release)
+        run: flutter build apk --release
+      - name: Nomlash
+        run: cp build/app/outputs/flutter-apk/app-release.apk build/AgroYordam-0.1.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AgroYordam-0.1-apk
+          path: mobile/build/AgroYordam-0.1.apk
+      - name: GitHub Release'ga yuklash
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.1.0
+          name: AgroYordam 0.1 (APK)
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          files: mobile/build/AgroYordam-0.1.apk
+          body: |
+            AgroYordam 0.1 — Android APK (test versiyasi).
+
+            O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
+            Birinchi ochishda pastdagi "Server: ..." tugmasi orqali backend manzilini kiriting
+            (masalan `http://192.168.1.10:8000` — backend kompyuterda `uvicorn app.main:app --host 0.0.0.0 --port 8000` bilan ishlashi kerak).

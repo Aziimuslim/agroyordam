@@ -48,6 +48,17 @@ flutter run -d chrome --dart-define=API_URL=http://localhost:8000   # web
 flutter run -d android                                               # emulyator (10.0.2.2:8000)
 ```
 
+### Android APK (telefonda sinash)
+
+APK har push'da GitHub Actions ("Android APK" workflow) tomonidan yig'iladi va **Releases → v0.1.0** sahifasiga
+`AgroYordam-0.1.apk` nomi bilan yuklanadi.
+
+1. Backend'ni kompyuterda tarmoqqa ochiq holda ishga tushiring: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+   (AI service ham ishlab turishi kerak).
+2. Telefon va kompyuter bitta Wi-Fi'da bo'lsin. APK'ni o'rnating.
+3. Ilovaning birinchi ekranida pastdagi **"Server: ..."** tugmasini bosing va kompyuter IP manzilini kiriting,
+   masalan `http://192.168.1.10:8000` → "Tekshirish" → "Saqlash".
+
 ### Demo hisoblar (faqat dev, `SEED_DEMO_DATA=true`)
 
 | Rol | Login | Parol |

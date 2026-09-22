@@ -10,6 +10,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/bottom_nav.dart';
 import '../../../core/widgets/widgets.dart';
+import '../auth/server_settings.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -90,6 +91,7 @@ class ProfileScreen extends ConsumerWidget {
           value: switch (mode) { ThemeMode.dark => "Qorong'i", ThemeMode.light => "Yorug'", _ => 'Tizim' },
           onTap: () => ref.read(themeModeProvider.notifier).cycle(),
         ),
+        ListRow(icon: Icons.dns_outlined, label: 'Server manzili', onTap: () => showServerSettings(context, ref)),
         ListRow(icon: AppIcons.globe, label: 'Til', value: "O'zbekcha", onTap: () => showToast(context, "Hozircha faqat o'zbek tili")),
         if (user.isAdmin) ListRow(icon: AppIcons.shield, label: 'Admin panel', onTap: () => context.push('/admin')),
         ListRow(
