@@ -21,7 +21,10 @@ jobs:
         with: {flutter-version: "3.35.4", channel: stable, cache: true}
       - run: flutter pub get
       - name: APK yig'ish (release)
-        run: flutter build apk --release
+        # Repo Settings → Variables → API_URL (masalan https://agroyordam.uz) berilsa, APK shu serverga o'zi ulanadi
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: flutter build apk --release ${API_URL:+--dart-define=API_URL=$API_URL}
       - name: Nomlash
         run: cp build/app/outputs/flutter-apk/app-release.apk build/AgroYordam-0.1.apk
       - uses: actions/upload-artifact@v4

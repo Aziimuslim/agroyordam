@@ -26,10 +26,12 @@ services:
     volumes: [miniodata:/data]
 
   ai-service:
+    image: ${IMAGE_REGISTRY:-agroyordam}/ai-service:${IMAGE_TAG:-latest}
     build: ./ai-service
     expose: ["8001"]   # faqat ichki tarmoq — tashqariga yopiq
 
   backend:
+    image: ${IMAGE_REGISTRY:-agroyordam}/backend:${IMAGE_TAG:-latest}
     build: ./backend
     env_file:
       - path: .env
@@ -53,6 +55,7 @@ services:
     expose: ["8000"]
 
   web:
+    image: ${IMAGE_REGISTRY:-agroyordam}/web:${IMAGE_TAG:-latest}
     build:
       context: ./mobile
       dockerfile: Dockerfile.web

@@ -19,6 +19,11 @@ PLANTS = [
     ("Bodring", "Cucumis sativus", "Palakli sabzavot.", "Iliq suv bilan sug'orish, shpalerga ko'tarish."),
     ("Uzum", "Vitis vinifera", "Ko'p yillik mevali o'simlik.", "Kesish, shpaler, zamburug'ga qarshi profilaktika."),
     ("Olma", "Malus domestica", "Mevali daraxt.", "Bahorgi kesish, profilaktik purkash."),
+    ("Makkajo'xori", "Zea mays", "Don va silos ekini.", "Qator oralarini yumshatish, azotli oziqlantirish, gullash davrida muntazam sug'orish."),
+    ("Shaftoli", "Prunus persica", "Danakli mevali daraxt.", "Erta bahorda kesish, kurtak bo'rtishida misli preparat bilan profilaktika."),
+    ("Olcha", "Prunus cerasus", "Danakli mevali daraxt.", "Qurigan shoxlarni kesish, tup atrofini toza saqlash."),
+    ("Qulupnay", "Fragaria × ananassa", "Ko'p yillik rezavor.", "Mulchalash, gajaklarni olib tashlash, 3–4 yilda joyini almashtirish."),
+    ("Qovoq", "Cucurbita spp.", "Palakli poliz ekini.", "Keng oraliq, ildiz tagidan sug'orish, palakni yerga yotqizmaslik."),
 ]
 
 MEDICINES = [
@@ -28,6 +33,10 @@ MEDICINES = [
     ("Mankoseb", "Mankoseb 80%", "Profilaktik fungitsid.", "20–25 g / 10 l suv", "Hosildan 20 kun oldin to'xtating.", "Agrokimyo"),
     ("Trichoderma (bio)", "Trichoderma harzianum", "Biologik fungitsid.", "15 g / 10 l suv, ildiz tagiga", "Kimyoviy fungitsid bilan aralashtirmang.", "BioAgro"),
     ("Bioinsektitsid (Bt)", "Bacillus thuringiensis", "Qurtlarga qarshi biologik vosita.", "20 ml / 10 l suv", "Kechqurun purkang.", "BioAgro"),
+    ("Abamektin", "Abamektin 1.8% EC", "Kanalar (o'rgimchakkana) va mayda so'ruvchi zararkunandalarga qarshi.", "Yorliqdagi me'yorda (odatda 5–10 ml / 10 l suv), 7–10 kundan so'ng takror", "Asalarilar uchun xavfli — gullash paytida qo'llamang; hosildan kamida 7 kun oldin to'xtating.", "Agrokimyo"),
+    ("Tebukonazol", "Tebukonazol 25% EW", "Tizimli fungitsid (zang, dog'lanish, un shudring).", "Yorliqdagi me'yorda (odatda 5–10 ml / 10 l suv)", "Mavsumda 2–3 martadan ko'p qo'llamang (rezistentlik); himoya vositalaridan foydalaning.", "Agrokimyo"),
+    ("Azoksistrobin", "Azoksistrobin 25% SC", "Keng ta'sirli tizimli fungitsid.", "Yorliqdagi me'yorda (odatda 6–10 ml / 10 l suv)", "Boshqa guruh fungitsidlari bilan navbatlab ishlating.", "Agrokimyo"),
+    ("Imidakloprid", "Imidakloprid 20% SL", "Oqqanot va shira (virus tashuvchilar)ga qarshi insektitsid.", "Yorliqdagi me'yorda (odatda 3–5 ml / 10 l suv)", "Asalarilar uchun juda xavfli; gullayotgan ekinlarga purkamang.", "Agrokimyo"),
 ]
 
 # (plant, ai_label, name, risk, symptoms, causes, treatment, prevention, [(medicine, recommendation)])
@@ -91,6 +100,108 @@ DISEASES = [
      "Fusarium/Pythium; ortiqcha namlik.",
      "Sug'orishni kamaytiring, Trichoderma bilan ildiz tagiga ishlov bering.", "Drenaj, almashlab ekish.",
      [("Trichoderma (bio)", "15 g / 10 l suv, ildiz tagiga")]),
+    ("Pomidor", "Tomato_Leaf_Mold", "Barg mog'ori (kladosporioz)", "medium",
+     "Barg ustida och-sariq dog'lar, ostida zaytun-qo'ng'ir baxmal g'ubor; barglar quriydi.",
+     "Passalora fulva zamburug'i; issiqxonada yuqori namlik (85%+).",
+     "Issiqxonani shamollating, zararlangan barglarni olib tashlang, misli yoki tizimli fungitsid bilan ishlov bering.",
+     "Namlikni pasaytirish, pastki barglarni kesish, chidamli navlar.",
+     [("Mis oksixlorid", "40 g / 10 l suv"), ("Azoksistrobin", "Yorliq me'yorida")]),
+    ("Pomidor", "Tomato_Septoria_leaf_spot", "Septorioz (oq dog'lanish)", "medium",
+     "Pastki barglarda mayda, kulrang markazli, qora hoshiyali ko'plab dog'lar.",
+     "Septoria lycopersici zamburug'i; nam havo, barglarning ho'llanishi.",
+     "Pastki zararlangan barglarni yig'ing, Mankoseb yoki misli preparat bilan 7–10 kun oralig'ida ishlov bering.",
+     "Mulchalash, tomchilatib sug'orish, o'simlik qoldiqlarini yo'qotish.",
+     [("Mankoseb", "25 g / 10 l suv"), ("Mis oksixlorid", "40 g / 10 l suv")]),
+    ("Pomidor", "Tomato_Spider_mites", "O'rgimchakkana", "medium",
+     "Barglarda mayda sariq nuqtalar, barg ostida nozik o'rgimchak to'ri; barglar bronza tusga kiradi.",
+     "Tetranychus urticae kanasi; issiq va quruq havo.",
+     "Barg ostini suv bilan yuving, akaritsid (Abamektin) bilan 7–10 kun oralig'ida 2 marta ishlov bering.",
+     "Begona o'tlarni yo'qotish, havo namligini me'yorda ushlash.",
+     [("Abamektin", "Yorliq me'yorida, barg ostiga")]),
+    ("Pomidor", "Tomato_Target_Spot", "Nishonsimon dog'lanish", "medium",
+     "Barglarda konsentrik halqali qo'ng'ir dog'lar, mevada chuqurchali dog'lar.",
+     "Corynespora cassiicola zamburug'i; issiq va nam sharoit.",
+     "Zararlangan barglarni olib tashlang, Azoksistrobin yoki Mankoseb bilan ishlov bering.",
+     "Havo aylanishini yaxshilash, almashlab ekish.",
+     [("Azoksistrobin", "Yorliq me'yorida"), ("Mankoseb", "25 g / 10 l suv")]),
+    ("Pomidor", "Tomato_Yellow_Leaf_Curl_Virus", "Barg sariq burishish virusi", "high",
+     "Yosh barglar sarg'ayib, yuqoriga buraladi, maydalashadi; o'simlik o'sishdan to'xtaydi.",
+     "TYLCV virusi; oqqanot (Bemisia tabaci) orqali tarqaladi.",
+     "Virusni davolab bo'lmaydi: kasal tuplarni sug'urib yo'qoting, oqqanotga qarshi insektitsid bilan ishlov bering.",
+     "Oqqanotga qarshi to'r, sariq yopishqoq tuzoqlar, chidamli navlar.",
+     [("Imidakloprid", "Oqqanotga qarshi, yorliq me'yorida")]),
+    ("Pomidor", "Tomato_mosaic_virus", "Pomidor mozaika virusi", "high",
+     "Barglarda och va to'q yashil mozaika, barg shakli buziladi, hosil kamayadi.",
+     "ToMV virusi; qo'l, asbob va urug' orqali yuqadi.",
+     "Davosi yo'q: kasal tuplarni yo'qoting, asboblarni dezinfeksiya qiling, qo'lni sovun bilan yuving.",
+     "Sog'lom urug', urug'ni termik ishlash, chidamli navlar.",
+     []),
+    ("Uzum", "Grape_Esca", "Eska (qora qizamiq)", "high",
+     "Barg tomirlari orasida sariq-qizg'ish 'yo'lbars' dog'lari, g'ujumlarda qora nuqtalar; tup to'satdan quriydi.",
+     "Yog'ochni zararlovchi zamburug'lar kompleksi (Phaeomoniella va b.).",
+     "Zararlangan novdalarni sog'lom yog'ochgacha kesing, kesiklarni bog' surkovi bilan yoping; kuchli zararlangan tuplarni almashtiring.",
+     "Quruq havoda kesish, katta kesiklarni himoyalash.",
+     []),
+    ("Uzum", "Grape_Leaf_blight", "Uzum barg dog'lanishi (izariopsis)", "medium",
+     "Barglarda noto'g'ri shakldagi to'q qo'ng'ir dog'lar, keyin barg quriydi.",
+     "Pseudocercospora vitis zamburug'i.",
+     "Mankoseb yoki misli preparat bilan ishlov bering, to'kilgan barglarni yig'ing.",
+     "Tokni siyraklashtirish, havo aylanishi.",
+     [("Mankoseb", "25 g / 10 l suv"), ("Bordo suyuqligi", "1% eritma")]),
+    ("Olma", "Apple_Black_rot", "Olma qora chirishi", "medium",
+     "Barglarda binafsha hoshiyali 'qurbaqa ko'zi' dog'lar, mevada qora konsentrik chirish, shoxlarda yaralar.",
+     "Botryosphaeria obtusa zamburug'i.",
+     "Mumiyolangan mevalar va yarali shoxlarni kesib yo'qoting, fungitsid bilan ishlov bering.",
+     "Sanitariya kesish, shikastlanishlarning oldini olish.",
+     [("Tebukonazol", "Yorliq me'yorida"), ("Bordo suyuqligi", "Bahorda 1%")]),
+    ("Olma", "Apple_Cedar_rust", "Olma zangi", "medium",
+     "Barg ustida yorqin sariq-to'q sariq dog'lar, ostida mayda so'rg'ichlar.",
+     "Gymnosporangium zamburug'i; archa (qora archa) oraliq xo'jayin.",
+     "Bahorda gullashdan oldin va keyin tizimli fungitsid bilan ishlov bering.",
+     "Yaqin atrofdagi archalardagi zang o'smalarini olib tashlash, chidamli navlar.",
+     [("Tebukonazol", "Yorliq me'yorida")]),
+    ("Makkajo'xori", "Corn_Gray_leaf_spot", "Kulrang barg dog'lanishi", "medium",
+     "Barg tomirlari bo'ylab cho'zinchoq to'rtburchak kulrang dog'lar.",
+     "Cercospora zeae-maydis zamburug'i; issiq, nam havo.",
+     "Kasallik erta aniqlansa tizimli fungitsid bilan ishlov bering.",
+     "Almashlab ekish, o'simlik qoldiqlarini haydab yuborish, chidamli duragaylar.",
+     [("Azoksistrobin", "Yorliq me'yorida")]),
+    ("Makkajo'xori", "Corn_Common_rust", "Makkajo'xori zangi", "low",
+     "Bargning ikki tomonida qizg'ish-jigarrang chang (so'rg'ich)lar.",
+     "Puccinia sorghi zamburug'i; salqin va nam havo.",
+     "Kuchli zararlanishda tizimli fungitsid (Tebukonazol) bilan ishlov bering.",
+     "Chidamli duragaylar, erta ekish.",
+     [("Tebukonazol", "Yorliq me'yorida")]),
+    ("Makkajo'xori", "Corn_Northern_Leaf_Blight", "Shimoliy barg kuyishi (gelmintosporioz)", "medium",
+     "Barglarda uzun (3–15 sm) kulrang-yashil, keyin qo'ng'ir 'sigara' shaklidagi dog'lar.",
+     "Exserohilum turcicum zamburug'i.",
+     "Ro'vak chiqarish davrida fungitsid bilan ishlov bering.",
+     "Almashlab ekish, qoldiqlarni haydash, chidamli duragaylar.",
+     [("Azoksistrobin", "Yorliq me'yorida"), ("Tebukonazol", "Yorliq me'yorida")]),
+    ("Shaftoli", "Peach_Bacterial_spot", "Shaftoli bakterial dog'lanishi", "medium",
+     "Barglarda mayda burchakli dog'lar, keyin teshiklar paydo bo'ladi; mevada yoriqli dog'lar.",
+     "Xanthomonas arboricola pv. pruni bakteriyasi.",
+     "Barg to'kilishida va kurtak bo'rtishida misli preparat bilan ishlov bering.",
+     "Chidamli navlar, ortiqcha azotdan saqlanish.",
+     [("Bordo suyuqligi", "Kurtak bo'rtishida 1–3%"), ("Mis oksixlorid", "40 g / 10 l suv")]),
+    ("Olcha", "Cherry_Powdery_mildew", "Olcha un shudringi", "medium",
+     "Yosh barg va novdalarda oq un kabi g'ubor; barglar buraladi.",
+     "Podosphaera clandestina zamburug'i.",
+     "Oltingugurt preparati yoki tizimli fungitsid bilan ishlov bering, zararlangan novdalarni kesing.",
+     "Shox-shabbani siyraklashtirish, havo aylanishi.",
+     [("Oltingugurt kukuni", "30 g / 10 l suv"), ("Tebukonazol", "Yorliq me'yorida")]),
+    ("Qulupnay", "Strawberry_Leaf_scorch", "Qulupnay barg kuyishi", "medium",
+     "Barglarda ko'plab mayda binafsha dog'lar, keyin barg chetlari kuygandek quriydi.",
+     "Diplocarpon earlianum zamburug'i.",
+     "Eski zararlangan barglarni olib tashlang, misli yoki tizimli fungitsid bilan ishlov bering.",
+     "Tomchilatib sug'orish, 3–4 yilda plantatsiyani yangilash.",
+     [("Mis oksixlorid", "30 g / 10 l suv"), ("Azoksistrobin", "Yorliq me'yorida")]),
+    ("Qovoq", "Squash_Powdery_mildew", "Qovoq un shudringi", "medium",
+     "Barglarda oq, un kabi dog'lar, keyin butun bargni qoplab quritadi.",
+     "Podosphaera xanthii zamburug'i; kun-tun harorat farqi.",
+     "Zararlangan barglarni kesing, oltingugurt eritmasi bilan haftada 1 marta ishlov bering.",
+     "Keng oraliq, azotni me'yorida berish, chidamli navlar.",
+     [("Oltingugurt kukuni", "30 g / 10 l suv")]),
 ]
 
 DEMO_USERS = [
@@ -100,27 +211,32 @@ DEMO_USERS = [
 
 
 async def seed_catalog(db: AsyncSession) -> None:
-    if await db.scalar(select(Plant.id).limit(1)):
-        return
-    plants = {}
+    """Idempotent: mavjud bazaga faqat yetishmayotgan o'simlik/dori/kasalliklarni qo'shadi."""
+    plants = {p.name: p for p in (await db.scalars(select(Plant))).all()}
     for name, sci, desc, care in PLANTS:
-        p = Plant(name=name, scientific_name=sci, description=desc, care_info=care)
-        db.add(p)
-        plants[name] = p
-    meds = {}
+        if name not in plants:
+            plants[name] = Plant(name=name, scientific_name=sci, description=desc, care_info=care)
+            db.add(plants[name])
+    meds = {m.name: m for m in (await db.scalars(select(Medicine))).all()}
     for name, ai, desc, usage, prec, man in MEDICINES:
-        m = Medicine(name=name, active_ingredient=ai, description=desc, usage=usage, precautions=prec, manufacturer=man)
-        db.add(m)
-        meds[name] = m
+        if name not in meds:
+            meds[name] = Medicine(name=name, active_ingredient=ai, description=desc, usage=usage, precautions=prec, manufacturer=man)
+            db.add(meds[name])
     await db.flush()
+    labels = set((await db.scalars(select(Disease.ai_label))).all())
+    added = 0
     for plant, label, name, risk, sym, cause, treat, prev, links in DISEASES:
+        if label in labels:
+            continue
         d = Disease(plant_id=plants[plant].id, ai_label=label, name=name, risk_level=risk, symptoms=sym, causes=cause,
                     treatment=treat, prevention=prev, description=sym)
         db.add(d)
         await db.flush()
         for med, rec in links:
             db.add(DiseaseMedicine(disease_id=d.id, medicine_id=meds[med].id, recommendation=rec))
-    log.info("KB seed: %d o'simlik, %d kasallik, %d dori", len(PLANTS), len(DISEASES), len(MEDICINES))
+        added += 1
+    if added:
+        log.info("KB seed: +%d kasallik (jami %d o'simlik, %d dori)", added, len(plants), len(meds))
 
 
 async def seed_users(db: AsyncSession) -> None:

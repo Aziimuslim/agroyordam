@@ -1,0 +1,91 @@
+name: Docker stack (smoke test + deploy)
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    paths-ignore: ["docs/**", "**.md"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  COMPOSE: docker compose -f docker-compose.yml -f docker-compose.prod.yml
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Production .env (DOMAIN=localhost)
+        run: |
+          cp .env.production.example .env
+          sed -i "s/^DOMAIN=.*/DOMAIN=localhost/" .env
+          sed -i "s/^SECRET_KEY=.*/SECRET_KEY=$(openssl rand -hex 32)/" .env
+          sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 16)/" .env
+          sed -i "s/^S3_SECRET_KEY=.*/S3_SECRET_KEY=$(openssl rand -hex 16)/" .env
+          echo "IMAGE_REGISTRY=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/agroyordam" >> .env
+          echo "IMAGE_TAG=${GITHUB_SHA::7}" >> .env
+      - name: Image'larni yig'ish
+        run: $COMPOSE build
+      - name: Stack'ni ishga tushirish
+        run: $COMPOSE up -d
+      - name: Tayyor bo'lishini kutish
+        run: |
+          for i in $(seq 1 60); do
+            curl -skf https://localhost/health && exit 0
+            sleep 5
+          done
+          exit 1
+      - name: AI model yuklanganini tekshirish
+        run: $COMPOSE exec -T ai-service python -c "import urllib.request as u; print(u.urlopen('http://localhost:8001/health').read().decode())"
+      - name: Smoke test
+        run: python3 deploy/smoke_test.py https://localhost
+      - name: Admin yaratish buyrug'i
+        run: $COMPOSE exec -T backend python -m app.create_admin --username ciadmin --email ci@example.com --password "Ci-admin-12345"
+      - name: Backup servisi
+        run: sleep 5 && ls -la backups/ && test -n "$(ls backups/*.sql.gz)"
+      - name: Loglar (xato bo'lsa)
+        if: failure()
+        run: $COMPOSE ps && $COMPOSE logs --tail=150
+      - name: GHCR'ga yuklash (main)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          $COMPOSE push ai-service backend web
+          for s in ai-service backend web; do
+            img="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/agroyordam/$s"
+            docker tag "$img:${GITHUB_SHA::7}" "$img:latest" && docker push "$img:latest"
+          done
+      - run: $COMPOSE down -v
+        if: always()
+
+  deploy:
+    needs: smoke
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      HAS_SERVER: ${{ secrets.SERVER_HOST != '' && secrets.SERVER_SSH_KEY != '' }}
+    steps:
+      - name: Server sozlanmagan
+        if: env.HAS_SERVER != 'true'
+        run: echo "SERVER_HOST / SERVER_USER / SERVER_SSH_KEY secret'lari yo'q — deploy o'tkazib yuborildi (DEPLOY.md ga qarang)"
+      - name: Serverga deploy
+        if: env.HAS_SERVER == 'true'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/agroyordam
+            git fetch origin main && git reset --hard origin/main
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            export IMAGE_TAG=latest
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull ai-service backend web
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
+            docker image prune -f
+            sleep 10 && curl -sf "https://$(grep ^DOMAIN= .env | cut -d= -f2)/health"

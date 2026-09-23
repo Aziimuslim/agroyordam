@@ -50,6 +50,10 @@ class AppIcons {
     if (n.contains('bodring')) return Icons.grass_rounded;
     if (n.contains('qalampir')) return Icons.local_fire_department_outlined;
     if (n.contains('pomidor')) return Icons.brightness_1_outlined;
+    if (n.contains('makkajo')) return Icons.grain_rounded;
+    if (n.contains('shaftoli') || n.contains('olcha')) return Icons.park_outlined;
+    if (n.contains('qulupnay')) return Icons.favorite_outline_rounded;
+    if (n.contains('qovoq')) return Icons.circle_outlined;
     return Icons.spa_outlined;
   }
 

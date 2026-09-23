@@ -11,6 +11,7 @@ from app.models.like import Like
 from app.models.medicine import Medicine
 from app.models.message import Message
 from app.models.notification import Notification
+from app.models.payment_transaction import PaymentTransaction
 from app.models.plant import Plant
 from app.models.post import Post
 from app.models.refresh_token import RefreshToken
@@ -22,5 +23,5 @@ from app.models.user import User
 __all__ = [
     "AIChatMessage", "Comment", "Conversation", "ConversationParticipant", "Crop", "CropLog",
     "Diagnosis", "Disease", "DiseaseMedicine", "Follower", "Like", "Medicine", "Message",
-    "Notification", "Plant", "Post", "RefreshToken", "Reminder", "Report", "Subscription", "User",
+    "Notification", "PaymentTransaction", "Plant", "Post", "RefreshToken", "Reminder", "Report", "Subscription", "User",
 ]

@@ -16,6 +16,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    settings.validate_production()
     if settings.DATABASE_URL.startswith("sqlite"):
         # Dev rejimi: SQLite'da jadvallarni avtomatik yaratamiz (PostgreSQL'da — Alembic)
         import app.models  # noqa: F401
@@ -23,7 +24,7 @@ async def lifespan(app: FastAPI):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     if settings.ENVIRONMENT != "test":
-        from app.seed import run_seed
+        from app.seed import run_seed  # KB har doim yangilanadi; demo foydalanuvchilar faqat SEED_DEMO_DATA=true
 
         await run_seed()
         if settings.ENABLE_SCHEDULER:
@@ -42,6 +43,9 @@ app = FastAPI(
     version=settings.APP_VERSION,
     description="AI yordamida ekin kasalliklarini tashxislash platformasi",
     lifespan=lifespan,
+    docs_url="/docs" if settings.docs_enabled else None,
+    redoc_url="/redoc" if settings.docs_enabled else None,
+    openapi_url="/openapi.json" if settings.docs_enabled else None,
 )
 app.add_middleware(
     CORSMiddleware,

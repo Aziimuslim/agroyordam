@@ -88,3 +88,17 @@ async def test_follow_flow(client, user_headers):
     assert notes[0]["type"] == "follow"
     assert (await client.delete(f"/api/v1/users/{other_id}/follow", headers=user_headers)).status_code == 204
     assert (await client.post(f"/api/v1/users/{me_id}/follow", headers=user_headers)).status_code == 400
+
+
+def test_production_settings_guard():
+    import pytest
+
+    from app.core.config import Settings
+
+    with pytest.raises(RuntimeError, match="SECRET_KEY"):
+        Settings(ENVIRONMENT="production", SEED_DEMO_DATA=False).validate_production()
+    with pytest.raises(RuntimeError, match="SEED_DEMO_DATA"):
+        Settings(ENVIRONMENT="production", SECRET_KEY="x" * 64, SEED_DEMO_DATA=True).validate_production()
+    ok = Settings(ENVIRONMENT="production", SECRET_KEY="x" * 64, SEED_DEMO_DATA=False)
+    ok.validate_production()
+    assert ok.docs_enabled is False and Settings(ENVIRONMENT="development").docs_enabled is True

@@ -1,0 +1,19 @@
+# Avtomatik HTTPS (Let's Encrypt). DOMAIN .env faylidan olinadi.
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Rasmlar (MinIO, faqat o'qish): https://DOMAIN/s3/agroyordam/...
+	handle_path /s3/* {
+		reverse_proxy minio:9000
+	}
+
+	# Web ilova + API + WebSocket (nginx orqali)
+	reverse_proxy web:80
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}

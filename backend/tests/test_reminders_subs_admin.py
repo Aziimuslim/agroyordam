@@ -48,20 +48,20 @@ def signed(provider: str, payload: dict) -> tuple[bytes, dict]:
 async def test_subscription_webhook_flow(client, user_headers):
     plans = (await client.get("/api/v1/subscriptions/plans")).json()
     assert {p["code"] for p in plans} == {"monthly", "yearly", "lifetime"}
-    co = (await client.post("/api/v1/subscriptions/checkout", json={"plan": "monthly", "provider": "click"}, headers=user_headers)).json()
+    co = (await client.post("/api/v1/subscriptions/checkout", json={"plan": "monthly", "provider": "uzum"}, headers=user_headers)).json()
     assert co["sandbox"] and "subscription_id" in co["payment_url"]
 
     payload = {"subscription_id": co["subscription_id"], "transaction_id": "T-1", "status": "paid", "amount": "25000"}
-    raw, headers = signed("click", payload)
-    bad = await client.post("/api/v1/subscriptions/webhook/click", content=raw, headers={**headers, "X-Signature": "00"})
+    raw, headers = signed("uzum", payload)
+    bad = await client.post("/api/v1/subscriptions/webhook/uzum", content=raw, headers={**headers, "X-Signature": "00"})
     assert bad.status_code == 401
-    wrong_provider = await client.post("/api/v1/subscriptions/webhook/payme", content=raw, headers=headers)
-    assert wrong_provider.status_code == 401
-    raw_amt, h_amt = signed("click", {**payload, "amount": "1"})
-    assert (await client.post("/api/v1/subscriptions/webhook/click", content=raw_amt, headers=h_amt)).status_code == 400
-    ok = await client.post("/api/v1/subscriptions/webhook/click", content=raw, headers=headers)
+    other = await client.post("/api/v1/subscriptions/webhook/payme", content=raw, headers=headers)
+    assert other.status_code == 404  # Payme/Click o'z protokoli orqali
+    raw_amt, h_amt = signed("uzum", {**payload, "amount": "1"})
+    assert (await client.post("/api/v1/subscriptions/webhook/uzum", content=raw_amt, headers=h_amt)).status_code == 400
+    ok = await client.post("/api/v1/subscriptions/webhook/uzum", content=raw, headers=headers)
     assert ok.status_code == 200 and ok.json()["status"] == "active"
-    again = await client.post("/api/v1/subscriptions/webhook/click", content=raw, headers=headers)
+    again = await client.post("/api/v1/subscriptions/webhook/uzum", content=raw, headers=headers)
     assert again.json()["status"] == "active"  # idempotent
 
     me = (await client.get("/api/v1/subscriptions/me", headers=user_headers)).json()

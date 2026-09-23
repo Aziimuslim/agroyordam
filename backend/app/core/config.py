@@ -45,7 +45,11 @@ class Settings(BaseSettings):
     # To'lov provayderlari (sandbox kalitlari .env orqali beriladi)
     PAYMENT_MODE: str = "sandbox"  # sandbox | live
     PAYME_MERCHANT_ID: str = ""
+    # Payme kabinetidagi kalit (test rejimida — test kaliti). Basic auth: "Paycom:<KEY>"
     PAYME_SECRET_KEY: str = "payme-sandbox-secret"
+    PAYME_CHECKOUT_URL: str = "https://checkout.paycom.uz"  # test kassa: https://test.paycom.uz
+    PAYME_ACCOUNT_FIELD: str = "order_id"
+    PAYME_TIMEOUT_MS: int = 43_200_000  # 12 soat
     CLICK_SERVICE_ID: str = ""
     CLICK_MERCHANT_ID: str = ""
     CLICK_SECRET_KEY: str = "click-sandbox-secret"
@@ -56,6 +60,20 @@ class Settings(BaseSettings):
     FCM_SERVER_KEY: str | None = None
     ENABLE_SCHEDULER: bool = True
     SEED_DEMO_DATA: bool = True
+
+    ENABLE_DOCS: bool | None = None  # None → production'da o'chiq, boshqa muhitda yoqiq
+
+    @property
+    def docs_enabled(self) -> bool:
+        return self.ENABLE_DOCS if self.ENABLE_DOCS is not None else self.ENVIRONMENT != "production"
+
+    def validate_production(self) -> None:
+        if self.ENVIRONMENT != "production":
+            return
+        if len(self.SECRET_KEY) < 32 or self.SECRET_KEY.startswith("change-me"):
+            raise RuntimeError("Production: SECRET_KEY kamida 32 belgili tasodifiy qiymat bo'lishi kerak (openssl rand -hex 32)")
+        if self.SEED_DEMO_DATA:
+            raise RuntimeError("Production: SEED_DEMO_DATA=false bo'lishi kerak (demo parollar ochiq)")
 
     @property
     def cors_origins(self) -> list[str]:

@@ -14,13 +14,16 @@ eslatmalar, jamoat, real-time chat, AI yordamchi, Premium obuna va admin panel.
 ```
 backend/      FastAPI (modular monolith), SQLAlchemy 2.0 async, Alembic, JWT + bcrypt, WebSocket, APScheduler
 ai-service/   Ichki AI mikroservis: rasm validatsiyasi (o'lcham, yorug'lik, Laplacian blur, o'simlik bor-yo'qligi)
-              + model interfeysi (MVP: deterministik stub, ONNX model tayyor bo'lganda avtomatik almashadi)
+              + PlantVillage'da o'qitilgan MobileNetV3 ONNX modeli (34 sinf, 11 ekin, val aniqligi 97%)
 mobile/       Flutter ilova — Android, iOS va Web (bitta kod bazasi), Riverpod + go_router, Clean Architecture
-deploy/       Nginx konfiguratsiyasi (reverse proxy, rate limit, WebSocket)
-docker-compose.yml, .env.example, .github/workflows/ci.yml
+deploy/       Nginx, Caddy (avtomatik HTTPS), production smoke-test
+docker-compose.yml + docker-compose.prod.yml, .env.example, .env.production.example
+DEPLOY.md     Domen, VPS va serverga chiqarish bo'yicha to'liq yo'riqnoma
 ```
 
 ## Tez ishga tushirish
+
+> Internetga (VPS + domen) chiqarish: **[DEPLOY.md](DEPLOY.md)**
 
 ### Docker bilan (butun tizim bitta buyruqda)
 
@@ -71,37 +74,55 @@ APK har push'da GitHub Actions ("Android APK" workflow) tomonidan yig'iladi va *
 
 - **Auth**: ro'yxatdan o'tish / kirish (email, telefon yoki username), refresh token rotatsiyasi (DB'da, bekor qilinadi),
   parolni tiklash, RBAC (`user`, `moderator`, `admin`).
-- **AI tashxis**: rasm → validatsiya → AI → bilimlar bazasi (`diseases.ai_label`) → `diagnoses` jadvaliga saqlash,
-  ekin sog'lig'i avtomatik yangilanadi, past ishonchda qayta suratga olish tavsiyasi.
+- **AI tashxis**: rasm → validatsiya → AI (MobileNetV3, 34 sinf) → bilimlar bazasi (`diseases.ai_label`, 28 kasallik) →
+  `diagnoses` jadvaliga saqlash. Ekin turi tanlansa, model faqat shu ekin kasalliklari ichidan tanlaydi.
+  Ekin sog'lig'i avtomatik yangilanadi, ishonch past bo'lsa qayta suratga olish tavsiya qilinadi.
 - **Mening bog'im**: ekinlar CRUD, sog'liq tarixi grafigi, ekin kundaligi, qayta tashxis.
 - **Eslatmalar**: qo'lda yoki tashxisdan avtomatik davolash rejasi; APScheduler vaqti kelganda bildirishnoma yuboradi.
 - **Jamoat**: postlar (rasm bilan), layk, izoh, obuna (follow), shikoyat; tashxisni bir tugma bilan ulashish.
 - **Chat**: 1:1 real-time chat (WebSocket), "yozmoqda..." va o'qilganlik belgisi, bildirishnomalar WebSocket'i.
 - **AI yordamchi**: bilimlar bazasiga tayangan erkin savol-javob (kunlik limit bilan).
-- **Premium**: Payme / Click / Uzum Bank; webhook HMAC imzo tekshiruvi; bepul reja — kuniga 3 ta AI tashxis va 3 tagacha ekin.
+- **Premium**: **Payme Merchant API** (JSON-RPC: Check/Create/Perform/Cancel/CheckTransaction, GetStatement) va
+  **Click SHOP API** (Prepare/Complete, md5 imzo) to'liq amalga oshirilgan; Uzum — HMAC webhook.
+  Bepul reja: kuniga 3 ta AI tashxis va 3 tagacha ekin.
 - **Admin panel** (Flutter Web'da keng ekran): platforma / AI / daromad statistikasi, foydalanuvchilarni bloklash,
   katalog (o'simlik, kasallik, dori va ularni bog'lash) CRUD, shikoyatlarni moderatsiya qilish.
 
 ## Testlar
 
 ```bash
-cd backend && pytest --cov=app          # 31 ta test, coverage ~95%
-cd ai-service && pytest                 # 9 ta test
+cd backend && pytest --cov=app          # 38 ta test, coverage ~94%
+cd ai-service && MODEL_PATH=models/agro-mobilenetv3.onnx pytest   # 11 ta test
 cd mobile && flutter analyze && flutter test
 ```
 
-CI (GitHub Actions) har push'da: PostgreSQL'da Alembic migratsiyasi, backend testlari (coverage ≥70%),
-AI service testlari, `flutter analyze`, `flutter test` va `flutter build web`.
+CI (GitHub Actions) har push'da:
+- **CI**: PostgreSQL'da Alembic migratsiyasi, backend testlari (coverage ≥70%), AI service testlari (haqiqiy model bilan),
+  `flutter analyze`, `flutter test` va `flutter build web`.
+- **Docker stack**: butun tizim `docker compose` bilan production rejimida (HTTPS) ko'tariladi va smoke-test qilinadi
+  (`deploy/smoke_test.py`). `main` branch'da image'lar GHCR'ga yuklanadi va serverga deploy qilinadi.
+- **Android APK**: APK yig'ilib, Releases'ga yuklanadi.
 
-## Hozircha nima qilinmagan (keyingi bosqichlar)
+## AI model
 
-- **Haqiqiy AI model**: `ai-service/training/train.py` (EfficientNet-B0 → ONNX) tayyor, lekin model dataset
-  (PlantVillage + mahalliy rasmlar) bilan hali o'qitilmagan. Hozir stub ishlaydi; `MODEL_PATH` berilganda real model ulanadi.
-- **To'lov provayderlari**: `PAYMENT_MODE=sandbox` — ilova ichida test to'lov. Live rejim uchun Payme/Click/Uzum
-  merchant kalitlari va har bir provayderning rasmiy webhook protokoli (Payme JSON-RPC, Click prepare/complete) kerak.
+| | |
+|---|---|
+| Arxitektura | MobileNetV3-Large (ImageNet) + chiziqli klassifikator, ONNX Runtime |
+| Dataset | PlantVillage (12 455 ta o'qitish + 2 178 ta tekshiruv rasmi) |
+| Sinflar | 34 ta: pomidor (10), kartoshka (3), qalampir (2), uzum (4), olma (4), makkajo'xori (4), shaftoli, olcha, qulupnay (2 tadan), qovoq (1) |
+| Aniqlik (val) | **97.1%** (eng pasti: pomidor alternariozi — 82%) |
+| Qayta o'qitish | GitHub Actions → "Train AI model" (`ai-service/training/train_plantvillage.py`) |
+
+⚠️ PlantVillage rasmlari laboratoriya sharoitida (bir xil fon) olingan. Dala sharoitidagi rasmlarda aniqlik pastroq bo'lishi mumkin.
+Keyingi qadam: foydalanuvchilar yuklagan rasmlar asosida mahalliy dataset yig'ib, modelni qayta o'qitish (fine-tune).
+
+## Hozircha nima qilinmagan
+
+- **Jonli to'lovlar**: kod tayyor, lekin Payme/Click merchant hisobi va kalitlari kerak (DEPLOY.md, 5-bo'lim).
+- **Uzum Bank**: rasmiy spetsifikatsiya bo'yicha moslashtirish kerak.
 - **Push-bildirishnomalar**: FCM kaliti (`FCM_SERVER_KEY`) va Firebase loyihasi berilganda yoqiladi.
-- **SMS / email** orqali parol tiklash kodi yuborish (hozir dev rejimida kod javobda qaytadi).
-- Load test va prod uchun TLS sertifikati.
+- **SMS / email** orqali parolni tiklash kodini yuborish.
+- **Bodring** kasalliklari bilimlar bazasida bor, lekin model ularni hali tanimaydi (PlantVillage'da bodring yo'q).
 
 ## Dizayn
 

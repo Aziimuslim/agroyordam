@@ -38,6 +38,9 @@ async def checkout(body: CheckoutIn, user: User = Depends(get_current_user), db:
 @router.post("/webhook/{provider}")
 async def webhook(provider: str, request: Request, x_signature: str | None = Header(default=None),
                   db: AsyncSession = Depends(get_db)):
+    """Uzum Bank uchun HMAC-imzoli webhook. Payme va Click o'z protokollari bilan /payments/* orqali ishlaydi."""
+    if provider != "uzum":
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Payme/Click uchun /api/v1/payments/* endpointlaridan foydalaning")
     raw = await request.body()
     verify_signature(provider, raw, x_signature)
     try:

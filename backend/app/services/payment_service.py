@@ -15,6 +15,7 @@ from decimal import Decimal
 from urllib.parse import urlencode
 
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -70,8 +71,8 @@ def payment_url(provider: str, sub: Subscription) -> str:
     if settings.PAYMENT_MODE == "sandbox":
         return f"{settings.PAYMENT_RETURN_URL}?sandbox=1&subscription_id={sub.id}&provider={provider}"
     if provider == "payme":
-        raw = f"m={settings.PAYME_MERCHANT_ID};ac.order_id={sub.id};a={amount * 100};c={settings.PAYMENT_RETURN_URL}"
-        return "https://checkout.paycom.uz/" + base64.b64encode(raw.encode()).decode()
+        raw = f"m={settings.PAYME_MERCHANT_ID};ac.{settings.PAYME_ACCOUNT_FIELD}={sub.id};a={amount * 100};c={settings.PAYMENT_RETURN_URL}"
+        return settings.PAYME_CHECKOUT_URL.rstrip("/") + "/" + base64.b64encode(raw.encode()).decode()
     if provider == "click":
         q = urlencode({
             "service_id": settings.CLICK_SERVICE_ID, "merchant_id": settings.CLICK_MERCHANT_ID,
@@ -91,6 +92,19 @@ async def create_checkout(db: AsyncSession, user: User, plan_code: str, provider
     db.add(sub)
     await db.flush()
     return sub
+
+
+async def revoke_payment(db: AsyncSession, sub: Subscription) -> None:
+    """To'lov qaytarilganda (refund) obunani bekor qiladi va Premium'ni olib tashlaydi."""
+    sub.status = "cancelled"
+    sub.auto_renew = False
+    user = await db.get(User, sub.user_id)
+    other = await db.scalar(select(Subscription).where(
+        Subscription.user_id == user.id, Subscription.status == "active", Subscription.id != sub.id).limit(1))
+    if other is None:
+        user.is_premium = False
+        user.premium_until = None
+    await db.flush()
 
 
 async def apply_payment(db: AsyncSession, sub: Subscription, txn_id: str, pay_status: str, amount: Decimal) -> Subscription:
