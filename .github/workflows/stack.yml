@@ -2,13 +2,12 @@ name: Docker stack (smoke test + deploy)
 
 on:
   push:
-    branches: [main, "claude/**"]
+    branches: ["**"]
     paths-ignore: ["docs/**", "**.md"]
   workflow_dispatch:
 
 permissions:
   contents: read
-  packages: write
 
 env:
   COMPOSE: docker compose -f docker-compose.yml -f docker-compose.prod.yml
@@ -25,8 +24,6 @@ jobs:
           sed -i "s/^DOMAIN=.*/DOMAIN=localhost/" .env
           sed -i "s/^SECRET_KEY=.*/SECRET_KEY=$(openssl rand -hex 32)/" .env
           sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 16)/" .env
-          echo "IMAGE_REGISTRY=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/agroyordam" >> .env
-          echo "IMAGE_TAG=${GITHUB_SHA::7}" >> .env
       - name: Image'larni yig'ish
         run: $COMPOSE build
       - name: Stack'ni ishga tushirish
@@ -49,21 +46,13 @@ jobs:
       - name: Loglar (xato bo'lsa)
         if: failure()
         run: $COMPOSE ps && $COMPOSE logs --tail=150
-      - name: GHCR'ga yuklash (main)
-        if: github.ref == 'refs/heads/main'
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          $COMPOSE push ai-service backend web
-          for s in ai-service backend web; do
-            img="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/agroyordam/$s"
-            docker tag "$img:${GITHUB_SHA::7}" "$img:latest" && docker push "$img:latest"
-          done
       - run: $COMPOSE down -v
         if: always()
 
   deploy:
     needs: smoke
-    if: github.ref == 'refs/heads/main'
+    # Asosiy (default) branch'ga push bo'lganda serverga chiqariladi
+    if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
     env:
       HAS_SERVER: ${{ secrets.SERVER_HOST != '' && secrets.SERVER_SSH_KEY != '' }}
@@ -80,11 +69,8 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             set -e
-            cd ~/agroyordam
-            git fetch origin main && git reset --hard origin/main
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-            export IMAGE_TAG=latest
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull ai-service backend web
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
+            cd /opt/agroyordam
+            git fetch origin "${{ github.ref_name }}" && git reset --hard "origin/${{ github.ref_name }}"
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --remove-orphans
             docker image prune -f
-            sleep 10 && curl -sf "https://$(grep ^DOMAIN= .env | cut -d= -f2)/health"
+            sleep 15 && curl -sf "https://$(grep ^DOMAIN= .env | cut -d= -f2)/health"

@@ -23,7 +23,7 @@ DEPLOY.md     Domen, VPS va serverga chiqarish bo'yicha to'liq yo'riqnoma
 
 ## Tez ishga tushirish
 
-> Internetga (VPS + domen) chiqarish: **[DEPLOY.md](DEPLOY.md)**
+> Internetga chiqarish: **[DEPLOY.md](DEPLOY.md)** · bepul server (Oracle Cloud + DuckDNS): **[docs/ORACLE_FREE.md](docs/ORACLE_FREE.md)**
 
 ### Docker bilan (butun tizim bitta buyruqda)
 
@@ -99,7 +99,7 @@ CI (GitHub Actions) har push'da:
 - **CI**: PostgreSQL'da Alembic migratsiyasi, backend testlari (coverage ≥70%), AI service testlari (haqiqiy model bilan),
   `flutter analyze`, `flutter test` va `flutter build web`.
 - **Docker stack**: butun tizim `docker compose` bilan production rejimida (HTTPS) ko'tariladi va smoke-test qilinadi
-  (`deploy/smoke_test.py`). `main` branch'da image'lar GHCR'ga yuklanadi va serverga deploy qilinadi.
+  (`deploy/smoke_test.py`). Asosiy branch'da server sozlangan bo'lsa, SSH orqali avtomatik deploy qilinadi.
 - **Android APK**: APK yig'ilib, Releases'ga yuklanadi.
 
 ## AI model

@@ -4,6 +4,9 @@ Natija: `https://sizning-domen.uz` da web ilova, APK esa shu serverga o'zi ulana
 
 Umumiy yo'l: **domen olish → VPS olish → domenni serverga ulash → serverda bir necha buyruq → (ixtiyoriy) avtomatik deploy**.
 
+> 💡 **Bepul variant:** Oracle Cloud (Always Free) + DuckDNS bo'yicha rasmli qadam-baqadam yo'riqnoma —
+> **[docs/ORACLE_FREE.md](docs/ORACLE_FREE.md)**
+
 ---
 
 ## 1. Domen olish
@@ -64,6 +67,13 @@ DNS yangilanishi bir necha daqiqadan 24 soatgacha davom etadi. Tekshirish: `ping
 
 ## 3. Serverni sozlash (bir marta, ~15 daqiqa)
 
+**Tez yo'l — bitta buyruq** (Ubuntu, amd64 yoki arm64). Serverga SSH orqali kirib:
+```bash
+curl -fsSL https://raw.githubusercontent.com/Aziimuslim/if-else-son-kiritish/HEAD/deploy/setup-server.sh | sudo bash -s -- agroyordam.uz
+```
+Skript firewall, Docker, loyiha kodi (`/opt/agroyordam`), maxfiy kalitlar bilan `.env` va ishga tushirishni o'zi bajaradi.
+Keyin faqat admin yaratasiz (pastda). Qo'lda qilishni istasangiz — quyidagi buyruqlar:
+
 ```bash
 ssh root@SERVER_IP
 
@@ -79,8 +89,8 @@ fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /
 echo '/swapfile none swap sw 0 0' >> /etc/fstab
 
 # Loyiha
-git clone https://github.com/Aziimuslim/if-else-son-kiritish.git ~/agroyordam
-cd ~/agroyordam
+git clone https://github.com/Aziimuslim/if-else-son-kiritish.git /opt/agroyordam
+cd /opt/agroyordam
 cp .env.production.example .env
 ```
 
@@ -122,17 +132,16 @@ gunzip -c backups/agroyordam-2026-09-23.sql.gz | dc exec -T db psql -U agro agro
 
 ## 4. Avtomatik yangilanish (ixtiyoriy, tavsiya)
 
-`main` branch'ga push qilinganda GitHub Actions ("Docker stack" workflow) quyidagilarni bajaradi:
+Asosiy (default) branch'ga push qilinganda GitHub Actions ("Docker stack" workflow) quyidagilarni bajaradi:
 1. Butun stack'ni production rejimida ko'tarib, smoke-test qiladi.
-2. Image'larni GitHub Container Registry'ga yuklaydi.
-3. Serverga SSH orqali kirib yangilaydi.
+2. Test o'tsa — serverga SSH orqali kirib, `/opt/agroyordam` da kodni yangilaydi va qayta yig'adi.
 
 Sozlash: GitHub → repo → **Settings → Secrets and variables → Actions**:
 
 | Nomi | Turi | Qiymati |
 |---|---|---|
 | `SERVER_HOST` | Secret | server IP manzili |
-| `SERVER_USER` | Secret | `root` (yoki boshqa foydalanuvchi) |
+| `SERVER_USER` | Secret | `ubuntu` yoki `root` (serverga kiradigan foydalanuvchi) |
 | `SERVER_SSH_KEY` | Secret | **alohida** deploy kalitining *maxfiy* qismi (`~/.ssh/agroyordam_deploy`) |
 | `API_URL` | **Variable** | `https://agroyordam.uz` — APK shu serverga o'zi ulanadi |
 
