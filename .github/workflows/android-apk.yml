@@ -21,9 +21,9 @@ jobs:
         with: {flutter-version: "3.35.4", channel: stable, cache: true}
       - run: flutter pub get
       - name: APK yig'ish (release)
-        # Repo Settings → Variables → API_URL (masalan https://agroyordam.uz) berilsa, APK shu serverga o'zi ulanadi
+        # Standart: jonli server. Boshqa server uchun Repo Settings → Variables → API_URL
         env:
-          API_URL: ${{ vars.API_URL }}
+          API_URL: ${{ vars.API_URL || 'https://agroyordam.duckdns.org' }}
         run: flutter build apk --release ${API_URL:+--dart-define=API_URL=$API_URL}
       - name: Nomlash
         run: cp build/app/outputs/flutter-apk/app-release.apk build/AgroYordam-0.1.apk
