@@ -31,17 +31,11 @@ jobs:
         with:
           name: AgroYordam-0.1-apk
           path: mobile/build/AgroYordam-0.1.apk
-      - name: GitHub Release'ga yuklash
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v0.1.0
-          name: AgroYordam 0.1 (APK)
-          target_commitish: ${{ github.sha }}
-          prerelease: true
-          files: mobile/build/AgroYordam-0.1.apk
-          body: |
-            AgroYordam 0.1 — Android APK (test versiyasi).
-
-            O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
-            Birinchi ochishda pastdagi "Server: ..." tugmasi orqali backend manzilini kiriting
-            (masalan `http://192.168.1.10:8000` — backend kompyuterda `uvicorn app.main:app --host 0.0.0.0 --port 8000` bilan ishlashi kerak).
+      - name: GitHub Release'ga yuklash (v0.1.0)
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view v0.1.0 >/dev/null 2>&1 || gh release create v0.1.0 --prerelease --target "$GITHUB_SHA" \
+            --title "AgroYordam 0.1 (APK)" --notes-file .github/apk-release-notes.md
+          gh release upload v0.1.0 mobile/build/AgroYordam-0.1.apk --clobber

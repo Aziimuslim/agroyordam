@@ -66,17 +66,11 @@ jobs:
           name: agro-model
           path: ai-service/models/
       - name: Release'ga yuklash (model-v1)
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: model-v1
-          name: AgroYordam AI model v1 (PlantVillage, MobileNetV3)
-          target_commitish: ${{ github.sha }}
-          prerelease: true
-          files: |
-            ai-service/models/agro-mobilenetv3.onnx
-            ai-service/models/agro-mobilenetv3.labels.txt
-            ai-service/models/agro-mobilenetv3.metrics.json
-          body: |
-            PlantVillage datasetida o'qitilgan kasallik klassifikatori (34 sinf, 11 ekin).
-            AI service Docker image'i build paytida shu faylni avtomatik yuklab oladi.
-            Aniqlik ko'rsatkichlari: agro-mobilenetv3.metrics.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view model-v1 >/dev/null 2>&1 || gh release create model-v1 --prerelease --target "$GITHUB_SHA" \
+            --title "AgroYordam AI model v1 (PlantVillage, MobileNetV3)" \
+            --notes "PlantVillage'da o'qitilgan kasallik klassifikatori (34 sinf, 11 ekin). Aniqlik: agro-mobilenetv3.metrics.json"
+          gh release upload model-v1 ai-service/models/agro-mobilenetv3.onnx ai-service/models/agro-mobilenetv3.labels.txt \
+            ai-service/models/agro-mobilenetv3.metrics.json --clobber
