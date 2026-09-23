@@ -1,0 +1,82 @@
+name: Train AI model
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, "claude/**"]
+    paths: ["ai-service/training/**", "ai-service/app/models/labels.py", "ai-service/app/inference/preprocess.py", ".github/workflows/train-model.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11", cache: pip}
+      - run: pip install -r ai-service/training/requirements.txt
+      - name: PlantVillage dataset (kerakli sinflar)
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/spMohanty/PlantVillage-Dataset /tmp/pv
+          cd /tmp/pv
+          git sparse-checkout set --no-cone \
+            "raw/color/Tomato___Bacterial_spot" \
+            "raw/color/Tomato___Early_blight" \
+            "raw/color/Tomato___Late_blight" \
+            "raw/color/Tomato___Leaf_Mold" \
+            "raw/color/Tomato___Septoria_leaf_spot" \
+            "raw/color/Tomato___Spider_mites Two-spotted_spider_mite" \
+            "raw/color/Tomato___Target_Spot" \
+            "raw/color/Tomato___Tomato_Yellow_Leaf_Curl_Virus" \
+            "raw/color/Tomato___Tomato_mosaic_virus" \
+            "raw/color/Tomato___healthy" \
+            "raw/color/Potato___Early_blight" \
+            "raw/color/Potato___Late_blight" \
+            "raw/color/Potato___healthy" \
+            "raw/color/Pepper,_bell___Bacterial_spot" \
+            "raw/color/Pepper,_bell___healthy" \
+            "raw/color/Grape___Black_rot" \
+            "raw/color/Grape___Esca_(Black_Measles)" \
+            "raw/color/Grape___Leaf_blight_(Isariopsis_Leaf_Spot)" \
+            "raw/color/Grape___healthy" \
+            "raw/color/Apple___Apple_scab" \
+            "raw/color/Apple___Black_rot" \
+            "raw/color/Apple___Cedar_apple_rust" \
+            "raw/color/Apple___healthy" \
+            "raw/color/Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot" \
+            "raw/color/Corn_(maize)___Common_rust_" \
+            "raw/color/Corn_(maize)___Northern_Leaf_Blight" \
+            "raw/color/Corn_(maize)___healthy" \
+            "raw/color/Peach___Bacterial_spot" \
+            "raw/color/Peach___healthy" \
+            "raw/color/Cherry_(including_sour)___Powdery_mildew" \
+            "raw/color/Cherry_(including_sour)___healthy" \
+            "raw/color/Strawberry___Leaf_scorch" \
+            "raw/color/Strawberry___healthy" \
+            "raw/color/Squash___Powdery_mildew"
+          du -sh raw/color
+      - name: O'qitish va ONNX eksport
+        working-directory: ai-service
+        run: python training/train_plantvillage.py --data /tmp/pv/raw/color --out models/agro-mobilenetv3.onnx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agro-model
+          path: ai-service/models/
+      - name: Release'ga yuklash (model-v1)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: model-v1
+          name: AgroYordam AI model v1 (PlantVillage, MobileNetV3)
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          files: |
+            ai-service/models/agro-mobilenetv3.onnx
+            ai-service/models/agro-mobilenetv3.labels.txt
+            ai-service/models/agro-mobilenetv3.metrics.json
+          body: |
+            PlantVillage datasetida o'qitilgan kasallik klassifikatori (34 sinf, 11 ekin).
+            AI service Docker image'i build paytida shu faylni avtomatik yuklab oladi.
+            Aniqlik ko'rsatkichlari: agro-mobilenetv3.metrics.json
