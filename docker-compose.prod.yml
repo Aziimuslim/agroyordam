@@ -10,13 +10,6 @@ services:
   redis:
     restart: unless-stopped
 
-  minio:
-    restart: unless-stopped
-    ports: !reset []
-    environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY:?S3_ACCESS_KEY kerak}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?S3_SECRET_KEY kerak}
-
   ai-service:
     restart: unless-stopped
 
@@ -28,7 +21,6 @@ services:
       SEED_DEMO_DATA: "false"
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agro}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-agroyordam}
       CORS_ORIGINS: https://${DOMAIN}
-      S3_PUBLIC_URL: https://${DOMAIN}/s3/agroyordam
       PAYMENT_RETURN_URL: https://${DOMAIN}/premium
 
   web:
@@ -38,7 +30,7 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
-    depends_on: [web, minio]
+    depends_on: [web]
     ports: ["80:80", "443:443", "443:443/udp"]
     environment:
       DOMAIN: ${DOMAIN:?DOMAIN kerak (masalan agroyordam.uz)}
@@ -47,7 +39,7 @@ services:
       - caddy_data:/data
       - caddy_config:/config
 
-  # Har kuni PostgreSQL zaxira nusxasi → ./backups (7 kun saqlanadi)
+  # Har kuni PostgreSQL va rasmlar zaxira nusxasi → ./backups (7 kun saqlanadi)
   backup:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -55,8 +47,8 @@ services:
       db: {condition: service_healthy}
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD}
-    volumes: ["./backups:/backups"]
-    entrypoint: ["sh", "-c", "while true; do pg_dump -h db -U ${POSTGRES_USER:-agro} ${POSTGRES_DB:-agroyordam} | gzip > /backups/agroyordam-$$(date +%F).sql.gz && find /backups -name '*.sql.gz' -mtime +7 -delete; sleep 86400; done"]
+    volumes: ["./backups:/backups", "media:/media:ro"]
+    entrypoint: ["sh", "-c", "while true; do d=$$(date +%F); pg_dump -h db -U ${POSTGRES_USER:-agro} ${POSTGRES_DB:-agroyordam} | gzip > /backups/agroyordam-$$d.sql.gz && tar czf /backups/media-$$d.tar.gz -C /media . && find /backups -name '*.gz' -mtime +7 -delete; sleep 86400; done"]
 
 volumes:
   caddy_data:

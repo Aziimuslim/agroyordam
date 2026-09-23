@@ -89,7 +89,6 @@ cp .env.production.example .env
 DOMAIN=agroyordam.uz                          # o'z domeningiz
 SECRET_KEY=...        # openssl rand -hex 32 natijasi
 POSTGRES_PASSWORD=... # openssl rand -hex 16
-S3_SECRET_KEY=...     # openssl rand -hex 16
 ```
 Tasodifiy qiymat olish: `openssl rand -hex 32`.
 
@@ -111,7 +110,7 @@ alias dc='docker compose -f docker-compose.yml -f docker-compose.prod.yml'
 dc ps                 # servislar holati
 dc logs -f backend    # backend loglari
 dc restart backend    # qayta ishga tushirish
-ls backups/           # kunlik bazaning zaxira nusxalari
+ls backups/           # kunlik zaxira nusxalar (baza + rasmlar)
 ```
 
 Zaxiradan tiklash:

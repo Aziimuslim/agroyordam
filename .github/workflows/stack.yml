@@ -25,7 +25,6 @@ jobs:
           sed -i "s/^DOMAIN=.*/DOMAIN=localhost/" .env
           sed -i "s/^SECRET_KEY=.*/SECRET_KEY=$(openssl rand -hex 32)/" .env
           sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 16)/" .env
-          sed -i "s/^S3_SECRET_KEY=.*/S3_SECRET_KEY=$(openssl rand -hex 16)/" .env
           echo "IMAGE_REGISTRY=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/agroyordam" >> .env
           echo "IMAGE_TAG=${GITHUB_SHA::7}" >> .env
       - name: Image'larni yig'ish

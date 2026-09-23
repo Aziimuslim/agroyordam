@@ -34,7 +34,6 @@ docker compose up --build
 
 - Ilova (web): http://localhost
 - API hujjatlari (Swagger): http://localhost/docs
-- MinIO konsol: http://localhost:9001
 
 ### Docker'siz (dasturlash uchun)
 

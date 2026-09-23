@@ -3,7 +3,7 @@
     python3 deploy/smoke_test.py https://localhost
 
 Tekshiradi: HTTPS, web ilova, /docs yopiqligi, ro'yxatdan o'tish, katalog (KB), ekin, rasm yuklab
-haqiqiy AI tashxis, rasmning S3/MinIO orqali ochilishi, obuna rejalari, to'lov endpointlari.
+haqiqiy AI tashxis, yuklangan rasmning ochilishi, obuna rejalari, to'lov endpointlari.
 """
 import json
 import ssl
@@ -96,7 +96,7 @@ check(st == 201, f"AI tashxis ({time.time() - t0:.1f}s): {diag.get('disease_name
       f"ishonch={diag.get('confidence') if isinstance(diag, dict) else '-'}")
 check(diag["plant_name"] == "Pomidor" or diag["disease_name"] is None, "tashxis ekin turiga mos (Pomidor)")
 st, _ = req("GET", diag["image_url"], raw=True)
-check(st == 200, f"yuklangan rasm S3 orqali ochiladi: {diag['image_url']}")
+check(st == 200, f"yuklangan rasm ochiladi: {diag['image_url']}")
 
 st, plans = req("GET", "/api/v1/subscriptions/plans")
 check(st == 200 and len(plans) == 3, "obuna rejalari")
