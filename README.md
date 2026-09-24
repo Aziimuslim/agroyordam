@@ -54,7 +54,7 @@ flutter run -d android                                               # emulyator
 
 APK har push'da GitHub Actions ("Android APK" workflow) tomonidan yig'iladi va **Releases** sahifasiga
 (`v<versiya>`) yuklanadi. Eng yangi versiya uchun doimiy havola:
-https://github.com/Aziimuslim/if-else-son-kiritish/releases/latest/download/AgroYordam.apk
+https://github.com/Aziimuslim/agroyordam/releases/latest/download/AgroYordam.apk
 
 Versiyani oshirish: `mobile/pubspec.yaml` dagi `version:` (masalan `0.1.2+3`, `+` dan keyingi raqam har safar oshadi),
 `mobile/lib/core/config.dart`, `backend/app/core/config.py` (`APP_VERSION`) va `.github/apk-release-notes.md`.

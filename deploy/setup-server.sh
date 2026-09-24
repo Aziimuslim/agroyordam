@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # AgroYordam — serverni bir buyruqda sozlash (Ubuntu 22.04/24.04, amd64 yoki arm64/Oracle Ampere).
 #
-#   curl -fsSL https://raw.githubusercontent.com/Aziimuslim/if-else-son-kiritish/HEAD/deploy/setup-server.sh | sudo bash -s -- agroyordam.duckdns.org
+#   curl -fsSL https://raw.githubusercontent.com/Aziimuslim/agroyordam/HEAD/deploy/setup-server.sh | sudo bash -s -- agroyordam.duckdns.org
 #
 # Qayta ishga tushirish xavfsiz: mavjud .env va ma'lumotlar saqlanadi, faqat kod yangilanadi.
 set -euo pipefail
 
 DOMAIN="${1:-}"
-REPO="${REPO:-https://github.com/Aziimuslim/if-else-son-kiritish.git}"
+REPO="${REPO:-https://github.com/Aziimuslim/agroyordam.git}"
 DIR="${DIR:-/opt/agroyordam}"
 OWNER="${SUDO_USER:-root}"
 

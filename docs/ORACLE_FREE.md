@@ -99,7 +99,7 @@ Birinchi ulanishda "Are you sure you want to continue connecting" so'raladi → 
 
 Serverda shu buyruqni bajaring (oxiridagi domenni o'zingiznikiga almashtiring):
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Aziimuslim/if-else-son-kiritish/HEAD/deploy/setup-server.sh | sudo bash -s -- agroyordam.duckdns.org
+curl -fsSL https://raw.githubusercontent.com/Aziimuslim/agroyordam/HEAD/deploy/setup-server.sh | sudo bash -s -- agroyordam.duckdns.org
 ```
 
 Skript o'zi quyidagilarni bajaradi:
@@ -123,16 +123,16 @@ Tekshirish: telefon yoki kompyuter brauzerida **https://agroyordam.duckdns.org**
 
 ## 7-qadam. APK'ni shu serverga ulash (~10 daqiqa)
 
-1. GitHub'da repo sahifasini oching: **https://github.com/Aziimuslim/if-else-son-kiritish/settings/variables/actions**
+1. GitHub'da repo sahifasini oching: **https://github.com/Aziimuslim/agroyordam/settings/variables/actions**
    (Settings → Secrets and variables → Actions → **Variables** yorlig'i)
 2. **New repository variable** tugmasini bosing:
    - **Name:** `API_URL`
    - **Value:** `https://agroyordam.duckdns.org`
    - → **Add variable**
-3. APK'ni qayta yig'dirish: **https://github.com/Aziimuslim/if-else-son-kiritish/actions/workflows/android-apk.yml**
+3. APK'ni qayta yig'dirish: **https://github.com/Aziimuslim/agroyordam/actions/workflows/android-apk.yml**
    → **Run workflow** → **Run workflow**. Taxminan 8 daqiqa kutasiz.
 4. Yangi APK havolasi o'zgarmaydi:
-   **https://github.com/Aziimuslim/if-else-son-kiritish/releases/latest/download/AgroYordam.apk**
+   **https://github.com/Aziimuslim/agroyordam/releases/latest/download/AgroYordam.apk**
    Telefonda eski ilovani o'chirib, yangisini o'rnating — u serverga o'zi ulanadi.
 
    Eski APK'ni o'chirmasangiz ham bo'ladi: birinchi ekrandagi **"Server: ..."** tugmasi orqali `https://agroyordam.duckdns.org` ni kiritsangiz yetarli.
@@ -148,7 +148,7 @@ Chiqqan qatorni serverdagi `~/.ssh/authorized_keys` fayliga qo'shing:
 ```bash
 ssh -i ~/.ssh/agroyordam ubuntu@SERVER_IP "echo '<shu qator>' >> ~/.ssh/authorized_keys"
 ```
-Keyin **https://github.com/Aziimuslim/if-else-son-kiritish/settings/secrets/actions** → **New repository secret** orqali uchta secret qo'shasiz:
+Keyin **https://github.com/Aziimuslim/agroyordam/settings/secrets/actions** → **New repository secret** orqali uchta secret qo'shasiz:
 
 | Name | Value |
 |---|---|

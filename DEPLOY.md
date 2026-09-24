@@ -69,7 +69,7 @@ DNS yangilanishi bir necha daqiqadan 24 soatgacha davom etadi. Tekshirish: `ping
 
 **Tez yo'l — bitta buyruq** (Ubuntu, amd64 yoki arm64). Serverga SSH orqali kirib:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Aziimuslim/if-else-son-kiritish/HEAD/deploy/setup-server.sh | sudo bash -s -- agroyordam.uz
+curl -fsSL https://raw.githubusercontent.com/Aziimuslim/agroyordam/HEAD/deploy/setup-server.sh | sudo bash -s -- agroyordam.uz
 ```
 Skript firewall, Docker, loyiha kodi (`/opt/agroyordam`), maxfiy kalitlar bilan `.env` va ishga tushirishni o'zi bajaradi.
 Keyin faqat admin yaratasiz (pastda). Qo'lda qilishni istasangiz — quyidagi buyruqlar:
@@ -89,7 +89,7 @@ fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /
 echo '/swapfile none swap sw 0 0' >> /etc/fstab
 
 # Loyiha
-git clone https://github.com/Aziimuslim/if-else-son-kiritish.git /opt/agroyordam
+git clone https://github.com/Aziimuslim/agroyordam.git /opt/agroyordam
 cd /opt/agroyordam
 cp .env.production.example .env
 ```
