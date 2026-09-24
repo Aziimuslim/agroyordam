@@ -16,6 +16,7 @@ import 'screens/community/create_post_screen.dart';
 import 'screens/community/post_detail_screen.dart';
 import 'screens/community/user_profile_screen.dart';
 import 'screens/diagnosis/assistant_screen.dart';
+import 'screens/diagnosis/care_plan_screen.dart';
 import 'screens/diagnosis/diagnose_screen.dart';
 import 'screens/diagnosis/diagnosis_detail_screen.dart';
 import 'screens/garden/add_crop_screen.dart';
@@ -70,7 +71,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         GoRoute(path: 'add', builder: (_, __) => const AddCropScreen()),
         GoRoute(path: ':id', builder: (_, s) => CropDetailScreen(id: s.pathParameters['id']!)),
       ]),
-      GoRoute(path: '/reminders', pageBuilder: (_, s) => _tab(const RemindersScreen(), s), routes: [
+      GoRoute(path: '/community', pageBuilder: (_, s) => _tab(const CommunityScreen(), s), routes: [
+        GoRoute(path: 'new', builder: (_, __) => const CreatePostScreen()),
+        GoRoute(path: ':id', builder: (_, s) => PostDetailScreen(id: s.pathParameters['id']!)),
+      ]),
+      GoRoute(path: '/reminders', builder: (_, s) => RemindersScreen(cropId: s.uri.queryParameters['crop']), routes: [
         GoRoute(path: 'add', builder: (_, s) => AddReminderScreen(cropId: s.uri.queryParameters['crop'])),
       ]),
       GoRoute(path: '/profile', pageBuilder: (_, s) => _tab(const ProfileScreen(), s), routes: [
@@ -78,15 +83,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       ]),
 
       GoRoute(path: '/diagnose', builder: (_, s) => DiagnoseScreen(cropId: s.uri.queryParameters['crop'])),
-      GoRoute(path: '/diagnosis/:id', builder: (_, s) => DiagnosisDetailScreen(id: s.pathParameters['id']!)),
+      GoRoute(path: '/diagnosis/:id', builder: (_, s) => DiagnosisDetailScreen(id: s.pathParameters['id']!), routes: [
+        GoRoute(path: 'plan', builder: (_, s) => CarePlanScreen(diagnosisId: s.pathParameters['id']!)),
+      ]),
       GoRoute(path: '/diagnoses', builder: (_, __) => const DiagnosesHistoryScreen()),
       GoRoute(path: '/assistant', builder: (_, __) => const AssistantScreen()),
       GoRoute(path: '/catalog', builder: (_, s) => CatalogScreen(tab: s.uri.queryParameters['tab'] ?? 'plants')),
 
-      GoRoute(path: '/community', builder: (_, __) => const CommunityScreen(), routes: [
-        GoRoute(path: 'new', builder: (_, __) => const CreatePostScreen()),
-        GoRoute(path: ':id', builder: (_, s) => PostDetailScreen(id: s.pathParameters['id']!)),
-      ]),
       GoRoute(path: '/users/:id', builder: (_, s) => UserProfileScreen(id: s.pathParameters['id']!)),
       GoRoute(path: '/messages', builder: (_, __) => const ConversationsScreen(), routes: [
         GoRoute(path: ':id', builder: (_, s) => ThreadScreen(id: s.pathParameters['id']!)),

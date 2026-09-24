@@ -8,6 +8,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
+import '../reminders/today_tasks.dart';
 import 'add_crop_screen.dart';
 
 class CropDetailScreen extends ConsumerWidget {
@@ -128,26 +129,56 @@ class _Body extends ConsumerWidget {
             Text('${last.diseaseName} · ${last.confidence.toStringAsFixed(0)}% · ${timeAgo(last.diagnosedAt)}', style: TextStyle(color: c.muted)),
             if (last.medicines.isNotEmpty)
               InfoBox(label: 'Tavsiya etilgan dori', value: '${last.medicines.first.name}${last.medicines.first.recommendation != null ? ', ${last.medicines.first.recommendation}' : ''}'),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: MiniButton(label: 'Parvarish rejasi', icon: AppIcons.bell, filled: true, onTap: () => context.push('/diagnosis/${last.id}/plan')),
+            ),
           ]),
         ),
       reminders.maybeWhen(
         data: (all) {
           final mine = all.where((r) => r.cropId == crop.id).toList();
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          final done = mine.where((r) => r.isCompleted).length;
+          final upcoming = mine.where((r) => !r.isCompleted && r.date.isAfter(today)).toList()..sort((a, b) => a.date.compareTo(b.date));
+          final planDays = mine.isEmpty ? 0 : mine.map((r) => r.date).reduce((a, b) => a.isAfter(b) ? a : b).difference(today).inDays;
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            SectionTitle('Vazifalar (${mine.length})', action: "+ Qo'shish", onAction: () => context.push('/reminders/add?crop=${crop.id}')),
-            if (mine.isEmpty) const EmptyNote("Bu ekin uchun eslatma yo'q"),
-            for (final r in mine)
-              ListRow(
-                icon: AppIcons.forReminder(r.type),
-                label: r.title,
-                chevron: false,
-                value: r.isCompleted ? 'Bajarildi' : formatDate(r.date),
-                onTap: () async {
-                  await ref.read(gardenRepoProvider).toggleReminder(r.id);
-                  ref.invalidate(remindersProvider);
-                  ref.invalidate(cropProvider(crop.id));
-                },
+            SectionTitle('Vazifalar', action: "+ Qo'shish", onAction: () => context.push('/reminders/add?crop=${crop.id}')),
+            if (mine.isEmpty)
+              const EmptyNote("Bu ekin uchun vazifa yo'q. Tashxisdan keyin \"Parvarish rejasi\"ni boshlang.")
+            else ...[
+              AppCard(
+                color: c.cream2,
+                shadow: false,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Expanded(child: Text('Bajarildi: $done / ${mine.length}', style: const TextStyle(fontWeight: FontWeight.w800))),
+                    if (planDays > 0) Text('yana $planDays kun', style: TextStyle(color: c.muted, fontSize: 12.5)),
+                  ]),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(99),
+                    child: LinearProgressIndicator(value: done / mine.length, minHeight: 8, backgroundColor: c.border, color: c.success),
+                  ),
+                ]),
               ),
+              Text('Bugun', style: TextStyle(fontWeight: FontWeight.w800, color: c.primaryDark)),
+              const SizedBox(height: 8),
+              TodayTasks(cropId: crop.id, limit: 6),
+              if (upcoming.isNotEmpty) ...[
+                Text('Keyingi vazifalar', style: TextStyle(fontWeight: FontWeight.w800, color: c.primaryDark)),
+                const SizedBox(height: 8),
+                for (final r in upcoming.take(3))
+                  ListRow(icon: AppIcons.forReminder(r.type), label: r.title, chevron: false, value: formatDate(r.date)),
+              ],
+              Center(
+                child: TextButton(
+                  onPressed: () => context.push('/reminders?crop=${crop.id}'),
+                  child: Text('Barcha vazifalar (${mine.length})', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800)),
+                ),
+              ),
+            ],
           ]);
         },
         orElse: () => const SizedBox.shrink(),

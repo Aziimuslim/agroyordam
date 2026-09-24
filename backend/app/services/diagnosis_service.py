@@ -32,7 +32,8 @@ def health_from(disease: Disease | None, healthy: bool, confidence: float) -> in
     return max(5, round(100 - penalty * confidence / 100))
 
 
-async def run_diagnosis(db: AsyncSession, user: User, upload: UploadFile, crop_id: uuid.UUID | None) -> DiagnosisOut:
+async def run_diagnosis(db: AsyncSession, user: User, upload: UploadFile, crop_id: uuid.UUID | None,
+                        plant_id: uuid.UUID | None = None) -> DiagnosisOut:
     await ensure_can_diagnose(db, user)
 
     crop = None
@@ -42,7 +43,8 @@ async def run_diagnosis(db: AsyncSession, user: User, upload: UploadFile, crop_i
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Ekin topilmadi")
 
     data, ext = await read_image(upload)
-    hint_plant = await db.get(Plant, crop.plant_id) if crop and crop.plant_id else None
+    hint_id = crop.plant_id if crop and crop.plant_id else plant_id
+    hint_plant = await db.get(Plant, hint_id) if hint_id else None
     try:
         pred = await get_ai_client().predict(data, f"upload.{ext}", CONTENT_TYPES[ext],
                                              plant_hint=hint_plant.name if hint_plant else None)
@@ -59,8 +61,9 @@ async def run_diagnosis(db: AsyncSession, user: User, upload: UploadFile, crop_i
     repo = DiseaseRepository(db)
     healthy = is_healthy_label(pred.ai_label)
     low_conf = pred.confidence < settings.AI_MIN_CONFIDENCE
-    disease = None if (healthy or low_conf or not pred.ai_label) else await repo.by_ai_label(pred.ai_label)
-    plant_id = (disease.plant_id if disease else None) or (crop.plant_id if crop else None)
+    # Ishonch past bo'lsa ham eng ehtimoliy kasallik ko'rsatiladi (UI uni 'taxminiy' deb belgilaydi)
+    disease = None if (healthy or not pred.ai_label) else await repo.by_ai_label(pred.ai_label)
+    plant_id = (disease.plant_id if disease else None) or (hint_plant.id if hint_plant else None)
 
     diag = Diagnosis(
         user_id=user.id,
@@ -83,7 +86,7 @@ async def run_diagnosis(db: AsyncSession, user: User, upload: UploadFile, crop_i
 
     await db.flush()
     title = "Tashxis tayyor"
-    body = f"{disease.name} aniqlandi ({pred.confidence:.0f}%)" if disease else ("O'simlik sog'lom" if healthy else "Natija aniq emas")
+    body = f"{disease.name} {'(taxminiy) ' if low_conf else ''}aniqlandi ({pred.confidence:.0f}%)" if disease else ("O'simlik sog'lom" if healthy else "Natija aniq emas")
     await notify(db, user.id, "diagnosis_ready", title, body, diag.id)
     await db.commit()
     return await to_out(db, diag, ai_label=pred.ai_label)

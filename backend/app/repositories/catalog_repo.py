@@ -26,4 +26,6 @@ class DiseaseRepository(Repository[Disease]):
             .join(DiseaseMedicine, DiseaseMedicine.medicine_id == Medicine.id)
             .where(DiseaseMedicine.disease_id == disease_id)
         )
-        return [(m, r) for m, r in (await self.db.execute(stmt)).all()]
+        rows = [(m, r) for m, r in (await self.db.execute(stmt)).all()]
+        # Aniq dozasi/jadvali bor (asosiy davolovchi) dori birinchi, "profilaktika uchun" kabilar keyin
+        return sorted(rows, key=lambda mr: (not any(ch.isdigit() for ch in (mr[1] or "")), mr[0].name))

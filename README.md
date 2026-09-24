@@ -1,4 +1,4 @@
-# AgroYordam 0.1.1
+# AgroYordam 0.1.2
 
 AI yordamida qishloq xo'jaligi ekinlari kasalliklarini tashxislaydigan **mobil va web** platforma:
 fermer barg rasmini yuklaydi → AI kasallikni aniqlaydi → bilimlar bazasidan belgilar, sabab, davolash,
@@ -78,10 +78,15 @@ Versiyani oshirish: `mobile/pubspec.yaml` dagi `version:` (masalan `0.1.2+3`, `+
 - **Auth**: ro'yxatdan o'tish / kirish (email, telefon yoki username), refresh token rotatsiyasi (DB'da, bekor qilinadi),
   parolni tiklash, RBAC (`user`, `moderator`, `admin`).
 - **AI tashxis**: rasm → validatsiya → AI (MobileNetV3, 34 sinf) → bilimlar bazasi (`diseases.ai_label`, 28 kasallik) →
-  `diagnoses` jadvaliga saqlash. Ekin turi tanlansa, model faqat shu ekin kasalliklari ichidan tanlaydi.
+  `diagnoses` jadvaliga saqlash. Ekin turi tanlansa (ekin yoki "Ekin turi" maydoni), model faqat shu ekin kasalliklari
+  ichidan tanlaydi. Dala suratlari uchun test-time augmentation (asl + ko'zgu + markaz). Ishonch past bo'lsa ham eng
+  ehtimoliy kasallik "taxminiy" deb ko'rsatiladi.
   Ekin sog'lig'i avtomatik yangilanadi, ishonch past bo'lsa qayta suratga olish tavsiya qilinadi.
 - **Mening bog'im**: ekinlar CRUD, sog'liq tarixi grafigi, ekin kundaligi, qayta tashxis.
-- **Eslatmalar**: qo'lda yoki tashxisdan avtomatik davolash rejasi; APScheduler vaqti kelganda bildirishnoma yuboradi.
+- **Parvarish rejasi**: tashxis natijasini bir tugma bilan bog'ga qo'shish (yangi yoki mavjud ekin) — kasallik xavfiga qarab
+  10/14/21 kunlik kunlik vazifalar (davolash jadvali dori tavsiyasidan, kunlik ko'rik, sug'orish, oraliq va yakuniy AI tashxis).
+- **Eslatmalar**: "Bugungi vazifalar" (bosh sahifa va ekin sahifasida bir bosishda bajarildi), qo'lda qo'shish;
+  APScheduler vaqti kelganda bildirishnoma yuboradi.
 - **Jamoat**: postlar (rasm bilan), layk, izoh, obuna (follow), shikoyat; tashxisni bir tugma bilan ulashish.
 - **Chat**: 1:1 real-time chat (WebSocket), "yozmoqda..." va o'qilganlik belgisi, bildirishnomalar WebSocket'i.
 - **AI yordamchi**: bilimlar bazasiga tayangan erkin savol-javob (kunlik limit bilan).

@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Protocol
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 
 from app.inference.preprocess import to_tensor
 from app.inference.validation import vegetation_masks
@@ -66,8 +66,16 @@ class OnnxClassifier:
         e = np.exp(logits - logits.max())
         return e / e.sum()  # softmax
 
+    def probabilities_tta(self, img: Image.Image) -> np.ndarray:
+        """Test-time augmentation: asl, ko'zgu va markazga yaqinlashtirilgan (80%) ko'rinishlar o'rtachasi.
+        Dala suratlarida (fon, siqilish, burchak) natijani barqarorroq qiladi."""
+        img = img.convert("RGB")
+        w, h = img.size
+        zoom = img.crop((int(w * 0.1), int(h * 0.1), int(w * 0.9), int(h * 0.9)))
+        return np.mean([self.probabilities(v) for v in (img, ImageOps.mirror(img), zoom)], axis=0)
+
     def predict(self, img: Image.Image, raw: bytes, plant_hint: str | None = None) -> tuple[str | None, str, float]:
-        probs = self.probabilities(img)
+        probs = self.probabilities_tta(img)
         prefix = PLANT_PREFIX.get(plant_hint or "")
         mask = np.array([lbl.startswith(prefix + "_") for lbl in self.labels]) if prefix else None
         if mask is not None and mask.any():

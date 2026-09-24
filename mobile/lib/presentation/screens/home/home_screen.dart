@@ -10,6 +10,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/widgets/bottom_nav.dart';
 import '../../../core/widgets/widgets.dart';
 import '../garden/garden_screen.dart';
+import '../reminders/today_tasks.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -27,6 +28,7 @@ class HomeScreen extends ConsumerWidget {
       onRefresh: () async {
         ref.invalidate(cropsProvider);
         ref.invalidate(notificationsProvider);
+        ref.invalidate(remindersProvider);
       },
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
@@ -42,6 +44,8 @@ class HomeScreen extends ConsumerWidget {
         ]),
         const SizedBox(height: 20),
         _Hero(onTap: () => context.push('/diagnose')),
+        SectionTitle('Bugungi vazifalar', action: 'Barcha eslatmalar', onAction: () => context.push('/reminders')),
+        const TodayTasks(),
         const SectionTitle("Bo'limlar"),
         Row(children: [
           _Chip3(icon: AppIcons.plant, label: "O'simliklar", onTap: () => context.push('/catalog?tab=plants')),
@@ -75,7 +79,7 @@ class HomeScreen extends ConsumerWidget {
         ),
         RowCard(
           dark: true,
-          leading: ThumbIcon(icon: AppIcons.chat, bg: c.card.withValues(alpha: 0.12), fg: c.card),
+          leading: ThumbIcon(icon: AppIcons.chat, bg: c.onDark.withValues(alpha: 0.14), fg: c.onDark),
           title: 'Jamoat',
           subtitle: "Boshqa fermerlarning natijalarini ko'ring",
           trailing: Container(
@@ -83,7 +87,7 @@ class HomeScreen extends ConsumerWidget {
             decoration: BoxDecoration(color: c.gold, borderRadius: BorderRadius.circular(AppRadius.pill)),
             child: Text('YANGI', style: TextStyle(color: c.onGold, fontWeight: FontWeight.w800, fontSize: 11)),
           ),
-          onTap: () => context.push('/community'),
+          onTap: () => context.go('/community'),
         ),
       ]),
     );

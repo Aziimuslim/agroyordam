@@ -36,7 +36,7 @@ class NotificationsScreen extends ConsumerWidget {
       case 'message':
         context.push('/messages/$id');
       case 'reminder':
-        context.go('/reminders');
+        context.push('/reminders');
       case 'subscription':
         context.push('/premium');
     }

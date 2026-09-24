@@ -115,14 +115,14 @@ class _PremiumState extends ConsumerState<PremiumScreen> {
                 Row(children: [
                   Icon(AppIcons.star, color: c.gold, size: 20),
                   const SizedBox(width: 6),
-                  Expanded(child: Text('Premium', style: TextStyle(color: c.card, fontSize: 17, fontWeight: FontWeight.w800))),
+                  Expanded(child: Text('Premium', style: TextStyle(color: c.onDark, fontSize: 17, fontWeight: FontWeight.w800))),
                   Text(formatMoney(plan.price) + (plan.code == 'monthly' ? '/oy' : plan.code == 'yearly' ? '/yil' : ''), style: TextStyle(color: c.gold, fontWeight: FontWeight.w900, fontSize: 15)),
                 ]),
                 const SizedBox(height: 12),
                 Wrap(spacing: 8, children: [
                   for (final p in list)
                     Material(
-                      color: _plan == p.code ? c.gold : c.card.withValues(alpha: 0.12),
+                      color: _plan == p.code ? c.gold : c.onDark.withValues(alpha: 0.12),
                       shape: const StadiumBorder(),
                       child: InkWell(
                         customBorder: const StadiumBorder(),
@@ -130,7 +130,7 @@ class _PremiumState extends ConsumerState<PremiumScreen> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           child: Text(switch (p.code) { 'monthly' => '1 oy', 'yearly' => '1 yil', _ => 'Umrbod' },
-                              style: TextStyle(color: _plan == p.code ? c.onGold : c.card, fontWeight: FontWeight.w800, fontSize: 13)),
+                              style: TextStyle(color: _plan == p.code ? c.onGold : c.onDark, fontWeight: FontWeight.w800, fontSize: 13)),
                         ),
                       ),
                     ),
@@ -142,9 +142,9 @@ class _PremiumState extends ConsumerState<PremiumScreen> {
                     ? Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(color: c.card.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(999)),
+                        decoration: BoxDecoration(color: c.onDark.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(999)),
                         alignment: Alignment.center,
-                        child: Text('Faol reja', style: TextStyle(color: c.card, fontWeight: FontWeight.w800)),
+                        child: Text('Faol reja', style: TextStyle(color: c.onDark, fontWeight: FontWeight.w800)),
                       )
                     : PillButton(label: "Premium'ga o'tish", style: PillStyle.light, block: true, onPressed: () => _checkout(plan)),
               ]),
@@ -170,7 +170,7 @@ class _Feat extends StatelessWidget {
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Icon(AppIcons.check, size: 18, color: color),
           const SizedBox(width: 9),
-          Expanded(child: Text(text, style: TextStyle(fontSize: 13.5, height: 1.35, color: dark ? context.c.card : context.c.text))),
+          Expanded(child: Text(text, style: TextStyle(fontSize: 13.5, height: 1.35, color: dark ? context.c.onDark : context.c.text))),
         ]),
       );
 }

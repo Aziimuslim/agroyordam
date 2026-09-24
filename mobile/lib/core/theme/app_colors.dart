@@ -22,6 +22,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.dangerBg,
     required this.gold,
     required this.onGold,
+    required this.onDark,
     required this.onDarkMuted,
     required this.tagCare,
     required this.onTagCare,
@@ -34,6 +35,10 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color primary, primaryDark, primaryLight;
   final Color dark, text, muted, border;
   final Color success, successBg, danger, dangerBg, gold, onGold, onDarkMuted;
+
+  /// `dark` — ajratilgan (to'q) sirt: asosiy tugmalar, "Obunam"/"Jamoat" kartalari, Premium kartasi, snackbar.
+  /// `onDark` — shu sirt ustidagi matn/ikonka rangi. Ikkala mavzuda ham kontrast yetarli bo'lishi shart.
+  final Color onDark;
   final Color tagCare, onTagCare, tagTreat, shadow;
   final List<Color> avatarPalette;
 
@@ -55,6 +60,7 @@ class AppColors extends ThemeExtension<AppColors> {
     dangerBg: Color(0xFFF5DEDB),
     gold: Color(0xFFE3AA3D),
     onGold: Color(0xFF3A2A0E),
+    onDark: Color(0xFFFFFFFF),
     onDarkMuted: Color(0xFFC9BCA8),
     tagCare: Color(0xFFDCEAD5),
     onTagCare: Color(0xFF3E6B34),
@@ -71,7 +77,7 @@ class AppColors extends ThemeExtension<AppColors> {
     primary: Color(0xFFC8703D),
     primaryDark: Color(0xFFE0A077),
     primaryLight: Color(0xFF3E2A1C),
-    dark: Color(0xFF120E0A),
+    dark: Color(0xFF4A3A2B),
     text: Color(0xFFF2E9DA),
     muted: Color(0xFFB6A98F),
     border: Color(0xFF3A3025),
@@ -81,7 +87,8 @@ class AppColors extends ThemeExtension<AppColors> {
     dangerBg: Color(0xFF3A2220),
     gold: Color(0xFFE3AA3D),
     onGold: Color(0xFF3A2A0E),
-    onDarkMuted: Color(0xFFC9BCA8),
+    onDark: Color(0xFFF7EEDF),
+    onDarkMuted: Color(0xFFD9CBB4),
     tagCare: Color(0xFF26331F),
     onTagCare: Color(0xFF9CCB8A),
     tagTreat: Color(0xFF3E2A1C),

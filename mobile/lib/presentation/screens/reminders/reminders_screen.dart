@@ -7,18 +7,18 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/format.dart';
-import '../../../core/widgets/bottom_nav.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 
 class RemindersScreen extends ConsumerStatefulWidget {
-  const RemindersScreen({super.key});
+  const RemindersScreen({super.key, this.cropId});
+  final String? cropId;
   @override
   ConsumerState<RemindersScreen> createState() => _RemindersState();
 }
 
 class _RemindersState extends ConsumerState<RemindersScreen> {
-  String _filter = 'all';
+  String _filter = 'today';
 
   Future<void> _clearDone(List<Reminder> list) async {
     final done = list.where((r) => r.isCompleted).toList();
@@ -39,28 +39,34 @@ class _RemindersState extends ConsumerState<RemindersScreen> {
     final c = context.c;
     final reminders = ref.watch(remindersProvider);
     return PageShell(
-      bottom: const AppBottomNav(current: '/reminders'),
+      padBottom: false,
       onRefresh: () async => ref.invalidate(remindersProvider),
       child: AsyncView(
         value: reminders,
         onRetry: () => ref.invalidate(remindersProvider),
-        data: (all) {
+        data: (everything) {
+          final all = widget.cropId == null ? everything : everything.where((r) => r.cropId == widget.cropId).toList();
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
           final list = switch (_filter) {
+            'today' => all.where((r) => !r.date.isAfter(today) && (!r.isCompleted || r.date == today)).toList(),
             'care' => all.where((r) => !r.isTreatment).toList(),
             'treat' => all.where((r) => r.isTreatment).toList(),
             _ => all,
           };
           final pending = all.where((r) => !r.isCompleted).length;
-          final today = DateTime.now();
-          final overdue = all.where((r) => !r.isCompleted && r.date.isBefore(DateTime(today.year, today.month, today.day))).length;
+          final overdue = all.where((r) => !r.isCompleted && r.date.isBefore(today)).length;
+          final cropName = widget.cropId == null ? null : all.map((r) => r.cropName).whereType<String>().firstOrNull;
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              const Expanded(child: Text('Eslatmalar', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800))),
+            TopBar(title: 'Eslatmalar', subtitle: cropName, actions: [
               CircleIconButton(icon: AppIcons.trash, tooltip: 'Bajarilganlarni tozalash', onTap: () => _clearDone(all)),
               const SizedBox(width: 8),
-              CircleIconButton(icon: AppIcons.plus, tooltip: "Eslatma qo'shish", onTap: () => context.push('/reminders/add')),
+              CircleIconButton(
+                icon: AppIcons.plus,
+                tooltip: "Eslatma qo'shish",
+                onTap: () => context.push(widget.cropId == null ? '/reminders/add' : '/reminders/add?crop=${widget.cropId}'),
+              ),
             ]),
-            const SizedBox(height: 18),
             AppCard(
               color: c.cream2,
               shadow: false,
@@ -76,11 +82,11 @@ class _RemindersState extends ConsumerState<RemindersScreen> {
               ]),
             ),
             ChipTabs(
-              tabs: const [('all', 'Barchasi'), ('care', 'Parvarish'), ('treat', 'Davolash')],
+              tabs: const [('today', 'Bugun'), ('all', 'Barchasi'), ('care', 'Parvarish'), ('treat', 'Davolash')],
               selected: _filter,
               onSelect: (v) => setState(() => _filter = v),
             ),
-            if (list.isEmpty) const EmptyNote("Bu bo'limda eslatma yo'q", icon: AppIcons.bell),
+            if (list.isEmpty) EmptyNote(_filter == 'today' ? "Bugun bajariladigan vazifa yo'q" : "Bu bo'limda eslatma yo'q", icon: AppIcons.bell),
             for (final r in list) ReminderCard(reminder: r),
           ]);
         },

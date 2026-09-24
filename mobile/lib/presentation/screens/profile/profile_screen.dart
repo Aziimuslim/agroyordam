@@ -59,13 +59,13 @@ class ProfileScreen extends ConsumerWidget {
         const SizedBox(height: 18),
         RowCard(
           dark: true,
-          leading: ThumbIcon(icon: AppIcons.star, bg: c.card.withValues(alpha: 0.14), fg: c.gold),
+          leading: ThumbIcon(icon: AppIcons.star, bg: c.onDark.withValues(alpha: 0.14), fg: c.gold),
           title: 'Obunam',
           subtitle: 'Joriy reja: ${user.isPremium ? 'Premium${user.premiumUntil != null && user.premiumUntil!.year < 2100 ? ' (${formatDate(user.premiumUntil)} gacha)' : ''}' : "Bepul · Premium'ga o'ting"}',
-          trailing: Icon(AppIcons.chevron, color: c.card),
+          trailing: Icon(AppIcons.chevron, color: c.onDark),
           onTap: () => context.push('/premium'),
         ),
-        SectionTitle('Mening postlarim', action: "Jamoatda ko'rish", onAction: () => context.push('/community')),
+        SectionTitle('Mening postlarim', action: "Jamoatda ko'rish", onAction: () => context.go('/community')),
         myPosts.maybeWhen(
           data: (posts) => posts.isEmpty
               ? const EmptyNote("Hali post yo'q")
@@ -82,8 +82,9 @@ class ProfileScreen extends ConsumerWidget {
           orElse: () => const SizedBox.shrink(),
         ),
         ListRow(icon: AppIcons.history, label: 'Tashxislar tarixi', onTap: () => context.push('/diagnoses')),
+        ListRow(icon: AppIcons.bell, label: 'Eslatmalar va vazifalar', onTap: () => context.push('/reminders')),
         ListRow(icon: AppIcons.chat, label: 'Xabarlar', onTap: () => context.push('/messages')),
-        ListRow(icon: AppIcons.bell, label: 'Bildirishnomalar', onTap: () => context.push('/notifications')),
+        ListRow(icon: Icons.notifications_none_rounded, label: 'Bildirishnomalar', onTap: () => context.push('/notifications')),
         ListRow(icon: AppIcons.book, label: 'Ensiklopediya', onTap: () => context.push('/catalog')),
         ListRow(
           icon: Icons.dark_mode_outlined,

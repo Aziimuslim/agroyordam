@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../application/providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/widgets/bottom_nav.dart';
 import '../../../core/widgets/widgets.dart';
 import 'post_card.dart';
 
@@ -30,6 +31,7 @@ class _CommunityState extends ConsumerState<CommunityScreen> {
         icon: const Icon(AppIcons.edit),
         label: const Text('Post yozish', style: TextStyle(fontWeight: FontWeight.w800)),
       ),
+      bottomNavigationBar: const AppBottomNav(current: '/community'),
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -38,7 +40,7 @@ class _CommunityState extends ConsumerState<CommunityScreen> {
             child: RefreshIndicator(
               onRefresh: () async => ref.invalidate(feedProvider(_feed)),
               child: ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 90), children: [
-                TopBar(title: 'Jamoat', actions: [
+                TopBar(title: 'Jamoat', showBack: false, actions: [
                   CircleIconButton(icon: AppIcons.chat, badge: unread, tooltip: 'Xabarlar', onTap: () => context.push('/messages')),
                 ]),
                 ChipTabs(tabs: const [('all', 'Barchasi'), ('following', 'Obunalarim')], selected: _feed, onSelect: (v) => setState(() => _feed = v)),

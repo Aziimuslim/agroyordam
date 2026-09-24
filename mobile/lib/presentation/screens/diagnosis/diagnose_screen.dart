@@ -27,6 +27,7 @@ class DiagnoseScreen extends ConsumerStatefulWidget {
 class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
   _Step _step = _Step.intro;
   late String? _cropId = widget.cropId;
+  String? _plantId;
   Uint8List? _image;
   Diagnosis? _result;
   ApiException? _error;
@@ -42,7 +43,7 @@ class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
     });
     try {
       final name = file.name.contains('.') ? file.name : '${file.name}.jpg';
-      final d = await ref.read(gardenRepoProvider).diagnose(bytes, name, cropId: _cropId);
+      final d = await ref.read(gardenRepoProvider).diagnose(bytes, name, cropId: _cropId, plantId: _plantId);
       ref.invalidate(mySubscriptionProvider);
       ref.invalidate(cropsProvider);
       ref.invalidate(diagnosesProvider);
@@ -98,6 +99,20 @@ class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
             ),
             orElse: () => const SizedBox.shrink(),
           ),
+          if (_cropId == null) ...[
+            const SizedBox(height: 12),
+            const FieldLabel("Ekin turi (aniqroq natija uchun)"),
+            DropdownButtonFormField<String?>(
+              initialValue: _plantId,
+              isExpanded: true,
+              dropdownColor: c.card,
+              items: [
+                const DropdownMenuItem<String?>(value: null, child: Text('Bilmayman — AI o\'zi aniqlasin')),
+                for (final p in ref.watch(plantsProvider).value ?? const <Plant>[]) DropdownMenuItem<String?>(value: p.id, child: Text(p.name)),
+              ],
+              onChanged: (v) => setState(() => _plantId = v),
+            ),
+          ],
           const SizedBox(height: 10),
           if (quota != null && quota.aiDailyLimit != null)
             Text('Bugungi bepul tashxis: ${quota.aiUsedToday}/${quota.aiDailyLimit}', style: TextStyle(color: c.muted, fontSize: 12.5)),
@@ -105,7 +120,7 @@ class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
           if (overLimit)
             _LimitCard(onUpgrade: () => context.push('/premium'))
           else ...[
-            PillButton(label: 'Rasmga olish', icon: AppIcons.camera, block: true, onPressed: () => _pick(ImageSource.camera)),
+            PillButton(label: 'Rasmga olish', icon: AppIcons.camera, style: PillStyle.primary, block: true, onPressed: () => _pick(ImageSource.camera)),
             const SizedBox(height: 10),
             PillButton(label: 'Galereyadan tanlash', icon: AppIcons.image, style: PillStyle.outline, block: true, onPressed: () => _pick(ImageSource.gallery)),
             const SizedBox(height: 16),
@@ -139,11 +154,13 @@ class _ResultCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
-    if (d.lowConfidence && !d.isHealthy) {
+    final planLabel = cropLinked ? 'Parvarish rejasi' : "Bog'imga qo'shish";
+    void openPlan() => context.push('/diagnosis/${d.id}/plan');
+    if (d.lowConfidence && !d.isHealthy && d.diseaseName == null) {
       return _ResultShell(children: [
-        Text('Ishonch darajasi past (${d.confidence.toStringAsFixed(0)}%)', style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
+        Text('Aniqlab bo\'lmadi (${d.confidence.toStringAsFixed(0)}%)', style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
         const SizedBox(height: 6),
-        Text("Rasmni yorug' joyda va bargga yaqinroq qilib qayta suratga oling — aniqroq natija olish uchun bu muhim.", style: TextStyle(color: c.muted)),
+        Text("Ekin turini tanlab yoki bargni yaqinroqdan qayta suratga olib ko'ring.", style: TextStyle(color: c.muted)),
         const SizedBox(height: 10),
         MiniButton(label: 'Qayta urinish', filled: true, onTap: onRetry),
       ]);
@@ -159,20 +176,32 @@ class _ResultCard extends ConsumerWidget {
         Text(d.recommendations ?? "Parvarishni davom ettiring.", style: const TextStyle(height: 1.5)),
         const SizedBox(height: 10),
         Wrap(spacing: 8, runSpacing: 8, children: [
+          MiniButton(label: planLabel, icon: AppIcons.leaf, filled: true, onTap: openPlan),
           MiniButton(label: 'Jamoatda ulashish', onTap: () => shareDiagnosis(context, ref, d)),
-          MiniButton(label: 'Yangi tashxis', filled: true, onTap: onRetry),
+          MiniButton(label: 'Yangi tashxis', onTap: onRetry),
         ]),
       ]);
     }
     final med = d.medicines.isNotEmpty ? d.medicines.first : null;
     return _ResultShell(children: [
       Text.rich(TextSpan(children: [
-        TextSpan(text: 'Aniqlangan kasallik: ${d.diseaseName} · '),
-        TextSpan(text: 'ishonch ${d.confidence.toStringAsFixed(0)}%', style: TextStyle(color: c.primary)),
+        TextSpan(text: '${d.lowConfidence ? 'Ehtimoliy kasallik' : 'Aniqlangan kasallik'}: ${d.diseaseName} · '),
+        TextSpan(text: '${d.lowConfidence ? 'taxminan' : 'ishonch'} ${d.confidence.toStringAsFixed(0)}%', style: TextStyle(color: c.primary)),
       ]), style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
-      if (d.riskLevel != null) ...[
+      const SizedBox(height: 8),
+      Wrap(spacing: 6, runSpacing: 6, children: [
+        if (d.plantName != null) Tag(d.plantName!, bg: c.tagCare, fg: c.onTagCare),
+        if (d.riskLevel != null)
+          Tag(riskLabels[d.riskLevel] ?? d.riskLevel!, bg: d.riskLevel == 'high' ? c.dangerBg : c.primaryLight, fg: d.riskLevel == 'high' ? c.danger : c.primaryDark),
+      ]),
+      if (d.lowConfidence) ...[
         const SizedBox(height: 8),
-        Tag(riskLabels[d.riskLevel] ?? d.riskLevel!, bg: d.riskLevel == 'high' ? c.dangerBg : c.primaryLight, fg: d.riskLevel == 'high' ? c.danger : c.primaryDark),
+        Text("AI to'liq ishonch hosil qilmadi — belgilarni solishtiring. Ekin turini tanlab qayta tekshirsangiz, natija aniqroq bo'ladi.",
+            style: TextStyle(color: c.muted, fontSize: 12.5)),
+      ],
+      if (d.symptoms != null) ...[
+        const SizedBox(height: 8),
+        Text('Belgilari: ${d.symptoms}', style: const TextStyle(height: 1.5, fontSize: 13.5)),
       ],
       const SizedBox(height: 8),
       Text(d.treatment ?? d.recommendations ?? '', style: const TextStyle(height: 1.5, fontSize: 13.5)),
@@ -183,10 +212,12 @@ class _ResultCard extends ConsumerWidget {
           child: Row(children: [Icon(AppIcons.check, size: 16, color: c.success), const SizedBox(width: 6), Text("Bog'imdagi ekin tarixiga saqlandi", style: TextStyle(color: c.success, fontWeight: FontWeight.w700, fontSize: 12.5))]),
         ),
       const SizedBox(height: 6),
+      PillButton(label: cropLinked ? 'Davolash rejasi' : "Bog'imga qo'shish va reja", icon: AppIcons.leaf, style: PillStyle.primary, block: true, onPressed: openPlan),
+      const SizedBox(height: 8),
       Wrap(spacing: 8, runSpacing: 8, children: [
-        MiniButton(label: 'Batafsil', filled: true, onTap: () => context.push('/diagnosis/${d.id}')),
-        MiniButton(label: "Eslatma qo'shish", onTap: () => addRemindersFromDiagnosis(context, ref, d)),
+        MiniButton(label: 'Batafsil', onTap: () => context.push('/diagnosis/${d.id}')),
         MiniButton(label: 'Jamoatda ulashish', onTap: () => shareDiagnosis(context, ref, d)),
+        MiniButton(label: 'Yangi tashxis', onTap: onRetry),
       ]),
     ]);
   }

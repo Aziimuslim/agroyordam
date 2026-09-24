@@ -188,7 +188,7 @@ class RowCard extends StatelessWidget {
         const SizedBox(width: 14),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: dark ? c.card : c.text), maxLines: 2, overflow: TextOverflow.ellipsis),
+            Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: dark ? c.onDark : c.text), maxLines: 2, overflow: TextOverflow.ellipsis),
             if (subtitle != null) ...[
               const SizedBox(height: 2),
               Text(subtitle!, style: TextStyle(fontSize: 12.5, color: dark ? c.onDarkMuted : c.muted), maxLines: 2, overflow: TextOverflow.ellipsis),
@@ -215,13 +215,15 @@ class PillButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final (bg, color, border) = switch (style) {
+    final (bg0, color0, border) = switch (style) {
       PillStyle.light => (c.card, c.primaryDark, null),
-      PillStyle.dark => (c.dark, c.card, null),
+      PillStyle.dark => (c.dark, c.onDark, null),
       PillStyle.primary => (c.primary, c.card, null),
       PillStyle.outline => (Colors.transparent, fg ?? c.text, BorderSide(color: c.border, width: 1.5)),
       PillStyle.soft => (c.primaryLight, c.primaryDark, null),
     };
+    final disabled = onPressed == null && !loading;
+    final (bg, color) = disabled ? (bg0.withValues(alpha: 0.45), color0.withValues(alpha: 0.6)) : (bg0, color0);
     final child = Row(
       mainAxisSize: block ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -240,7 +242,7 @@ class PillButton extends StatelessWidget {
         onPressed: loading ? null : onPressed,
         style: TextButton.styleFrom(
           backgroundColor: bg,
-          disabledBackgroundColor: bg.withValues(alpha: 0.6),
+          disabledBackgroundColor: bg,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           shape: StadiumBorder(side: border ?? BorderSide.none),
         ),

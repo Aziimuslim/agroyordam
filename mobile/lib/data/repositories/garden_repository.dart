@@ -19,18 +19,29 @@ class GardenRepository extends BaseRepository {
   Future<void> addLog(String id, String content) => call(() => dio.post('/crops/$id/logs', data: {'content': content}));
 
   // Tashxis
-  Future<Diagnosis> diagnose(List<int> bytes, String filename, {String? cropId}) => call(() async {
+  Future<Diagnosis> diagnose(List<int> bytes, String filename, {String? cropId, String? plantId}) => call(() async {
         final ext = filename.split('.').last.toLowerCase();
         final mime = ext == 'png' ? 'png' : (ext == 'webp' ? 'webp' : 'jpeg');
         final form = FormData.fromMap({
           'image': MultipartFile.fromBytes(bytes, filename: filename, contentType: DioMediaType('image', mime)),
           if (cropId != null) 'crop_id': cropId,
+          if (cropId == null && plantId != null) 'plant_id': plantId,
         });
         return Diagnosis.fromJson((await dio.post('/diagnoses', data: form)).data);
       });
   Future<List<Diagnosis>> diagnoses({String? cropId}) => call(() async =>
       list((await dio.get('/diagnoses', queryParameters: {if (cropId != null) 'crop_id': cropId})).data, Diagnosis.fromJson));
   Future<Diagnosis> diagnosis(String id) => call(() async => Diagnosis.fromJson((await dio.get('/diagnoses/$id')).data));
+  Future<CarePlan> carePlan(String id) => call(() async => CarePlan.fromJson((await dio.get('/diagnoses/$id/care-plan')).data));
+
+  /// Tashxisni bog'ga qo'shadi va rejani eslatmalar sifatida saqlaydi → ekin ID.
+  Future<String> applyCarePlan(String id, {String? cropId, String? cropName, String? plantId}) => call(() async =>
+      (await dio.post('/diagnoses/$id/care-plan', data: {
+        if (cropId != null) 'crop_id': cropId,
+        if (cropName != null && cropName.isNotEmpty) 'crop_name': cropName,
+        if (plantId != null) 'plant_id': plantId,
+      }))
+          .data['crop_id'] as String);
   Future<Post> shareDiagnosis(String id) => call(() async => Post.fromJson((await dio.post('/diagnoses/$id/share')).data));
 
   // Eslatmalar

@@ -4,6 +4,7 @@ import 'package:agroyordam/core/storage/token_storage.dart';
 import 'package:agroyordam/core/theme/app_colors.dart';
 import 'package:agroyordam/core/utils/format.dart';
 import 'package:agroyordam/domain/entities/entities.dart';
+import 'package:agroyordam/presentation/screens/reminders/today_tasks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -73,5 +74,47 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text("Maydonni to'ldiring"), findsOneWidget);
     expect(find.text('Parolni kiriting'), findsOneWidget);
+  });
+
+  test("to'q sirtlardagi matn ikkala mavzuda ham o'qiladi (WCAG kontrast ≥ 4.5)", () {
+    double contrast(Color a, Color b) {
+      final la = a.computeLuminance(), lb = b.computeLuminance();
+      return (la > lb ? la + 0.05 : lb + 0.05) / (la > lb ? lb + 0.05 : la + 0.05);
+    }
+
+    for (final c in [AppColors.light, AppColors.darkTheme]) {
+      expect(contrast(c.dark, c.onDark), greaterThanOrEqualTo(4.5));
+      expect(contrast(c.dark, c.onDarkMuted), greaterThanOrEqualTo(3));
+      // to'q tugma sahifa fonidan ajralib turishi kerak
+      expect(contrast(c.dark, c.cream), greaterThanOrEqualTo(1.4));
+    }
+  });
+
+  test('CarePlan.fromJson va bugungi vazifalar', () {
+    final plan = CarePlan.fromJson({
+      'diagnosis_id': 'd1',
+      'plant_name': 'Pomidor',
+      'disease_name': 'Fitoftoroz',
+      'confidence': '61.70',
+      'duration_days': 21,
+      'tasks': [
+        {'day': 0, 'date': '2026-09-24', 'time': '08:00:00', 'title': 'Barglarni olib tashlang', 'reminder_type': 'treatment'},
+      ],
+    });
+    expect(plan.confidence, 61.7);
+    expect(plan.tasks.single.title, 'Barglarni olib tashlang');
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    Reminder r(String id, DateTime d, {bool done = false, String? crop}) =>
+        Reminder(id: id, title: id, date: d, isCompleted: done, cropId: crop);
+    final due = dueTasks([
+      r('ertaga', today.add(const Duration(days: 1))),
+      r('bugun', today, crop: 'c1'),
+      r('kecha', today.subtract(const Duration(days: 1))),
+      r('bajarilgan', today, done: true),
+    ]);
+    expect(due.map((e) => e.id), ['kecha', 'bugun']);
+    expect(dueTasks([r('bugun', today, crop: 'c1'), r('x', today, crop: 'c2')], cropId: 'c1').single.id, 'bugun');
   });
 }

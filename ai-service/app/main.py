@@ -2,7 +2,7 @@
 import io
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from app.inference.classifier import load_classifier
 from app.inference.validation import validate
@@ -10,7 +10,7 @@ from app.schemas import PredictResponse
 
 MAX_BYTES = 10 * 1024 * 1024
 
-app = FastAPI(title="AgroYordam AI Service", version="0.1.1")
+app = FastAPI(title="AgroYordam AI Service", version="0.1.2")
 classifier = load_classifier()
 
 
@@ -31,6 +31,7 @@ async def predict(image: UploadFile = File(...), plant_hint: str | None = Form(d
     except (UnidentifiedImageError, OSError):
         return PredictResponse(plant=None, ai_label=None, confidence=0, is_valid_image=False, reason="Fayl rasm emas")
 
+    img = ImageOps.exif_transpose(img)  # telefon suratlari aylantirilgan holda keladi
     check = validate(img)
     if not check.ok:
         return PredictResponse(plant=None, ai_label=None, confidence=0, is_valid_image=False, reason=check.reason)

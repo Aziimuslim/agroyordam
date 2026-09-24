@@ -37,3 +37,12 @@ def test_plant_hint_restricts_classes():
     for plant, prefix in [("Pomidor", "Tomato_"), ("Uzum", "Grape_"), ("Makkajo'xori", "Corn_")]:
         p, label, conf = clf.predict(leaf(), b"", plant)
         assert label.startswith(prefix) and p == plant and 0 < conf <= 100
+
+
+def test_tta_is_normalized_and_deterministic():
+    from app.inference.classifier import OnnxClassifier
+
+    clf = OnnxClassifier(MODEL)
+    p1, p2 = clf.probabilities_tta(leaf()), clf.probabilities_tta(leaf())
+    assert p1.shape == (len(MODEL_LABELS),) and abs(p1.sum() - 1) < 1e-4
+    assert np.allclose(p1, p2)

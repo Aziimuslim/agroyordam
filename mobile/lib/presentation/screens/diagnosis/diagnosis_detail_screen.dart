@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
 import '../../../core/config.dart';
@@ -7,8 +8,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/widgets.dart';
 import 'diagnosis_actions.dart';
-
-final _diagProvider = FutureProvider.autoDispose.family((ref, String id) => ref.watch(gardenRepoProvider).diagnosis(id));
 
 class DiagnosisDetailScreen extends ConsumerWidget {
   const DiagnosisDetailScreen({super.key, required this.id});
@@ -20,8 +19,8 @@ class DiagnosisDetailScreen extends ConsumerWidget {
     return PageShell(
       padBottom: false,
       child: AsyncView(
-        value: ref.watch(_diagProvider(id)),
-        onRetry: () => ref.invalidate(_diagProvider(id)),
+        value: ref.watch(diagnosisProvider(id)),
+        onRetry: () => ref.invalidate(diagnosisProvider(id)),
         data: (d) {
           Widget section(String title, String? body) => body == null || body.isEmpty
               ? const SizedBox.shrink()
@@ -46,7 +45,7 @@ class DiagnosisDetailScreen extends ConsumerWidget {
                 Text(d.title, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
                 Wrap(spacing: 8, runSpacing: 6, children: [
-                  Tag('Ishonch ${d.confidence.toStringAsFixed(0)}%'),
+                  Tag('${d.lowConfidence ? 'Taxminiy' : 'Ishonch'} ${d.confidence.toStringAsFixed(0)}%'),
                   if (d.riskLevel != null && !d.isHealthy)
                     Tag(riskLabels[d.riskLevel] ?? '', bg: d.riskLevel == 'high' ? c.dangerBg : c.primaryLight, fg: d.riskLevel == 'high' ? c.danger : c.primaryDark),
                   if (d.plantName != null) Tag(d.plantName!, bg: c.tagCare, fg: c.onTagCare),
@@ -69,8 +68,14 @@ class DiagnosisDetailScreen extends ConsumerWidget {
                   ]),
                 ),
             ],
-            if (!d.isHealthy && !d.lowConfidence) ...[
-              PillButton(label: "Eslatmalar qo'shish", icon: Icons.notifications_active_outlined, block: true, onPressed: () => addRemindersFromDiagnosis(context, ref, d)),
+            if (d.isHealthy || d.diseaseName != null) ...[
+              PillButton(
+                label: d.cropId != null ? 'Parvarish rejasi' : "Bog'imga qo'shish va parvarish rejasi",
+                icon: Icons.notifications_active_outlined,
+                style: PillStyle.primary,
+                block: true,
+                onPressed: () => context.push('/diagnosis/${d.id}/plan'),
+              ),
               const SizedBox(height: 10),
             ],
             PillButton(label: 'Jamoatda ulashish', style: PillStyle.outline, block: true, onPressed: () => shareDiagnosis(context, ref, d)),

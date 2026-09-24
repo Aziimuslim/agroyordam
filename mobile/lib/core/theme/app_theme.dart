@@ -48,7 +48,7 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: c.dark,
-        contentTextStyle: TextStyle(fontFamily: font, fontWeight: FontWeight.w700, color: c.card, fontSize: 13.5),
+        contentTextStyle: TextStyle(fontFamily: font, fontWeight: FontWeight.w700, color: c.onDark, fontSize: 13.5),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),

@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_icons.dart';
 
-/// Pastki navigatsiya: Bosh sahifa, Bog'im, [Tashxis kamerasi], Eslatmalar, Profil.
+/// Pastki navigatsiya: Bosh sahifa, Bog'im, [Tashxis kamerasi], Jamoat, Profil.
+/// Eslatmalar — ekin sahifasida, bosh sahifadagi "Bugungi vazifalar"da va Profil menyusida.
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({super.key, required this.current});
   final String current;
@@ -63,7 +64,7 @@ class AppBottomNav extends StatelessWidget {
                     ),
                   ]),
                 ),
-                item('/reminders', 'Eslatmalar', AppIcons.bell),
+                item('/community', 'Jamoat', AppIcons.chat),
                 item('/profile', 'Profil', AppIcons.sliders),
               ]),
             ),

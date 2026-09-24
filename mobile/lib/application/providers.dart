@@ -102,6 +102,8 @@ final cropHealthProvider =
 final cropLogsProvider = FutureProvider.autoDispose.family<List<CropLog>, String>((ref, id) => ref.watch(gardenRepoProvider).logs(id));
 final cropDiagnosesProvider =
     FutureProvider.autoDispose.family<List<Diagnosis>, String>((ref, id) => ref.watch(gardenRepoProvider).diagnoses(cropId: id));
+final diagnosisProvider = FutureProvider.autoDispose.family<Diagnosis, String>((ref, id) => ref.watch(gardenRepoProvider).diagnosis(id));
+final carePlanProvider = FutureProvider.autoDispose.family<CarePlan, String>((ref, id) => ref.watch(gardenRepoProvider).carePlan(id));
 final diagnosesProvider = FutureProvider.autoDispose<List<Diagnosis>>((ref) => ref.watch(gardenRepoProvider).diagnoses());
 final remindersProvider = FutureProvider.autoDispose<List<Reminder>>((ref) => ref.watch(gardenRepoProvider).reminders());
 
