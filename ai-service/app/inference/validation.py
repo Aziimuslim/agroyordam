@@ -7,7 +7,12 @@ from PIL import Image
 MIN_SIDE = 224
 MIN_BRIGHTNESS = 35
 MAX_BRIGHTNESS = 235
-MIN_LAPLACIAN_VAR = 25.0
+# Xiralik 320px'ga kichraytirilgan rasmda, eng tiniq 1/4 bo'laklar bo'yicha o'lchanadi:
+# telefonning ozgina "yumshoq" surati va orqa foni xira (bokeh) close-up'lar o'tadi,
+# faqat haqiqatan xira (qimirlagan, fokussiz) rasmlar rad etiladi.
+SHARPNESS_SIDE = 320
+SHARPNESS_GRID = 4
+MIN_LAPLACIAN_VAR = 5.0
 MIN_PLANT_RATIO = 0.12
 
 
@@ -25,6 +30,21 @@ def laplacian_variance(gray: np.ndarray) -> float:
     g = gray.astype(np.float64)
     lap = (-4 * g[1:-1, 1:-1] + g[:-2, 1:-1] + g[2:, 1:-1] + g[1:-1, :-2] + g[1:-1, 2:])
     return float(lap.var())
+
+
+def sharpness(img: Image.Image) -> float:
+    """Rasmning eng tiniq qismlari (4×4 to'rning yuqori chorak bo'laklari) Laplacian variance o'rtachasi."""
+    small = img.convert("L")
+    small.thumbnail((SHARPNESS_SIDE, SHARPNESS_SIDE))
+    g = np.asarray(small)
+    h, w = g.shape
+    n = SHARPNESS_GRID
+    tiles = sorted(
+        (laplacian_variance(g[i * h // n:(i + 1) * h // n, j * w // n:(j + 1) * w // n]) for i in range(n) for j in range(n)),
+        reverse=True,
+    )
+    top = tiles[: max(1, len(tiles) // 4)]
+    return float(sum(top) / len(top))
 
 
 def vegetation_masks(rgb: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -50,7 +70,7 @@ def validate(img: Image.Image) -> ValidationResult:
         return ValidationResult(False, "Rasm juda qorong'i. Yorug' joyda qayta suratga oling.", brightness)
     if brightness > MAX_BRIGHTNESS:
         return ValidationResult(False, "Rasm juda yorug' (oqarib ketgan). Soyaroq joyda suratga oling.", brightness)
-    sharp = laplacian_variance(gray)
+    sharp = sharpness(img)
     if sharp < MIN_LAPLACIAN_VAR:
         return ValidationResult(False, "Rasm xira. Kamerani qimirlatmay, bargga fokus qilib suratga oling.", brightness, sharp)
     leaf, _ = vegetation_masks(rgb)

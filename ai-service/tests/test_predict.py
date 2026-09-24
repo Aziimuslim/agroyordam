@@ -64,6 +64,38 @@ def test_blurry_image():
     assert r["is_valid_image"] is False and "xira" in r["reason"]
 
 
+def _blurred_leaf(radius: float, blur_background_only: bool = False) -> bytes:
+    from PIL import ImageDraw, ImageFilter
+    rng = np.random.default_rng(3)
+    bg = np.clip(np.full((1200, 1200, 3), (120, 110, 90)) + rng.normal(0, 25, (1200, 1200, 3)), 0, 255)
+    im = Image.fromarray(bg.astype(np.uint8))
+    d = ImageDraw.Draw(im)
+    d.ellipse((150, 250, 1050, 950), fill=(70, 130, 50))
+    for i in range(12):
+        d.line((600, 600, 150 + i * 80, 250 if i % 2 else 950), fill=(110, 160, 80), width=4)
+    blurred = im.filter(ImageFilter.GaussianBlur(radius))
+    if blur_background_only:
+        mask = Image.new("L", im.size, 0)
+        ImageDraw.Draw(mask).ellipse((150, 250, 1050, 950), fill=255)
+        blurred = Image.composite(im, blurred, mask)
+    buf = io.BytesIO()
+    blurred.save(buf, "JPEG", quality=88)
+    return buf.getvalue()
+
+
+def test_slightly_soft_phone_photo_is_accepted():
+    assert post(_blurred_leaf(2)).json()["is_valid_image"] is True
+
+
+def test_sharp_leaf_with_blurred_background_is_accepted():
+    assert post(_blurred_leaf(12, blur_background_only=True)).json()["is_valid_image"] is True
+
+
+def test_very_blurry_photo_is_rejected():
+    r = post(_blurred_leaf(10)).json()
+    assert r["is_valid_image"] is False and "xira" in r["reason"]
+
+
 def test_no_plant():
     rng = np.random.default_rng(1)
     gray = rng.integers(60, 200, (300, 300))
