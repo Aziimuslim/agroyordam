@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text, Uuid, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -25,3 +25,14 @@ class Diagnosis(Base):
     causes: Mapped[str | None] = mapped_column(Text)
     recommendations: Mapped[str | None] = mapped_column(Text)
     diagnosed_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, server_default=func.now())
+
+    # AI modeli qaytargan sinf (masalan Tomato_Late_blight) — dataset va tahlil uchun
+    ai_label: Mapped[str | None] = mapped_column(String(150))
+
+    # Dataset yig'ish: foydalanuvchi fikri va mutaxassis (admin/moderator) tekshiruvi
+    user_feedback: Mapped[bool | None] = mapped_column(Boolean)  # True — AI to'g'ri topdi, False — xato
+    # pending — tekshirilmagan, confirmed — AI to'g'ri, corrected — mutaxassis tuzatgan, rejected — datasetga yaroqsiz
+    review_status: Mapped[str] = mapped_column(String(20), default="pending", server_default="pending", index=True)
+    verified_label: Mapped[str | None] = mapped_column(String(150), index=True)
+    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("users.id", ondelete="SET NULL"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime)

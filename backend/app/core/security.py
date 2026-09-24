@@ -42,6 +42,20 @@ def decode_access_token(token: str) -> dict | None:
     return payload
 
 
+def create_scoped_token(subject: str, scope: str, minutes: int = 10) -> str:
+    """Qisqa muddatli, bitta amal uchun token (masalan dataset ZIP'ini brauzerda yuklab olish havolasi)."""
+    expire = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+    return jwt.encode({"sub": subject, "type": scope, "exp": expire}, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
+def decode_scoped_token(token: str, scope: str) -> str | None:
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+    except JWTError:
+        return None
+    return payload.get("sub") if payload.get("type") == scope else None
+
+
 def new_refresh_token() -> tuple[str, str]:
     """Qaytaradi: (mijozga beriladigan token, DB'da saqlanadigan hash)."""
     raw = secrets.token_urlsafe(48)

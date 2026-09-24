@@ -71,6 +71,7 @@ async def run_diagnosis(db: AsyncSession, user: User, upload: UploadFile, crop_i
         plant_id=plant_id,
         disease_id=disease.id if disease else None,
         image_url=image_url,
+        ai_label=pred.ai_label,
         confidence=Decimal(str(round(pred.confidence, 2))),
         risk_level=disease.risk_level if disease else ("low" if healthy else None),
         symptoms=disease.symptoms if disease else None,
@@ -108,7 +109,7 @@ async def to_out(db: AsyncSession, diag: Diagnosis, ai_label: str | None = None)
         plant_name=plant.name if plant else None,
         disease_id=diag.disease_id,
         disease_name=disease.name if disease else None,
-        ai_label=ai_label or (disease.ai_label if disease else None),
+        ai_label=ai_label or diag.ai_label or (disease.ai_label if disease else None),
         image_url=diag.image_url,
         confidence=diag.confidence,
         risk_level=diag.risk_level,
@@ -120,5 +121,6 @@ async def to_out(db: AsyncSession, diag: Diagnosis, ai_label: str | None = None)
         is_healthy=healthy,
         low_confidence=(not healthy and disease is None) or conf < settings.AI_MIN_CONFIDENCE,
         medicines=meds,
+        user_feedback=diag.user_feedback,
         diagnosed_at=diag.diagnosed_at,
     )

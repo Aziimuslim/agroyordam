@@ -2,6 +2,11 @@ name: Train AI model
 
 on:
   workflow_dispatch:
+    inputs:
+      dataset_url:
+        description: "Dala dataseti ZIP havolasi (admin panel → Dataset → eksport; masalan GitHub Release'ga yuklangan fayl). Bo'sh — faqat PlantVillage"
+        required: false
+        default: ""
   push:
     branches: [main, "claude/**"]
     paths: ["ai-service/training/**", "ai-service/app/models/labels.py", "ai-service/app/inference/preprocess.py", ".github/workflows/train-model.yml"]
@@ -58,9 +63,20 @@ jobs:
             "raw/color/Strawberry___healthy" \
             "raw/color/Squash___Powdery_mildew"
           du -sh raw/color
+      - name: Dala dataseti (ixtiyoriy)
+        if: ${{ github.event.inputs.dataset_url != '' }}
+        env:
+          DATASET_URL: ${{ github.event.inputs.dataset_url }}
+        run: |
+          curl -fsSL -o /tmp/field.zip "$DATASET_URL"
+          mkdir -p /tmp/field && unzip -q /tmp/field.zip -d /tmp/field
+          find /tmp/field -mindepth 1 -maxdepth 1 -type d -exec sh -c 'echo "$(basename "$1"): $(ls "$1" | wc -l)"' _ {} \;
       - name: O'qitish va ONNX eksport
         working-directory: ai-service
-        run: python training/train_plantvillage.py --data /tmp/pv/raw/color --out models/agro-mobilenetv3.onnx
+        run: |
+          EXTRA=""
+          [ -d /tmp/field ] && EXTRA="--extra /tmp/field"
+          python training/train_plantvillage.py --data /tmp/pv/raw/color --out models/agro-mobilenetv3.onnx $EXTRA
       - uses: actions/upload-artifact@v4
         with:
           name: agro-model

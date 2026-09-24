@@ -117,4 +117,19 @@ void main() {
     expect(due.map((e) => e.id), ['kecha', 'bugun']);
     expect(dueTasks([r('bugun', today, crop: 'c1'), r('x', today, crop: 'c2')], cropId: 'c1').single.id, 'bugun');
   });
+
+  test('DatasetItem.fromJson', () {
+    final it = DatasetItem.fromJson({
+      'id': 'x',
+      'image_url': '/media/diagnoses/a.jpg',
+      'review_status': 'pending',
+      'ai_label': 'Tomato_Late_blight',
+      'confidence': 61.7,
+      'user_feedback': false,
+      'diagnosed_at': '2026-09-24T08:00:00',
+    });
+    expect(it.confidence, 61.7);
+    expect(it.userFeedback, false);
+    expect(it.verifiedLabel, isNull);
+  });
 }

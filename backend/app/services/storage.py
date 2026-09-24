@@ -51,6 +51,14 @@ class LocalStorage:
         (target / name).write_bytes(data)
         return f"{self.base_url}/{folder}/{name}"
 
+    def read(self, url: str) -> bytes | None:
+        if not url.startswith(self.base_url + "/"):
+            return None
+        path = (self.root / url[len(self.base_url) + 1:]).resolve()
+        if self.root.resolve() not in path.parents or not path.is_file():
+            return None
+        return path.read_bytes()
+
 
 class S3Storage:
     def __init__(self) -> None:
@@ -81,6 +89,14 @@ class S3Storage:
         content_type = {"jpg": "image/jpeg", "png": "image/png", "webp": "image/webp"}[ext]
         self.client.put_object(Bucket=self.bucket, Key=key, Body=data, ContentType=content_type)
         return f"{self.public}/{key}"
+
+    def read(self, url: str) -> bytes | None:
+        if not url.startswith(self.public + "/"):
+            return None
+        try:
+            return self.client.get_object(Bucket=self.bucket, Key=url[len(self.public) + 1:])["Body"].read()
+        except Exception:
+            return None
 
 
 _storage = None

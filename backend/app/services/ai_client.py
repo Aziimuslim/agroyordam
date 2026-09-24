@@ -39,6 +39,17 @@ class AIClient:
         )
 
 
+    async def labels(self) -> list[str]:
+        """Model biladigan sinflar ro'yxati (dataset belgilash uchun)."""
+        try:
+            async with httpx.AsyncClient(base_url=settings.AI_SERVICE_URL, timeout=10) as client:
+                resp = await client.get("/labels")
+            resp.raise_for_status()
+            return list(resp.json().get("labels", []))
+        except (httpx.HTTPError, ValueError):
+            return []
+
+
 _client: AIClient = AIClient()
 
 

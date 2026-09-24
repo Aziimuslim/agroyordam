@@ -37,6 +37,11 @@ def test_health():
     assert client.get("/health").json()["status"] == "ok"
 
 
+def test_labels():
+    labels = client.get("/labels").json()["labels"]
+    assert "Tomato_Late_blight" in labels and "Tomato_healthy" in labels
+
+
 def test_contract_and_determinism():
     img = leaf_image(True)
     a, b = post(img).json(), post(img).json()

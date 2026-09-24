@@ -27,7 +27,12 @@ class DiagnosisOut(ORMModel):
     is_healthy: bool = False
     low_confidence: bool = False
     medicines: list[MedicineRecommendation] = []
+    user_feedback: bool | None = None
     diagnosed_at: datetime | None = None
+
+
+class FeedbackIn(BaseModel):
+    correct: bool
 
 
 class ShareIn(BaseModel):

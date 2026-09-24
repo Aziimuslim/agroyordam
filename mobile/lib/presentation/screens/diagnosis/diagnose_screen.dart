@@ -180,6 +180,7 @@ class _ResultCard extends ConsumerWidget {
           MiniButton(label: 'Jamoatda ulashish', onTap: () => shareDiagnosis(context, ref, d)),
           MiniButton(label: 'Yangi tashxis', onTap: onRetry),
         ]),
+        _Feedback(d: d),
       ]);
     }
     final med = d.medicines.isNotEmpty ? d.medicines.first : null;
@@ -219,7 +220,62 @@ class _ResultCard extends ConsumerWidget {
         MiniButton(label: 'Jamoatda ulashish', onTap: () => shareDiagnosis(context, ref, d)),
         MiniButton(label: 'Yangi tashxis', onTap: onRetry),
       ]),
+      _Feedback(d: d),
     ]);
+  }
+}
+
+/// "AI to'g'ri topdimi?" — javoblar dataset tekshiruvida ishlatiladi ("xato"lar birinchi ko'riladi).
+class _Feedback extends ConsumerStatefulWidget {
+  const _Feedback({required this.d});
+  final Diagnosis d;
+  @override
+  ConsumerState<_Feedback> createState() => _FeedbackState();
+}
+
+class _FeedbackState extends ConsumerState<_Feedback> {
+  late bool? _value = widget.d.userFeedback;
+
+  Future<void> _send(bool correct) async {
+    setState(() => _value = correct);
+    try {
+      await ref.read(gardenRepoProvider).feedback(widget.d.id, correct);
+    } catch (e) {
+      if (mounted) showError(context, e);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    if (_value != null) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Text(_value! ? "Rahmat! Fikringiz AI'ni yaxshilashga yordam beradi." : "Rahmat! Mutaxassis rasmni tekshirib, AI'ni shu asosda o'rgatadi.",
+            style: TextStyle(color: c.muted, fontSize: 12.5)),
+      );
+    }
+    Widget btn(bool v, IconData icon, String label) => InkWell(
+          borderRadius: BorderRadius.circular(99),
+          onTap: () => _send(v),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(border: Border.all(color: c.border), borderRadius: BorderRadius.circular(99)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(icon, size: 16, color: v ? c.success : c.danger),
+              const SizedBox(width: 6),
+              Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5)),
+            ]),
+          ),
+        );
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
+        Text("AI to'g'ri topdimi?", style: TextStyle(color: c.muted, fontSize: 12.5, fontWeight: FontWeight.w700)),
+        btn(true, Icons.thumb_up_alt_outlined, 'Ha'),
+        btn(false, Icons.thumb_down_alt_outlined, "Yo'q"),
+      ]),
+    );
   }
 }
 
@@ -334,6 +390,9 @@ class _Tips extends StatelessWidget {
         tip(Icons.wb_sunny_outlined, "Kunduzgi yorug'likda suratga oling"),
         tip(Icons.center_focus_strong_outlined, 'Bitta zararlangan bargni kadr markaziga oling'),
         tip(Icons.back_hand_outlined, 'Kamerani qimirlatmang — rasm xira bo\'lmasin'),
+        const SizedBox(height: 4),
+        Text("Yuklangan rasmlar mutaxassis tekshiruvidan so'ng AI'ni yaxshilash uchun anonim ishlatilishi mumkin.",
+            style: TextStyle(color: c.muted, fontSize: 11.5)),
       ]),
     );
   }

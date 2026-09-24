@@ -6,6 +6,14 @@ so'ng ustiga chiziqli klassifikator o'qitiladi. Natija bitta ONNX faylga yig'ila
 
     python training/train_plantvillage.py --data /path/PlantVillage-Dataset/raw/color --out models/agro.onnx
 
+Dala dataseti (admin panel → Dataset → eksport ZIP, ochilgan papka: <label>/<rasm>) qo'shish:
+
+    python training/train_plantvillage.py --data .../raw/color --extra /path/agroyordam-dataset
+
+Dala rasmlari o'qitishda --extra-weight marta takrorlanadi (ular kamroq, lekin haqiqiy sharoitga yaqin),
+yangi sinflar (masalan Cucumber_Powdery_mildew) avtomatik qo'shiladi, metrics.json da dala rasmlaridagi aniqlik
+alohida ko'rsatiladi.
+
 GitHub Actions: .github/workflows/train-model.yml (model-v1 release'ga yuklaydi).
 """
 import argparse
@@ -79,15 +87,29 @@ def main():
     ap.add_argument("--batch", type=int, default=64)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--extra", action="append", default=[], help="dala dataseti papkasi (<label>/<rasm>), bir necha marta berish mumkin")
+    ap.add_argument("--extra-weight", type=int, default=3, help="dala rasmlarini o'qitishda necha marta takrorlash")
     args = ap.parse_args()
 
     random.seed(args.seed)
     torch.manual_seed(args.seed)
     torch.set_num_threads(max(1, torch.get_num_threads()))
-    labels = sorted(set(PLANTVILLAGE_CLASSES.values()))
+    exts = {".jpg", ".jpeg", ".png", ".webp"}
+    extra: dict[str, list[Path]] = {}
+    for root in args.extra:
+        for d in sorted(p for p in Path(root).iterdir() if p.is_dir()):
+            extra.setdefault(d.name, []).extend(sorted(f for f in d.iterdir() if f.suffix.lower() in exts))
+    labels = sorted(set(PLANTVILLAGE_CLASSES.values()) | set(extra))
     idx = {lbl: i for i, lbl in enumerate(labels)}
 
-    train, val = [], []
+    train, val, field_val = [], [], []
+    for label, files in extra.items():
+        random.shuffle(files)
+        n_val = int(len(files) * args.val_frac) if len(files) >= 10 else 0
+        field_val += [(f, idx[label]) for f in files[:n_val]]
+        train += [(f, idx[label]) for f in files[n_val:]] * args.extra_weight
+        print(f"[dala] {label:27s} train={len(files) - n_val:4d} val={n_val}")
+    val += field_val
     for folder, label in PLANTVILLAGE_CLASSES.items():
         files = sorted(p for p in (Path(args.data) / folder).iterdir() if p.suffix.lower() in {".jpg", ".jpeg", ".png"})
         random.shuffle(files)
@@ -158,6 +180,10 @@ def main():
         per_class[labels[yi]][0] += pred == yi
         per_class[labels[yi]][1] += 1
     onnx_acc = correct / len(val)
+    field_set = {str(f) for f, _ in field_val}
+    field_ok = sum(
+        int(sess.run(None, {"input": to_tensor(Image.open(p))})[0][0].argmax()) == yi for p, yi in field_val
+    ) if field_val else 0
     metrics = {
         "arch": "mobilenet_v3_large (ImageNet) + linear head",
         "dataset": "PlantVillage (raw/color)",
@@ -166,6 +192,9 @@ def main():
         "val_samples": len(val),
         "val_accuracy_torch": round(best_acc, 4),
         "val_accuracy_onnx": round(onnx_acc, 4),
+        "field_train_images": sum(len(v) for v in extra.values()) - len(field_set),
+        "field_val_samples": len(field_val),
+        "val_accuracy_field": round(field_ok / len(field_val), 4) if field_val else None,
         "per_class_accuracy": {k: round(c / t, 4) for k, (c, t) in per_class.items()},
     }
     out.with_suffix(".metrics.json").write_text(json.dumps(metrics, indent=2, ensure_ascii=False))

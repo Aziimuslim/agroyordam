@@ -36,6 +36,9 @@ class FakeAI:
         self.last_hint = plant_hint
         return self.next
 
+    async def labels(self):
+        return ["Tomato_Late_blight", "Tomato_healthy"]
+
 
 @pytest.fixture
 def fake_ai(monkeypatch):

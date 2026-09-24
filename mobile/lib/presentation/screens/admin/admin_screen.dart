@@ -7,6 +7,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
+import 'dataset_tab.dart';
 
 final _statsProvider = FutureProvider.autoDispose((ref) async {
   final r = ref.watch(adminRepoProvider);
@@ -15,7 +16,7 @@ final _statsProvider = FutureProvider.autoDispose((ref) async {
 final _usersProvider = FutureProvider.autoDispose.family<List<AppUser>, String>((ref, q) => ref.watch(adminRepoProvider).users(q: q));
 final _reportsProvider = FutureProvider.autoDispose((ref) => ref.watch(adminRepoProvider).reports());
 
-/// Admin panel (Flutter Web'da keng ekranga moslashadi): statistika, foydalanuvchilar, katalog, shikoyatlar.
+/// Admin panel (Flutter Web'da keng ekranga moslashadi): statistika, dataset, foydalanuvchilar, katalog, shikoyatlar.
 class AdminScreen extends ConsumerStatefulWidget {
   const AdminScreen({super.key});
   @override
@@ -33,11 +34,12 @@ class _AdminState extends ConsumerState<AdminScreen> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const TopBar(title: 'Admin panel', subtitle: 'AgroYordam boshqaruvi'),
         ChipTabs(
-          tabs: const [('stats', 'Statistika'), ('users', 'Foydalanuvchilar'), ('catalog', 'Katalog'), ('reports', 'Shikoyatlar')],
+          tabs: const [('stats', 'Statistika'), ('dataset', 'Dataset'), ('users', 'Foydalanuvchilar'), ('catalog', 'Katalog'), ('reports', 'Shikoyatlar')],
           selected: _tab,
           onSelect: (v) => setState(() => _tab = v),
         ),
         switch (_tab) {
+          'dataset' => const DatasetTab(),
           'users' => const _UsersTab(),
           'catalog' => const _CatalogTab(),
           'reports' => const _ReportsTab(),

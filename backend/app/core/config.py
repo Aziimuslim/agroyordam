@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     APP_NAME: str = "AgroYordam"
-    APP_VERSION: str = "0.1.2"
+    APP_VERSION: str = "0.1.3"
     ENVIRONMENT: str = "development"  # development | production | test
 
     # Dev'da Docker'siz ishga tushirish uchun SQLite; docker-compose PostgreSQL beradi

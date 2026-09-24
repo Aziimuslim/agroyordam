@@ -4,19 +4,26 @@ import io
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-from app.inference.classifier import load_classifier
+from app.inference.classifier import OnnxClassifier, load_classifier
 from app.inference.validation import validate
+from app.models.labels import ALL_LABELS
 from app.schemas import PredictResponse
 
 MAX_BYTES = 10 * 1024 * 1024
 
-app = FastAPI(title="AgroYordam AI Service", version="0.1.2")
+app = FastAPI(title="AgroYordam AI Service", version="0.1.3")
 classifier = load_classifier()
 
 
 @app.get("/health")
 async def health():
     return {"status": "ok", "model": type(classifier).__name__}
+
+
+@app.get("/labels")
+async def labels():
+    """Model taniydigan sinflar (backend dataset belgilashda ishlatadi)."""
+    return {"labels": classifier.labels if isinstance(classifier, OnnxClassifier) else ALL_LABELS}
 
 
 @app.post("/predict", response_model=PredictResponse)

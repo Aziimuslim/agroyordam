@@ -20,6 +20,7 @@ class Diagnosis {
     this.isHealthy = false,
     this.lowConfidence = false,
     this.medicines = const [],
+    this.userFeedback,
     this.diagnosedAt,
   });
   final String id, imageUrl;
@@ -27,6 +28,7 @@ class Diagnosis {
   final double confidence;
   final bool isHealthy, lowConfidence;
   final List<Medicine> medicines;
+  final bool? userFeedback;
   final DateTime? diagnosedAt;
 
   String get title => isHealthy ? "O'simlik sog'lom" : (diseaseName ?? 'Aniqlanmadi');
@@ -49,6 +51,7 @@ class Diagnosis {
         isHealthy: j['is_healthy'] ?? false,
         lowConfidence: j['low_confidence'] ?? false,
         medicines: [for (final m in (j['medicines'] as List? ?? [])) Medicine.fromJson(m)],
+        userFeedback: j['user_feedback'],
         diagnosedAt: parseDate(j['diagnosed_at']),
       );
 }
@@ -90,5 +93,28 @@ class CarePlan {
         isHealthy: j['is_healthy'] ?? false,
         durationDays: j['duration_days'],
         tasks: [for (final t in (j['tasks'] as List? ?? [])) CarePlanTask.fromJson(t)],
+      );
+}
+
+/// Dataset tekshiruvi uchun yuklangan tashxis rasmi (admin panel → Dataset).
+class DatasetItem {
+  DatasetItem({required this.id, required this.imageUrl, required this.reviewStatus, this.aiLabel, this.confidence, this.plantName, this.diseaseName, this.userFeedback, this.verifiedLabel, this.diagnosedAt});
+  final String id, imageUrl, reviewStatus;
+  final String? aiLabel, plantName, diseaseName, verifiedLabel;
+  final double? confidence;
+  final bool? userFeedback;
+  final DateTime? diagnosedAt;
+
+  factory DatasetItem.fromJson(Map<String, dynamic> j) => DatasetItem(
+        id: j['id'],
+        imageUrl: j['image_url'],
+        reviewStatus: j['review_status'],
+        aiLabel: j['ai_label'],
+        confidence: (j['confidence'] as num?)?.toDouble(),
+        plantName: j['plant_name'],
+        diseaseName: j['disease_name'],
+        userFeedback: j['user_feedback'],
+        verifiedLabel: j['verified_label'],
+        diagnosedAt: parseDate(j['diagnosed_at']),
       );
 }

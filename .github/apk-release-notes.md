@@ -5,6 +5,11 @@ Web ilova: https://agroyordam.duckdns.org
 O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
 Ilova https://agroyordam.duckdns.org serveriga o'zi ulanadi. Eski versiya o'rnatilgan bo'lsa, ustidan yangilanadi.
 
+## 0.1.3
+- **Dataset yig'ish**: tashxis natijasida "AI to'g'ri topdimi? Ha / Yo'q".
+- Admin panelda **Dataset** bo'limi: mutaxassis rasmlarni tasdiqlaydi yoki to'g'ri kasallikni tanlaydi,
+  sinflar bo'yicha progress, AI'ning dala sharoitidagi aniqligi, ZIP eksport va modelni qayta o'qitish.
+
 ## 0.1.2
 - **Parvarish rejasi**: AI tashxisini "Mening bog'im"ga bir tugma bilan qo'shish — kasallik nomi, ishonch foizi,
   belgilari, sababi, davolash va dori; kasallik xavfiga qarab 10–21 kunlik kunlik vazifalar eslatma bo'lib keladi.

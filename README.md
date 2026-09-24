@@ -1,4 +1,4 @@
-# AgroYordam 0.1.2
+# AgroYordam 0.1.3
 
 AI yordamida qishloq xo'jaligi ekinlari kasalliklarini tashxislaydigan **mobil va web** platforma:
 fermer barg rasmini yuklaydi → AI kasallikni aniqlaydi → bilimlar bazasidan belgilar, sabab, davolash,
@@ -93,6 +93,9 @@ Versiyani oshirish: `mobile/pubspec.yaml` dagi `version:` (masalan `0.1.2+3`, `+
 - **Premium**: **Payme Merchant API** (JSON-RPC: Check/Create/Perform/Cancel/CheckTransaction, GetStatement) va
   **Click SHOP API** (Prepare/Complete, md5 imzo) to'liq amalga oshirilgan; Uzum — HMAC webhook.
   Bepul reja: kuniga 3 ta AI tashxis va 3 tagacha ekin.
+- **Dala dataseti** ([docs/DATASET.md](docs/DATASET.md)): foydalanuvchi "AI to'g'ri topdimi?" deb baholaydi, mutaxassis
+  admin panelda rasmlarni tasdiqlaydi/tuzatadi, sinflar bo'yicha progress va AI'ning dala aniqligi, ZIP eksport →
+  GitHub Actions'da modelni PlantVillage + dala rasmlari bilan qayta o'qitish.
 - **Admin panel** (Flutter Web'da keng ekran): platforma / AI / daromad statistikasi, foydalanuvchilarni bloklash,
   katalog (o'simlik, kasallik, dori va ularni bog'lash) CRUD, shikoyatlarni moderatsiya qilish.
 
@@ -122,7 +125,7 @@ CI (GitHub Actions) har push'da:
 | Qayta o'qitish | GitHub Actions → "Train AI model" (`ai-service/training/train_plantvillage.py`) |
 
 ⚠️ PlantVillage rasmlari laboratoriya sharoitida (bir xil fon) olingan. Dala sharoitidagi rasmlarda aniqlik pastroq bo'lishi mumkin.
-Keyingi qadam: foydalanuvchilar yuklagan rasmlar asosida mahalliy dataset yig'ib, modelni qayta o'qitish (fine-tune).
+Mahalliy dataset yig'ish va qayta o'qitish: [docs/DATASET.md](docs/DATASET.md).
 
 ## Hozircha nima qilinmagan
 

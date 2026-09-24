@@ -11,7 +11,7 @@ from app.core.deps import get_current_user
 from app.models import Crop, CropLog, Diagnosis, Disease, Plant, Post, Reminder, User
 from app.repositories.catalog_repo import DiseaseRepository
 from app.schemas.community import PostOut
-from app.schemas.diagnosis import CarePlanApplied, CarePlanApply, CarePlanOut, CarePlanTask, DiagnosisOut, ShareIn
+from app.schemas.diagnosis import CarePlanApplied, CarePlanApply, CarePlanOut, CarePlanTask, DiagnosisOut, FeedbackIn, ShareIn
 from app.services.care_plan import build_plan
 from app.services.community_service import post_out
 from app.services.diagnosis_service import health_from, run_diagnosis, to_out
@@ -57,6 +57,16 @@ async def get_diagnosis(diag_id: uuid.UUID, user: User = Depends(get_current_use
 async def delete_diagnosis(diag_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     await db.delete(await own(db, diag_id, user))
     await db.commit()
+
+
+@router.post("/{diag_id}/feedback", response_model=DiagnosisOut)
+async def diagnosis_feedback(diag_id: uuid.UUID, body: FeedbackIn,
+                             user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """"AI to'g'ri topdimi?" — xato deb belgilanganlar dataset tekshiruvida birinchi ko'rsatiladi."""
+    d = await own(db, diag_id, user)
+    d.user_feedback = body.correct
+    await db.commit()
+    return await to_out(db, d)
 
 
 @router.post("/{diag_id}/share", response_model=PostOut, status_code=201)
