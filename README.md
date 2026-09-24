@@ -1,4 +1,4 @@
-# AgroYordam 0.1
+# AgroYordam 0.1.1
 
 AI yordamida qishloq xo'jaligi ekinlari kasalliklarini tashxislaydigan **mobil va web** platforma:
 fermer barg rasmini yuklaydi → AI kasallikni aniqlaydi → bilimlar bazasidan belgilar, sabab, davolash,
@@ -52,8 +52,12 @@ flutter run -d android                                               # emulyator
 
 ### Android APK (telefonda sinash)
 
-APK har push'da GitHub Actions ("Android APK" workflow) tomonidan yig'iladi va **Releases → v0.1.0** sahifasiga
-`AgroYordam-0.1.apk` nomi bilan yuklanadi.
+APK har push'da GitHub Actions ("Android APK" workflow) tomonidan yig'iladi va **Releases** sahifasiga
+(`v<versiya>`) yuklanadi. Eng yangi versiya uchun doimiy havola:
+https://github.com/Aziimuslim/if-else-son-kiritish/releases/latest/download/AgroYordam.apk
+
+Versiyani oshirish: `mobile/pubspec.yaml` dagi `version:` (masalan `0.1.2+3`, `+` dan keyingi raqam har safar oshadi),
+`mobile/lib/core/config.dart`, `backend/app/core/config.py` (`APP_VERSION`) va `.github/apk-release-notes.md`.
 
 1. Backend'ni kompyuterda tarmoqqa ochiq holda ishga tushiring: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
    (AI service ham ishlab turishi kerak).

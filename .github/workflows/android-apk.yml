@@ -26,17 +26,28 @@ jobs:
           API_URL: ${{ vars.API_URL || 'https://agroyordam.duckdns.org' }}
         run: flutter build apk --release ${API_URL:+--dart-define=API_URL=$API_URL}
       - name: Nomlash
-        run: cp build/app/outputs/flutter-apk/app-release.apk build/AgroYordam-0.1.apk
+        id: ver
+        run: |
+          VER=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)
+          echo "ver=$VER" >> "$GITHUB_OUTPUT"
+          cp build/app/outputs/flutter-apk/app-release.apk "build/AgroYordam-$VER.apk"
+          cp build/app/outputs/flutter-apk/app-release.apk build/AgroYordam.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: AgroYordam-0.1-apk
-          path: mobile/build/AgroYordam-0.1.apk
-      - name: GitHub Release'ga yuklash (v0.1.0)
+          name: AgroYordam-${{ steps.ver.outputs.ver }}-apk
+          path: mobile/build/AgroYordam-${{ steps.ver.outputs.ver }}.apk
+      - name: GitHub Release'ga yuklash (v${{ steps.ver.outputs.ver }})
         working-directory: .
         env:
           GH_TOKEN: ${{ github.token }}
+          VER: ${{ steps.ver.outputs.ver }}
         run: |
-          gh release view v0.1.0 >/dev/null 2>&1 || gh release create v0.1.0 --prerelease --target "$GITHUB_SHA" \
-            --title "AgroYordam 0.1 (APK)" --notes-file .github/apk-release-notes.md
-          gh release upload v0.1.0 mobile/build/AgroYordam-0.1.apk --clobber
-          gh release edit v0.1.0 --notes-file .github/apk-release-notes.md
+          gh release view "v$VER" >/dev/null 2>&1 || gh release create "v$VER" --latest --target "$GITHUB_SHA" \
+            --title "AgroYordam $VER" --notes-file .github/apk-release-notes.md
+          gh release upload "v$VER" "mobile/build/AgroYordam-$VER.apk" mobile/build/AgroYordam.apk --clobber
+          gh release edit "v$VER" --latest --notes-file .github/apk-release-notes.md
+          # Avval ulashilgan eski havola (v0.1.0/AgroYordam-0.1.apk) ham eng yangi APK'ni bersin
+          if gh release view v0.1.0 >/dev/null 2>&1 && [ "$VER" != "0.1.0" ]; then
+            cp mobile/build/AgroYordam.apk mobile/build/AgroYordam-0.1.apk
+            gh release upload v0.1.0 mobile/build/AgroYordam-0.1.apk --clobber
+          fi

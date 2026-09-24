@@ -95,6 +95,7 @@ class WelcomeScreen extends ConsumerWidget {
           icon: Icon(Icons.dns_outlined, size: 16, color: c.muted),
           label: Text('Server: ${AppConfig.apiUrl}', style: TextStyle(color: c.muted, fontSize: 12)),
         ),
+        Text('Versiya ${AppConfig.version}', style: TextStyle(color: c.muted, fontSize: 11)),
         const SizedBox(height: 6),
       ],
     );

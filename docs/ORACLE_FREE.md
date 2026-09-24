@@ -132,7 +132,7 @@ Tekshirish: telefon yoki kompyuter brauzerida **https://agroyordam.duckdns.org**
 3. APK'ni qayta yig'dirish: **https://github.com/Aziimuslim/if-else-son-kiritish/actions/workflows/android-apk.yml**
    → **Run workflow** → **Run workflow**. Taxminan 8 daqiqa kutasiz.
 4. Yangi APK havolasi o'zgarmaydi:
-   **https://github.com/Aziimuslim/if-else-son-kiritish/releases/download/v0.1.0/AgroYordam-0.1.apk**
+   **https://github.com/Aziimuslim/if-else-son-kiritish/releases/latest/download/AgroYordam.apk**
    Telefonda eski ilovani o'chirib, yangisini o'rnating — u serverga o'zi ulanadi.
 
    Eski APK'ni o'chirmasangiz ham bo'ladi: birinchi ekrandagi **"Server: ..."** tugmasi orqali `https://agroyordam.duckdns.org` ni kiritsangiz yetarli.

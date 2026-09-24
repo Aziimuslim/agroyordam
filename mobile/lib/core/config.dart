@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 class AppConfig {
   static const appName = 'AgroYordam';
-  static const version = '0.1.0';
+  static const version = '0.1.1';
 
   static const _apiOverride = String.fromEnvironment('API_URL');
   static const prefsKey = 'agro_server_url';
