@@ -5,11 +5,13 @@ import 'package:go_router/go_router.dart';
 import '../../../application/providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 import '../reminders/today_tasks.dart';
 import 'add_crop_screen.dart';
+import 'crop_photo.dart';
 
 class CropDetailScreen extends ConsumerWidget {
   const CropDetailScreen({super.key, required this.id});
@@ -82,32 +84,41 @@ class _Body extends ConsumerWidget {
       TopBar(title: crop.name, actions: [
         CircleIconButton(icon: AppIcons.edit, tooltip: 'Tahrirlash', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AddCropScreen(crop: crop)))),
       ]),
-      AppCard(
-        padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 16),
+      // Figma "Yashil dala": surat-banner, ustida nom va sog'liq; pastida ma'lumot chiplari
+      ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.lg + 4),
         child: SizedBox(
-          width: double.infinity,
-          child: Column(children: [
-            ThumbIcon(icon: AppIcons.forPlant(crop.plantName ?? crop.name), size: 70, radius: 20),
-            const SizedBox(height: 12),
-            Text(crop.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-            Text([crop.plantName, crop.variety].whereType<String>().join(' · '), style: TextStyle(color: c.muted)),
-            const SizedBox(height: 10),
-            PctBadge(crop.healthScore, suffix: " sog'lom", fontSize: 15),
-            if (crop.area != null || crop.plantingDate != null || crop.location != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                [
-                  if (crop.area != null) '${crop.area} sotix',
-                  if (crop.plantingDate != null) 'Ekilgan: ${formatDate(crop.plantingDate)}',
-                  if (crop.location != null) crop.location!,
-                ].join(' · '),
-                textAlign: TextAlign.center,
-                style: TextStyle(color: c.muted, fontSize: 12.5),
+          height: 200,
+          child: Stack(fit: StackFit.expand, children: [
+            CropPhoto(crop: crop, iconSize: 64),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(begin: Alignment.center, end: Alignment.bottomCenter, colors: [Color(0x00000000), Color(0xB3000000)]),
               ),
-            ],
+            ),
+            Positioned(top: 12, right: 12, child: PctBadge(crop.healthScore, suffix: " sog'lom", fontSize: 13)),
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 14,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(crop.name, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
+                if (crop.plantName != null || crop.variety != null)
+                  Text([crop.plantName, crop.variety].whereType<String>().join(' · '),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13.5, fontWeight: FontWeight.w600)),
+              ]),
+            ),
           ]),
         ),
       ),
+      const SizedBox(height: 12),
+      if (crop.area != null || crop.plantingDate != null || crop.location != null)
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          if (crop.area != null) Tag('${crop.area} sotix', bg: c.cream2, fg: c.text),
+          if (crop.plantingDate != null) Tag('Ekilgan: ${formatDate(crop.plantingDate)}', bg: c.cream2, fg: c.text),
+          if (crop.location != null) Tag(crop.location!, bg: c.cream2, fg: c.text),
+        ]),
+      const SizedBox(height: 14),
       health.maybeWhen(
         data: (points) => points.length < 2
             ? const SizedBox.shrink()

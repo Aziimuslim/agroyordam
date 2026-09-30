@@ -18,6 +18,8 @@ class GardenRepository extends BaseRepository {
   Future<List<CropLog>> logs(String id) => call(() async => list((await dio.get('/crops/$id/logs')).data, CropLog.fromJson));
   Future<void> addLog(String id, String content) => call(() => dio.post('/crops/$id/logs', data: {'content': content}));
 
+  Future<Weather> weather() => call(() async => Weather.fromJson((await dio.get('/weather')).data));
+
   // Tashxis
   Future<Diagnosis> diagnose(List<int> bytes, String filename, {String? cropId, String? plantId}) => call(() async {
         final ext = filename.split('.').last.toLowerCase();

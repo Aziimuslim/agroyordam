@@ -82,7 +82,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         GoRoute(path: 'edit', builder: (_, __) => const EditProfileScreen()),
       ]),
 
-      GoRoute(path: '/diagnose', builder: (_, s) => DiagnoseScreen(cropId: s.uri.queryParameters['crop'])),
+      GoRoute(path: '/diagnose', builder: (_, s) => DiagnoseScreen(cropId: s.uri.queryParameters['crop'], source: s.uri.queryParameters['source'])),
       GoRoute(path: '/diagnosis/:id', builder: (_, s) => DiagnosisDetailScreen(id: s.pathParameters['id']!), routes: [
         GoRoute(path: 'plan', builder: (_, s) => CarePlanScreen(diagnosisId: s.pathParameters['id']!)),
       ]),

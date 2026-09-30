@@ -53,19 +53,21 @@ void main() {
   test("sog'liq ranglari semantik", () {
     const c = AppColors.light;
     expect(c.health(90), c.success);
-    expect(c.health(50), c.gold);
+    expect(c.health(50), c.warning); // oq fonda o'qilishi uchun sariq emas, to'q sariq
     expect(c.health(20), c.danger);
   });
 
   testWidgets('tizimga kirmagan foydalanuvchi Welcome ekranini ko\'radi', (tester) async {
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
-    expect(find.text('Xush kelibsiz!'), findsOneWidget);
+    expect(find.text("Ekinlaringiz sog'lig'i — cho'ntagingizda"), findsOneWidget);
     expect(find.text('Email bilan davom etish'), findsOneWidget);
   });
 
   testWidgets('login formasi validatsiyasi', (tester) async {
     await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Email bilan davom etish')); // kichik ekranda pastda — scroll
     await tester.pumpAndSettle();
     await tester.tap(find.text('Email bilan davom etish'));
     await tester.pumpAndSettle();

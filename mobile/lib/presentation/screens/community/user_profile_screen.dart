@@ -96,7 +96,7 @@ class _Stat extends StatelessWidget {
           margin: EdgeInsets.zero,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           child: Column(children: [
-            Text('$value', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: context.c.primary)),
+            Text('$value', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: context.c.primary)),
             Text(label, style: TextStyle(fontSize: 11.5, color: context.c.muted, fontWeight: FontWeight.w700)),
           ]),
         ),

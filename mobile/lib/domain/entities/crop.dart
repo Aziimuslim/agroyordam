@@ -14,10 +14,11 @@ class Crop {
     this.healthScore = 100,
     this.notes,
     this.lastDisease,
+    this.imageUrl,
     this.createdAt,
   });
   final String id, name, status;
-  final String? plantId, plantName, variety, location, notes, lastDisease;
+  final String? plantId, plantName, variety, location, notes, lastDisease, imageUrl;
   final DateTime? plantingDate, createdAt;
   final double? area;
   final int healthScore;
@@ -35,6 +36,7 @@ class Crop {
         healthScore: j['health_score'] ?? 100,
         notes: j['notes'],
         lastDisease: j['last_disease'],
+        imageUrl: j['image_url'],
         createdAt: parseDate(j['created_at']),
       );
 }
@@ -57,4 +59,22 @@ class CropLog {
 
   factory CropLog.fromJson(Map<String, dynamic> j) =>
       CropLog(id: j['id'], content: j['content'], imageUrl: j['image_url'], createdAt: parseDate(j['created_at']));
+}
+
+/// Ob-havo va zamburug' kasalliklari xavfi (backend: GET /weather, manba — Open-Meteo).
+class Weather {
+  Weather({required this.city, required this.temperature, required this.humidity, required this.condition, required this.risk, required this.riskText, this.rainMm = 0});
+  final String city, condition, risk, riskText;
+  final double temperature, rainMm;
+  final int humidity;
+
+  factory Weather.fromJson(Map<String, dynamic> j) => Weather(
+        city: j['city'],
+        temperature: (j['temperature'] as num).toDouble(),
+        humidity: (j['humidity'] as num).toInt(),
+        condition: j['condition'] ?? '',
+        risk: j['risk'] ?? 'low',
+        riskText: j['risk_text'] ?? '',
+        rainMm: (j['rain_next_48h_mm'] as num?)?.toDouble() ?? 0,
+      );
 }

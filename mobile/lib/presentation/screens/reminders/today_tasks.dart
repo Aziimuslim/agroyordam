@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../application/providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
@@ -21,11 +20,19 @@ List<Reminder> dueTasks(List<Reminder> all, {String? cropId}) {
     ..sort((a, b) => a.date.compareTo(b.date) != 0 ? a.date.compareTo(b.date) : (a.time ?? '').compareTo(b.time ?? ''));
 }
 
-/// Bir bosishda bajarildi deb belgilanadigan vazifa qatori (bosh sahifa, ekin sahifasi).
+(Color, Color) _typeColors(AppColors c, String? type) => switch (type) {
+      'treatment' => (c.dangerBg, c.danger),
+      'watering' => (c.infoBg, c.info),
+      'recheck' => (c.accentSoft, c.warning),
+      'fertilizing' => (c.warningBg, c.warning),
+      _ => (c.successBg, c.success),
+    };
+
+/// Bir bosishda bajarildi deb belgilanadigan vazifa qatori (Figma: "Tasks" kartasidagi qator).
 class TaskTile extends ConsumerWidget {
-  const TaskTile({super.key, required this.r, this.showCrop = true});
+  const TaskTile({super.key, required this.r, this.showCrop = true, this.divider = false});
   final Reminder r;
-  final bool showCrop;
+  final bool showCrop, divider;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -35,47 +42,63 @@ class TaskTile extends ConsumerWidget {
       if (showCrop && r.cropName != null) r.cropName!,
       overdue ? "Muddati o'tgan · ${formatDate(r.date)}" : (r.time != null ? r.time!.substring(0, 5) : 'Bugun'),
     ].join(' · ');
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(color: c.card, borderRadius: BorderRadius.circular(AppRadius.md), boxShadow: softShadow(context, 6)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        onTap: () async {
-          try {
-            await ref.read(gardenRepoProvider).toggleReminder(r.id);
-            ref.invalidate(remindersProvider);
-            if (r.cropId != null) ref.invalidate(cropProvider(r.cropId!));
-          } catch (e) {
-            if (context.mounted) showError(context, e);
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 10, 14, 10),
-          child: Row(children: [
-            Icon(r.isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                color: r.isCompleted ? c.success : (overdue ? c.danger : c.muted), size: 26),
-            const SizedBox(width: 8),
-            Icon(AppIcons.forReminder(r.type), size: 18, color: c.primaryDark),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(r.title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
-                      decoration: r.isCompleted ? TextDecoration.lineThrough : null,
-                    )),
-                Text(meta, style: TextStyle(fontSize: 12, color: overdue ? c.danger : c.muted)),
-              ]),
+    final (bg, fg) = _typeColors(c, r.type);
+    return InkWell(
+      onTap: () async {
+        try {
+          await ref.read(gardenRepoProvider).toggleReminder(r.id);
+          ref.invalidate(remindersProvider);
+          if (r.cropId != null) ref.invalidate(cropProvider(r.cropId!));
+        } catch (e) {
+          if (context.mounted) showError(context, e);
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(border: divider ? Border(top: BorderSide(color: c.border)) : null),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: r.isCompleted ? c.success : Colors.transparent,
+              shape: BoxShape.circle,
+              border: r.isCompleted ? null : Border.all(color: overdue ? c.danger : c.border, width: 2),
             ),
-          ]),
-        ),
+            child: r.isCompleted ? Icon(AppIcons.check, size: 15, color: c.card) : null,
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(11)),
+            child: Icon(AppIcons.forReminder(r.type), size: 18, color: fg),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(r.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14.5,
+                    color: r.isCompleted ? c.muted : c.text,
+                    decoration: r.isCompleted ? TextDecoration.lineThrough : null,
+                  )),
+              const SizedBox(height: 2),
+              Text(meta, style: TextStyle(fontSize: 12.5, color: overdue ? c.danger : c.muted, fontWeight: FontWeight.w500)),
+            ]),
+          ),
+        ]),
       ),
     );
   }
 }
 
-/// "Bugungi vazifalar" ro'yxati. cropId berilsa — faqat shu ekin.
+/// "Bugungi vazifalar" kartasi: muddati o'tgan + bugungi bajarilmaganlar, keyin bugun bajarilganlar (chizilgan).
+/// cropId berilsa — faqat shu ekin.
 class TodayTasks extends ConsumerWidget {
   const TodayTasks({super.key, this.cropId, this.limit = 4});
   final String? cropId;
@@ -83,18 +106,36 @@ class TodayTasks extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
     return ref.watch(remindersProvider).maybeWhen(
           data: (all) {
+            final t = _today();
             final due = dueTasks(all, cropId: cropId);
-            if (due.isEmpty) return const EmptyNote("Bugun bajariladigan vazifa yo'q", icon: AppIcons.check);
-            return Column(children: [
-              for (final r in due.take(limit)) TaskTile(r: r, showCrop: cropId == null),
-              if (due.length > limit)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text('yana ${due.length - limit} ta vazifa', style: TextStyle(color: context.c.muted, fontSize: 12.5)),
-                ),
-            ]);
+            final doneToday = all.where((r) => r.isCompleted && r.date == t && (cropId == null || r.cropId == cropId)).toList();
+            final rows = [...due, ...doneToday];
+            if (rows.isEmpty) {
+              return AppCard(
+                child: Row(children: [
+                  Icon(AppIcons.check, color: c.success),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text("Bugun bajariladigan vazifa yo'q", style: TextStyle(color: c.muted, fontWeight: FontWeight.w600))),
+                ]),
+              );
+            }
+            final shown = rows.take(limit).toList();
+            return AppCard(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Column(children: [
+                for (var i = 0; i < shown.length; i++) TaskTile(r: shown[i], showCrop: cropId == null, divider: i > 0),
+                if (rows.length > limit)
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(border: Border(top: BorderSide(color: c.border))),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text('yana ${rows.length - limit} ta vazifa', style: TextStyle(color: c.primary, fontSize: 13, fontWeight: FontWeight.w700)),
+                  ),
+              ]),
+            );
           },
           orElse: () => const SizedBox.shrink(),
         );

@@ -96,7 +96,7 @@ class _PremiumState extends ConsumerState<PremiumScreen> {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(color: c.card, borderRadius: BorderRadius.circular(AppRadius.lg), boxShadow: softShadow(context)),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Row(children: [Expanded(child: Text('Bepul', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800))), Text("0 so'm", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15))]),
+            const Row(children: [Expanded(child: Text('Bepul', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800))), Text("0 so'm", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15))]),
             const SizedBox(height: 6),
             _Feat('AI tashxis — kuniga 3 marta', c.success),
             _Feat("\"Mening bog'im\" — 3 tagacha ekin", c.success),
@@ -116,7 +116,7 @@ class _PremiumState extends ConsumerState<PremiumScreen> {
                   Icon(AppIcons.star, color: c.gold, size: 20),
                   const SizedBox(width: 6),
                   Expanded(child: Text('Premium', style: TextStyle(color: c.onDark, fontSize: 17, fontWeight: FontWeight.w800))),
-                  Text(formatMoney(plan.price) + (plan.code == 'monthly' ? '/oy' : plan.code == 'yearly' ? '/yil' : ''), style: TextStyle(color: c.gold, fontWeight: FontWeight.w900, fontSize: 15)),
+                  Text(formatMoney(plan.price) + (plan.code == 'monthly' ? '/oy' : plan.code == 'yearly' ? '/yil' : ''), style: TextStyle(color: c.gold, fontWeight: FontWeight.w800, fontSize: 15)),
                 ]),
                 const SizedBox(height: 12),
                 Wrap(spacing: 8, children: [

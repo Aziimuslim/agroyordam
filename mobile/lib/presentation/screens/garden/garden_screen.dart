@@ -9,6 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/bottom_nav.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
+import 'crop_photo.dart';
 
 class GardenScreen extends ConsumerStatefulWidget {
   const GardenScreen({super.key});
@@ -115,11 +116,7 @@ class _CropTile extends StatelessWidget {
       onTap: () => context.push('/garden/${crop.id}'),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(
-          child: Container(
-            width: double.infinity,
-            color: c.tan,
-            child: Icon(AppIcons.forPlant(crop.plantName ?? crop.name), size: 34, color: c.primaryDark),
-          ),
+          child: CropPhoto(crop: crop),
         ),
         Padding(
           padding: const EdgeInsets.all(12),

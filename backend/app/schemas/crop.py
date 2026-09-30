@@ -43,6 +43,7 @@ class CropOut(ORMModel):
     notes: str | None = None
     created_at: datetime | None = None
     last_disease: str | None = None
+    image_url: str | None = None  # oxirgi tashxis surati (kartada ko'rsatiladi)
 
 
 class CropLogIn(BaseModel):

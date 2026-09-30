@@ -40,6 +40,17 @@ class AppIcons {
   static const history = Icons.history_rounded;
   static const lock = Icons.lock_outline_rounded;
   static const bot = Icons.smart_toy_outlined;
+  static const users = Icons.people_outline_rounded;
+  static const sun = Icons.wb_sunny_outlined;
+  static const cloud = Icons.cloud_outlined;
+  static const rain = Icons.water_drop_outlined;
+  static const scan = Icons.crop_free_rounded;
+  static const calendar = Icons.event_available_outlined;
+  static const share = Icons.ios_share_rounded;
+  static const thumbUp = Icons.thumb_up_alt_outlined;
+  static const thumbDown = Icons.thumb_down_alt_outlined;
+  static const alert = Icons.warning_amber_rounded;
+  static const gallery = Icons.photo_library_outlined;
 
   /// Ekin turi bo'yicha ikon.
   static IconData forPlant(String? name) {

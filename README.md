@@ -1,13 +1,15 @@
-# AgroYordam 0.1.3
+# AgroYordam 0.1.4
 
 AI yordamida qishloq xo'jaligi ekinlari kasalliklarini tashxislaydigan **mobil va web** platforma:
 fermer barg rasmini yuklaydi → AI kasallikni aniqlaydi → bilimlar bazasidan belgilar, sabab, davolash,
 oldini olish va tavsiya etilgan dorilar ko'rsatiladi. Qo'shimcha: "Mening bog'im", sog'liq monitoringi,
 eslatmalar, jamoat, real-time chat, AI yordamchi, Premium obuna va admin panel.
 
-| Bosh sahifa | AI tashxis | Tashxis natijasi | Eslatmalar | Jamoat | Premium |
+| Bosh sahifa | Qorong'i mavzu | AI tashxis | Tashxis natijasi | Parvarish rejasi | Ekin |
 |---|---|---|---|---|---|
-| ![](docs/screenshots/02-home.jpg) | ![](docs/screenshots/04-ai-tashxis.jpg) | ![](docs/screenshots/05-tashxis-natijasi.jpg) | ![](docs/screenshots/06-eslatmalar.jpg) | ![](docs/screenshots/07-jamoat.jpg) | ![](docs/screenshots/10-premium.jpg) |
+| ![](docs/screenshots/02-bosh-sahifa.jpg) | ![](docs/screenshots/03-bosh-sahifa-qorongi.jpg) | ![](docs/screenshots/04-ai-tashxis.jpg) | ![](docs/screenshots/05-tashxis-natijasi.jpg) | ![](docs/screenshots/06-parvarish-rejasi.jpg) | ![](docs/screenshots/07-ekin.jpg) |
+
+Dizayn tizimi va Figma fayli: **[docs/DESIGN.md](docs/DESIGN.md)**
 
 ## Tarkib
 
@@ -85,6 +87,8 @@ Versiyani oshirish: `mobile/pubspec.yaml` dagi `version:` (masalan `0.1.2+3`, `+
 - **Mening bog'im**: ekinlar CRUD, sog'liq tarixi grafigi, ekin kundaligi, qayta tashxis.
 - **Parvarish rejasi**: tashxis natijasini bir tugma bilan bog'ga qo'shish (yangi yoki mavjud ekin) — kasallik xavfiga qarab
   10/14/21 kunlik kunlik vazifalar (davolash jadvali dori tavsiyasidan, kunlik ko'rik, sug'orish, oraliq va yakuniy AI tashxis).
+- **Ob-havo va kasallik xavfi**: bosh sahifada viloyat bo'yicha harorat, namlik, yog'in (Open-Meteo, kalitsiz) va
+  zamburug' kasalliklari xavfi (past/o'rta/yuqori).
 - **Eslatmalar**: "Bugungi vazifalar" (bosh sahifa va ekin sahifasida bir bosishda bajarildi), qo'lda qo'shish;
   APScheduler vaqti kelganda bildirishnoma yuboradi.
 - **Jamoat**: postlar (rasm bilan), layk, izoh, obuna (follow), shikoyat; tashxisni bir tugma bilan ulashish.
@@ -137,6 +141,6 @@ Mahalliy dataset yig'ish va qayta o'qitish: [docs/DATASET.md](docs/DATASET.md).
 
 ## Dizayn
 
-Ranglar, shrift (Nunito), kartalar va ekranlar tuzilishi berilgan dizayn maketiga mos. Barcha ranglar
-`mobile/lib/core/theme/app_colors.dart` faylida jamlangan (boshqa joyda hardcoded hex yo'q), yorug' va qorong'i
-mavzular qo'llab-quvvatlanadi.
+"Yashil dala" dizayn tizimi (Figma'da ishlab chiqilgan): Plus Jakarta Sans shrifti, yashil + quyosh sarig'i aksent,
+chiziqli kartalar, yorug' va qorong'i mavzu. Tokenlar, qoidalar va Figma havolasi — [docs/DESIGN.md](docs/DESIGN.md).
+Barcha ranglar `mobile/lib/core/theme/app_colors.dart` faylida jamlangan.

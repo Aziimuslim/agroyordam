@@ -11,7 +11,7 @@ from app.schemas import PredictResponse
 
 MAX_BYTES = 10 * 1024 * 1024
 
-app = FastAPI(title="AgroYordam AI Service", version="0.1.3")
+app = FastAPI(title="AgroYordam AI Service", version="0.1.4")
 classifier = load_classifier()
 
 

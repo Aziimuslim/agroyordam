@@ -104,13 +104,21 @@ class CircleIconButton extends StatelessWidget {
         customBorder: const CircleBorder(),
         onTap: onTap,
         child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: softShadow(context, 6, 2)),
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: context.c.border, width: 1.2)),
           child: Stack(alignment: Alignment.center, children: [
             Icon(icon, size: 22, color: color ?? context.c.text),
             if (badge)
-              Positioned(top: 7, right: 8, child: Container(width: 9, height: 9, decoration: BoxDecoration(color: context.c.danger, shape: BoxShape.circle))),
+              Positioned(
+                top: 9,
+                right: 10,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(color: context.c.danger, shape: BoxShape.circle, border: Border.all(color: context.c.card, width: 2)),
+                ),
+              ),
           ]),
         ),
       ),
@@ -120,7 +128,7 @@ class CircleIconButton extends StatelessWidget {
 }
 
 class AppCard extends StatelessWidget {
-  const AppCard({super.key, required this.child, this.onTap, this.padding = const EdgeInsets.all(16), this.color, this.margin = const EdgeInsets.only(bottom: 14), this.radius = AppRadius.md, this.shadow = true, this.expand = true});
+  const AppCard({super.key, required this.child, this.onTap, this.padding = const EdgeInsets.all(16), this.color, this.margin = const EdgeInsets.only(bottom: 14), this.radius = AppRadius.lg, this.shadow = true, this.expand = true});
   final Widget child;
   final VoidCallback? onTap;
   final EdgeInsets padding, margin;
@@ -134,10 +142,14 @@ class AppCard extends StatelessWidget {
       padding: margin,
       child: Container(
         width: expand ? double.infinity : null,
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(radius), boxShadow: shadow ? softShadow(context) : null),
+        // "Yashil dala": oq kartalar 1px chegara bilan, soyasiz; rangli (color berilgan) kartalar chegarasiz
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(radius)),
         child: Material(
           color: color ?? context.c.card,
-          borderRadius: BorderRadius.circular(radius),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radius),
+            side: color == null && shadow ? BorderSide(color: context.c.border) : BorderSide.none,
+          ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(onTap: onTap, child: Padding(padding: padding, child: child)),
         ),
@@ -243,8 +255,8 @@ class PillButton extends StatelessWidget {
         style: TextButton.styleFrom(
           backgroundColor: bg,
           disabledBackgroundColor: bg,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-          shape: StadiumBorder(side: border ?? BorderSide.none),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md), side: border ?? BorderSide.none),
         ),
         child: child,
       ),
@@ -348,11 +360,11 @@ class SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(top: 4, bottom: 12),
         child: Row(children: [
-          Expanded(child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800))),
+          Expanded(child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.2))),
           if (action != null)
             InkWell(
               onTap: onAction,
-              child: Text(action!, style: TextStyle(fontSize: 12.5, color: context.c.primary, fontWeight: FontWeight.w700)),
+              child: Text(action!, style: TextStyle(fontSize: 14, color: context.c.primary, fontWeight: FontWeight.w700)),
             ),
         ]),
       );
@@ -377,13 +389,13 @@ class ChipTabs extends StatelessWidget {
               padding: const EdgeInsets.only(right: 8),
               child: Material(
                 color: selected == id ? c.primary : c.card,
-                shape: const StadiumBorder(),
+                shape: StadiumBorder(side: selected == id ? BorderSide.none : BorderSide(color: c.border)),
                 child: InkWell(
                   customBorder: const StadiumBorder(),
                   onTap: () => onSelect(id),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    child: Text(label, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: selected == id ? c.card : c.text)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                    child: Text(label, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: selected == id ? c.card : c.text)),
                   ),
                 ),
               ),
@@ -457,7 +469,7 @@ class HealthRing extends StatelessWidget {
             strokeCap: StrokeCap.round,
           ),
         ),
-        Text('$pct%', style: TextStyle(fontWeight: FontWeight.w900, fontSize: size * 0.24, color: c.primaryDark)),
+        Text('$pct%', style: TextStyle(fontWeight: FontWeight.w800, fontSize: size * 0.24, color: c.primaryDark)),
       ]),
     );
   }
@@ -478,7 +490,7 @@ class ListRow extends StatelessWidget {
       onTap: onTap,
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-      radius: 14,
+      radius: AppRadius.md,
       child: Row(children: [
         SizedBox(width: 36, child: Icon(icon, color: danger ? c.danger : c.primaryDark)),
         Expanded(child: Text(label, style: TextStyle(fontWeight: danger ? FontWeight.w800 : FontWeight.w700, fontSize: 14.5, color: danger ? c.danger : c.text))),
@@ -507,7 +519,7 @@ class InfoBox extends StatelessWidget {
         width: double.infinity,
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(color: context.c.cream2, borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(color: context.c.cream2, borderRadius: BorderRadius.circular(AppRadius.md)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(label, style: TextStyle(color: context.c.muted, fontSize: 11.5)),
           const SizedBox(height: 2),

@@ -28,6 +28,18 @@ String greeting([DateTime? now]) {
   return 'Xayrli kech!';
 }
 
+const _weekdays = ['Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba', 'Yakshanba'];
+const _months = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'];
+
+/// "Seshanba, 30-sentabr"
+String formatDayLong([DateTime? d]) {
+  final t = d ?? DateTime.now();
+  return '${_weekdays[t.weekday - 1]}, ${t.day}-${_months[t.month - 1]}';
+}
+
+/// "Xayrli tong" (undovsiz, ism bilan ishlatish uchun)
+String greetingShort([DateTime? now]) => greeting(now).replaceAll('!', '');
+
 DateTime? parseDate(dynamic v) {
   if (v == null) return null;
   final s = v.toString();

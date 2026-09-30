@@ -5,6 +5,14 @@ Web ilova: https://agroyordam.duckdns.org
 O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
 Ilova https://agroyordam.duckdns.org serveriga o'zi ulanadi. Eski versiya o'rnatilgan bo'lsa, ustidan yangilanadi.
 
+## 0.1.4 — yangi dizayn
+- **"Yashil dala" dizayn tizimi** (Figma'da ishlab chiqilgan): yangi ranglar, Plus Jakarta Sans shrifti,
+  chiziqli kartalar, yorug' va qorong'i mavzu.
+- Yangi **bosh sahifa**: ob-havo va kasallik xavfi, AI tashxis kartasi, bugungi vazifalar, ekinlar suratlari bilan.
+- Yangi **AI tashxis** oqimi: ekin turini tanlash, skanerlash animatsiyasi, alohida **natija ekrani**
+  (AI ishonchi, Davolash / Belgilar / Oldini olish, dorilar, "Bog'imga qo'shish · N kunlik reja").
+- Yangi **kirish ekrani**, ekin sahifasi surat-banner bilan, yangi pastki menyu.
+
 ## 0.1.3
 - **Dataset yig'ish**: tashxis natijasida "AI to'g'ri topdimi? Ha / Yo'q".
 - Admin panelda **Dataset** bo'limi: mutaxassis rasmlarni tasdiqlaydi yoki to'g'ri kasallikni tanlaydi,

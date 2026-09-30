@@ -70,7 +70,7 @@ class _StatsTab extends ConsumerWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('$value', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: c.primary)),
+                      Text('$value', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: c.primary)),
                       Text(label, style: TextStyle(fontSize: 11.5, color: c.muted, fontWeight: FontWeight.w700)),
                     ]),
                   ),

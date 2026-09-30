@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -10,16 +9,18 @@ import '../../../application/providers.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
-import '../../../core/utils/format.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
-import 'diagnosis_actions.dart';
 
-enum _Step { intro, analyzing, result, error }
+enum _Step { intro, analyzing, error }
 
+/// AI tashxis: ekin/turini tanlash → rasm (kamera yoki galereya) → tahlil → natija ekrani (/diagnosis/:id).
+/// `source` = camera | gallery berilsa, ekran ochilishi bilan tanlash oynasi chiqadi (bosh sahifadagi tugmalar).
 class DiagnoseScreen extends ConsumerStatefulWidget {
-  const DiagnoseScreen({super.key, this.cropId});
+  const DiagnoseScreen({super.key, this.cropId, this.source});
   final String? cropId;
+  final String? source;
   @override
   ConsumerState<DiagnoseScreen> createState() => _DiagnoseState();
 }
@@ -29,12 +30,18 @@ class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
   late String? _cropId = widget.cropId;
   String? _plantId;
   Uint8List? _image;
-  Diagnosis? _result;
   ApiException? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final src = switch (widget.source) { 'camera' => ImageSource.camera, 'gallery' => ImageSource.gallery, _ => null };
+    if (src != null) WidgetsBinding.instance.addPostFrameCallback((_) => _pick(src));
+  }
 
   Future<void> _pick(ImageSource source) async {
     final file = await ImagePicker().pickImage(source: source, maxWidth: 1600, imageQuality: 88);
-    if (file == null) return;
+    if (file == null || !mounted) return;
     final bytes = await file.readAsBytes();
     setState(() {
       _image = bytes;
@@ -52,11 +59,9 @@ class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
         ref.invalidate(cropDiagnosesProvider(_cropId!));
         ref.invalidate(cropHealthProvider(_cropId!));
       }
-      setState(() {
-        _result = d;
-        _step = _Step.result;
-      });
+      if (mounted) context.pushReplacement('/diagnosis/${d.id}');
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = ApiException.from(e);
         _step = _Step.error;
@@ -67,291 +72,224 @@ class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
   void _restart() => setState(() {
         _step = _Step.intro;
         _image = null;
-        _result = null;
         _error = null;
       });
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final crops = ref.watch(cropsProvider);
-    final sub = ref.watch(mySubscriptionProvider);
-    final quota = sub.value;
+    final quota = ref.watch(mySubscriptionProvider).value;
     final overLimit = quota != null && quota.aiDailyLimit != null && quota.aiUsedToday >= quota.aiDailyLimit!;
 
     return PageShell(
       padBottom: false,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const TopBar(title: 'AI Tashxis', subtitle: 'Onlayn — darhol javob beradi'),
-        const _Bubble(text: "Salom! Menga o'simlik yoki bargning aniq rasmini yuboring — men tahlil qilib, kasallik va davolash yo'lini aytib beraman."),
+        TopBar(
+          title: 'AI tashxis',
+          subtitle: quota != null && quota.aiDailyLimit != null ? 'Bugun: ${quota.aiUsedToday}/${quota.aiDailyLimit} bepul tashxis' : 'Cheksiz · Premium',
+        ),
+        if (_step == _Step.analyzing && _image != null) _Analyzing(image: _image!),
+        if (_step == _Step.error && _error != null) ...[
+          if (_image != null) _PhotoPreview(image: _image!),
+          _error!.isPaymentRequired
+              ? _LimitCard(onUpgrade: () => context.push('/premium'), message: _error!.message)
+              : _ErrorCard(message: _error!.message, onRetry: _restart),
+        ],
         if (_step == _Step.intro) ...[
-          const FieldLabel('Qaysi ekin haqida? (tashxis shu ekin tarixiga saqlanadi)'),
-          crops.maybeWhen(
-            data: (list) => DropdownButtonFormField<String?>(
-              initialValue: list.any((e) => e.id == _cropId) ? _cropId : null,
-              isExpanded: true,
-              dropdownColor: c.card,
-              items: [
-                const DropdownMenuItem<String?>(value: null, child: Text("— Bog'imga bog'lamasdan —")),
-                for (final cr in list) DropdownMenuItem<String?>(value: cr.id, child: Text('${cr.name}${cr.plantName != null ? ' · ${cr.plantName}' : ''}')),
-              ],
-              onChanged: (v) => setState(() => _cropId = v),
-            ),
-            orElse: () => const SizedBox.shrink(),
+          const _ScanHero(),
+          const SizedBox(height: 18),
+          _TargetPicker(
+            cropId: _cropId,
+            plantId: _plantId,
+            onCrop: (v) => setState(() => _cropId = v),
+            onPlant: (v) => setState(() => _plantId = v),
           ),
-          if (_cropId == null) ...[
-            const SizedBox(height: 12),
-            const FieldLabel("Ekin turi (aniqroq natija uchun)"),
-            DropdownButtonFormField<String?>(
-              initialValue: _plantId,
-              isExpanded: true,
-              dropdownColor: c.card,
-              items: [
-                const DropdownMenuItem<String?>(value: null, child: Text('Bilmayman — AI o\'zi aniqlasin')),
-                for (final p in ref.watch(plantsProvider).value ?? const <Plant>[]) DropdownMenuItem<String?>(value: p.id, child: Text(p.name)),
-              ],
-              onChanged: (v) => setState(() => _plantId = v),
-            ),
-          ],
-          const SizedBox(height: 10),
-          if (quota != null && quota.aiDailyLimit != null)
-            Text('Bugungi bepul tashxis: ${quota.aiUsedToday}/${quota.aiDailyLimit}', style: TextStyle(color: c.muted, fontSize: 12.5)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           if (overLimit)
             _LimitCard(onUpgrade: () => context.push('/premium'))
           else ...[
             PillButton(label: 'Rasmga olish', icon: AppIcons.camera, style: PillStyle.primary, block: true, onPressed: () => _pick(ImageSource.camera)),
             const SizedBox(height: 10),
-            PillButton(label: 'Galereyadan tanlash', icon: AppIcons.image, style: PillStyle.outline, block: true, onPressed: () => _pick(ImageSource.gallery)),
-            const SizedBox(height: 16),
-            _Tips(),
+            PillButton(label: 'Galereyadan tanlash', icon: AppIcons.gallery, style: PillStyle.outline, block: true, onPressed: () => _pick(ImageSource.gallery)),
           ],
+          const SizedBox(height: 18),
+          const _Tips(),
+          const SizedBox(height: 8),
+          Text("Yuklangan rasmlar mutaxassis tekshiruvidan so'ng AI'ni yaxshilash uchun anonim ishlatilishi mumkin.",
+              textAlign: TextAlign.center, style: TextStyle(color: c.subtle, fontSize: 11.5)),
         ],
-        if (_image != null) _Bubble(me: true, image: _image, text: 'Bargning rasmi yuborildi'),
-        if (_step == _Step.analyzing) const _Bubble(typing: true, text: 'AI tahlil qilmoqda'),
-        if (_step == _Step.error && _error != null)
-          _error!.isPaymentRequired
-              ? _LimitCard(onUpgrade: () => context.push('/premium'), message: _error!.message)
-              : _ResultShell(children: [
-                  Text('Tahlil qilib bo\'lmadi', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: c.danger)),
-                  const SizedBox(height: 6),
-                  Text(_error!.message),
-                  const SizedBox(height: 10),
-                  MiniButton(label: 'Qayta urinish', filled: true, onTap: _restart),
-                ]),
-        if (_step == _Step.result && _result != null) _ResultCard(d: _result!, onRetry: _restart, cropLinked: _cropId != null),
       ]),
     );
   }
 }
 
-class _ResultCard extends ConsumerWidget {
-  const _ResultCard({required this.d, required this.onRetry, required this.cropLinked});
-  final Diagnosis d;
-  final VoidCallback onRetry;
-  final bool cropLinked;
+/// Kamera ramkasi illyustratsiyasi (Figma: tashxis natijasidagi "scan" ramkasi).
+class _ScanHero extends StatelessWidget {
+  const _ScanHero();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 190,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [Color(0xFF0F3D27), Color(0xFF2E8B57)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        borderRadius: BorderRadius.circular(AppRadius.lg + 4),
+      ),
+      child: Stack(alignment: Alignment.center, children: [
+        Icon(AppIcons.leaf, size: 92, color: Colors.white.withValues(alpha: 0.22)),
+        Icon(AppIcons.scan, size: 150, color: Colors.white.withValues(alpha: 0.9)),
+        const Positioned(
+          bottom: 14,
+          child: Text("Bargni ramka markaziga oling", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+        ),
+      ]),
+    );
+  }
+}
+
+class _TargetPicker extends ConsumerWidget {
+  const _TargetPicker({required this.cropId, required this.plantId, required this.onCrop, required this.onPlant});
+  final String? cropId, plantId;
+  final ValueChanged<String?> onCrop, onPlant;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
-    final planLabel = cropLinked ? 'Parvarish rejasi' : "Bog'imga qo'shish";
-    void openPlan() => context.push('/diagnosis/${d.id}/plan');
-    if (d.lowConfidence && !d.isHealthy && d.diseaseName == null) {
-      return _ResultShell(children: [
-        Text('Aniqlab bo\'lmadi (${d.confidence.toStringAsFixed(0)}%)', style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 6),
-        Text("Ekin turini tanlab yoki bargni yaqinroqdan qayta suratga olib ko'ring.", style: TextStyle(color: c.muted)),
-        const SizedBox(height: 10),
-        MiniButton(label: 'Qayta urinish', filled: true, onTap: onRetry),
-      ]);
-    }
-    if (d.isHealthy) {
-      return _ResultShell(children: [
-        Row(children: [
-          Icon(Icons.verified_rounded, color: c.success),
-          const SizedBox(width: 8),
-          Expanded(child: Text("O'simlik sog'lom · ishonch ${d.confidence.toStringAsFixed(0)}%", style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800))),
-        ]),
-        const SizedBox(height: 6),
-        Text(d.recommendations ?? "Parvarishni davom ettiring.", style: const TextStyle(height: 1.5)),
-        const SizedBox(height: 10),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          MiniButton(label: planLabel, icon: AppIcons.leaf, filled: true, onTap: openPlan),
-          MiniButton(label: 'Jamoatda ulashish', onTap: () => shareDiagnosis(context, ref, d)),
-          MiniButton(label: 'Yangi tashxis', onTap: onRetry),
-        ]),
-        _Feedback(d: d),
-      ]);
-    }
-    final med = d.medicines.isNotEmpty ? d.medicines.first : null;
-    return _ResultShell(children: [
-      Text.rich(TextSpan(children: [
-        TextSpan(text: '${d.lowConfidence ? 'Ehtimoliy kasallik' : 'Aniqlangan kasallik'}: ${d.diseaseName} · '),
-        TextSpan(text: '${d.lowConfidence ? 'taxminan' : 'ishonch'} ${d.confidence.toStringAsFixed(0)}%', style: TextStyle(color: c.primary)),
-      ]), style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
-      const SizedBox(height: 8),
-      Wrap(spacing: 6, runSpacing: 6, children: [
-        if (d.plantName != null) Tag(d.plantName!, bg: c.tagCare, fg: c.onTagCare),
-        if (d.riskLevel != null)
-          Tag(riskLabels[d.riskLevel] ?? d.riskLevel!, bg: d.riskLevel == 'high' ? c.dangerBg : c.primaryLight, fg: d.riskLevel == 'high' ? c.danger : c.primaryDark),
-      ]),
-      if (d.lowConfidence) ...[
-        const SizedBox(height: 8),
-        Text("AI to'liq ishonch hosil qilmadi — belgilarni solishtiring. Ekin turini tanlab qayta tekshirsangiz, natija aniqroq bo'ladi.",
-            style: TextStyle(color: c.muted, fontSize: 12.5)),
-      ],
-      if (d.symptoms != null) ...[
-        const SizedBox(height: 8),
-        Text('Belgilari: ${d.symptoms}', style: const TextStyle(height: 1.5, fontSize: 13.5)),
-      ],
-      const SizedBox(height: 8),
-      Text(d.treatment ?? d.recommendations ?? '', style: const TextStyle(height: 1.5, fontSize: 13.5)),
-      if (med != null) InfoBox(label: 'Tavsiya etilgan dori', value: '${med.name}${med.recommendation != null ? ', ${med.recommendation}' : ''}'),
-      if (cropLinked)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: Row(children: [Icon(AppIcons.check, size: 16, color: c.success), const SizedBox(width: 6), Text("Bog'imdagi ekin tarixiga saqlandi", style: TextStyle(color: c.success, fontWeight: FontWeight.w700, fontSize: 12.5))]),
-        ),
-      const SizedBox(height: 6),
-      PillButton(label: cropLinked ? 'Davolash rejasi' : "Bog'imga qo'shish va reja", icon: AppIcons.leaf, style: PillStyle.primary, block: true, onPressed: openPlan),
-      const SizedBox(height: 8),
-      Wrap(spacing: 8, runSpacing: 8, children: [
-        MiniButton(label: 'Batafsil', onTap: () => context.push('/diagnosis/${d.id}')),
-        MiniButton(label: 'Jamoatda ulashish', onTap: () => shareDiagnosis(context, ref, d)),
-        MiniButton(label: 'Yangi tashxis', onTap: onRetry),
-      ]),
-      _Feedback(d: d),
-    ]);
-  }
-}
-
-/// "AI to'g'ri topdimi?" — javoblar dataset tekshiruvida ishlatiladi ("xato"lar birinchi ko'riladi).
-class _Feedback extends ConsumerStatefulWidget {
-  const _Feedback({required this.d});
-  final Diagnosis d;
-  @override
-  ConsumerState<_Feedback> createState() => _FeedbackState();
-}
-
-class _FeedbackState extends ConsumerState<_Feedback> {
-  late bool? _value = widget.d.userFeedback;
-
-  Future<void> _send(bool correct) async {
-    setState(() => _value = correct);
-    try {
-      await ref.read(gardenRepoProvider).feedback(widget.d.id, correct);
-    } catch (e) {
-      if (mounted) showError(context, e);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    if (_value != null) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 10),
-        child: Text(_value! ? "Rahmat! Fikringiz AI'ni yaxshilashga yordam beradi." : "Rahmat! Mutaxassis rasmni tekshirib, AI'ni shu asosda o'rgatadi.",
-            style: TextStyle(color: c.muted, fontSize: 12.5)),
-      );
-    }
-    Widget btn(bool v, IconData icon, String label) => InkWell(
-          borderRadius: BorderRadius.circular(99),
-          onTap: () => _send(v),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(border: Border.all(color: c.border), borderRadius: BorderRadius.circular(99)),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(icon, size: 16, color: v ? c.success : c.danger),
-              const SizedBox(width: 6),
-              Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5)),
-            ]),
+    final crops = ref.watch(cropsProvider).value ?? const <Crop>[];
+    final plants = ref.watch(plantsProvider).value ?? const <Plant>[];
+    return AppCard(
+      margin: EdgeInsets.zero,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Qaysi ekin?', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 2),
+        Text("Ekin turini tanlasangiz, AI aniqroq natija beradi", style: TextStyle(color: c.muted, fontSize: 12.5)),
+        if (crops.isNotEmpty) ...[
+          const FieldLabel("Bog'imdagi ekin"),
+          DropdownButtonFormField<String?>(
+            initialValue: crops.any((e) => e.id == cropId) ? cropId : null,
+            isExpanded: true,
+            dropdownColor: c.card,
+            items: [
+              const DropdownMenuItem<String?>(value: null, child: Text("— Bog'imga bog'lamasdan —")),
+              for (final cr in crops) DropdownMenuItem<String?>(value: cr.id, child: Text('${cr.name}${cr.plantName != null ? ' · ${cr.plantName}' : ''}')),
+            ],
+            onChanged: onCrop,
           ),
-        );
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
-        Text("AI to'g'ri topdimi?", style: TextStyle(color: c.muted, fontSize: 12.5, fontWeight: FontWeight.w700)),
-        btn(true, Icons.thumb_up_alt_outlined, 'Ha'),
-        btn(false, Icons.thumb_down_alt_outlined, "Yo'q"),
+        ],
+        if (cropId == null) ...[
+          const FieldLabel('Ekin turi'),
+          DropdownButtonFormField<String?>(
+            initialValue: plantId,
+            isExpanded: true,
+            dropdownColor: c.card,
+            items: [
+              const DropdownMenuItem<String?>(value: null, child: Text("Bilmayman — AI o'zi aniqlasin")),
+              for (final p in plants) DropdownMenuItem<String?>(value: p.id, child: Text(p.name)),
+            ],
+            onChanged: onPlant,
+          ),
+        ],
       ]),
     );
   }
 }
 
-class _ResultShell extends StatelessWidget {
-  const _ResultShell({required this.children});
-  final List<Widget> children;
+class _PhotoPreview extends StatelessWidget {
+  const _PhotoPreview({required this.image, this.child});
+  final Uint8List image;
+  final Widget? child;
   @override
-  Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.only(bottom: 14, right: 24),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.c.card,
-          borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16), bottomRight: Radius.circular(16), bottomLeft: Radius.circular(4)),
-          boxShadow: softShadow(context, 8),
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.lg + 4),
+          child: AspectRatio(
+            aspectRatio: 4 / 4.2,
+            child: Stack(fit: StackFit.expand, children: [Image.memory(image, fit: BoxFit.cover), if (child != null) child!]),
+          ),
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
       );
 }
 
-class _Bubble extends StatefulWidget {
-  const _Bubble({required this.text, this.me = false, this.image, this.typing = false});
-  final String text;
-  final bool me, typing;
-  final Uint8List? image;
+/// Tahlil: rasm ustida yurib turuvchi skaner chizig'i.
+class _Analyzing extends StatefulWidget {
+  const _Analyzing({required this.image});
+  final Uint8List image;
   @override
-  State<_Bubble> createState() => _BubbleState();
+  State<_Analyzing> createState() => _AnalyzingState();
 }
 
-class _BubbleState extends State<_Bubble> {
-  Timer? _t;
-  int _dots = 1;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.typing) _t = Timer.periodic(const Duration(milliseconds: 400), (_) => setState(() => _dots = _dots % 3 + 1));
-  }
+class _AnalyzingState extends State<_Analyzing> with SingleTickerProviderStateMixin {
+  late final _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..repeat(reverse: true);
 
   @override
   void dispose() {
-    _t?.cancel();
+    _ctrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final me = widget.me;
-    return Align(
-      alignment: me ? Alignment.centerRight : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width.clamp(0, 480) * 0.78),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: me ? c.primary : c.card,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(16),
-              topRight: const Radius.circular(16),
-              bottomLeft: Radius.circular(me ? 16 : 4),
-              bottomRight: Radius.circular(me ? 4 : 16),
-            ),
-            boxShadow: softShadow(context, 8),
-          ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            if (widget.image != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: ClipRRect(borderRadius: BorderRadius.circular(14), child: AspectRatio(aspectRatio: 4 / 3, child: Image.memory(widget.image!, fit: BoxFit.cover))),
+    return Column(children: [
+      _PhotoPreview(
+        image: widget.image,
+        child: Stack(fit: StackFit.expand, children: [
+          Container(color: Colors.black.withValues(alpha: 0.25)),
+          Center(child: Icon(AppIcons.scan, size: 220, color: Colors.white.withValues(alpha: 0.9))),
+          AnimatedBuilder(
+            animation: _ctrl,
+            builder: (context, _) => Align(
+              alignment: Alignment(0, -0.8 + 1.6 * _ctrl.value),
+              child: Container(
+                height: 3,
+                margin: const EdgeInsets.symmetric(horizontal: 40),
+                decoration: BoxDecoration(color: c.gold, boxShadow: [BoxShadow(color: c.gold.withValues(alpha: 0.7), blurRadius: 16)]),
               ),
-            Text(widget.typing ? '${widget.text}${'.' * _dots}' : widget.text,
-                style: TextStyle(fontSize: 14, height: 1.45, color: me ? c.card : (widget.typing ? c.muted : c.text))),
-          ]),
-        ),
+            ),
+          ),
+        ]),
       ),
+      AppCard(
+        child: Row(children: [
+          SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.6, color: c.primary)),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('AI tahlil qilmoqda…', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+              Text("Barg tekshirilmoqda va bilimlar bazasi bilan solishtirilmoqda", style: TextStyle(color: c.muted, fontSize: 12.5)),
+            ]),
+          ),
+        ]),
+      ),
+    ]);
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({required this.message, required this.onRetry});
+  final String message;
+  final VoidCallback onRetry;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return AppCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(color: c.dangerBg, borderRadius: BorderRadius.circular(12)),
+            child: Icon(AppIcons.alert, color: c.danger, size: 20),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(child: Text("Tahlil qilib bo'lmadi", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800))),
+        ]),
+        const SizedBox(height: 10),
+        Text(message, style: TextStyle(color: c.muted, height: 1.45)),
+        const SizedBox(height: 14),
+        PillButton(label: 'Qayta urinish', icon: AppIcons.camera, style: PillStyle.primary, block: true, onPressed: onRetry),
+      ]),
     );
   }
 }
@@ -363,36 +301,45 @@ class _LimitCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => AppCard(
         child: Column(children: [
-          const Text('Bepul limit tugadi', style: TextStyle(fontWeight: FontWeight.w800)),
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(color: context.c.accentSoft, shape: BoxShape.circle),
+            child: Icon(AppIcons.star, color: context.c.warning),
+          ),
+          const SizedBox(height: 10),
+          const Text('Bepul limit tugadi', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
           const SizedBox(height: 6),
           Text(message ?? "Bugungi bepul AI tashxislardan foydalandingiz. Ertaga qayta urinib ko'ring yoki Premium'ga o'ting.",
               textAlign: TextAlign.center, style: TextStyle(color: context.c.muted)),
           const SizedBox(height: 14),
-          PillButton(label: "Premium'ga o'tish", icon: AppIcons.star, block: true, onPressed: onUpgrade),
+          PillButton(label: "Premium'ga o'tish", icon: AppIcons.star, style: PillStyle.primary, block: true, onPressed: onUpgrade),
         ]),
       );
 }
 
 class _Tips extends StatelessWidget {
+  const _Tips();
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    Widget tip(IconData i, String t) => Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(children: [Icon(i, size: 18, color: c.primary), const SizedBox(width: 10), Expanded(child: Text(t, style: TextStyle(color: c.muted, fontSize: 13)))]),
+    Widget tip(IconData i, String t, Color bg, Color fg) => Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Row(children: [
+            Container(width: 34, height: 34, decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)), child: Icon(i, size: 18, color: fg)),
+            const SizedBox(width: 12),
+            Expanded(child: Text(t, style: TextStyle(color: c.text, fontSize: 13.5, fontWeight: FontWeight.w600))),
+          ]),
         );
     return AppCard(
       color: c.cream2,
-      shadow: false,
+      margin: EdgeInsets.zero,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Yaxshi natija uchun', style: TextStyle(fontWeight: FontWeight.w800)),
-        const SizedBox(height: 10),
-        tip(Icons.wb_sunny_outlined, "Kunduzgi yorug'likda suratga oling"),
-        tip(Icons.center_focus_strong_outlined, 'Bitta zararlangan bargni kadr markaziga oling'),
-        tip(Icons.back_hand_outlined, 'Kamerani qimirlatmang — rasm xira bo\'lmasin'),
-        const SizedBox(height: 4),
-        Text("Yuklangan rasmlar mutaxassis tekshiruvidan so'ng AI'ni yaxshilash uchun anonim ishlatilishi mumkin.",
-            style: TextStyle(color: c.muted, fontSize: 11.5)),
+        const Text('Yaxshi natija uchun', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+        const SizedBox(height: 12),
+        tip(AppIcons.sun, "Kunduzgi yorug'likda suratga oling", c.accentSoft, c.warning),
+        tip(AppIcons.scan, 'Bitta zararlangan bargni kadr markaziga oling', c.successBg, c.success),
+        tip(Icons.back_hand_outlined, 'Kamerani qimirlatmang — rasm xira bo\'lmasin', c.infoBg, c.info),
       ]),
     );
   }

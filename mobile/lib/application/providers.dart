@@ -95,6 +95,14 @@ final diseasesProvider = FutureProvider.autoDispose<List<Disease>>((ref) => ref.
 final medicinesProvider = FutureProvider.autoDispose<List<Medicine>>((ref) => ref.watch(catalogRepoProvider).medicines());
 final diseaseProvider = FutureProvider.autoDispose.family<Disease, String>((ref, id) => ref.watch(catalogRepoProvider).disease(id));
 
+/// Ob-havo ixtiyoriy: xato bo'lsa null (bosh sahifada karta ko'rsatilmaydi).
+final weatherProvider = FutureProvider.autoDispose<Weather?>((ref) async {
+  try {
+    return await ref.watch(gardenRepoProvider).weather();
+  } catch (_) {
+    return null;
+  }
+});
 final cropsProvider = FutureProvider.autoDispose<List<Crop>>((ref) => ref.watch(gardenRepoProvider).crops());
 final cropProvider = FutureProvider.autoDispose.family<Crop, String>((ref, id) => ref.watch(gardenRepoProvider).crop(id));
 final cropHealthProvider =
