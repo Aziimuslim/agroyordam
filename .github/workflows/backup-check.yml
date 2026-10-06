@@ -55,7 +55,7 @@ jobs:
           if [ "$rc" -ne 0 ]; then
             echo "::error::Zaxira muammosi: $(echo "$out" | head -1). Serverda: sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml logs --tail=50 backup"
           fi
-          echo "$out" | grep -q "YOQILMAGAN" && echo "::warning::Tashqi xotiraga zaxira yoqilmagan — server yo'qolsa, nusxalar ham yo'qoladi. docs/BACKUP.md"
+          grep -q "YOQILMAGAN" <<< "$out" && echo "::warning::Tashqi xotiraga zaxira yoqilmagan — server yo'qolsa, nusxalar ham yo'qoladi. docs/BACKUP.md"
           exit "$rc"
       - name: Kalitni o'chirish
         if: always()
