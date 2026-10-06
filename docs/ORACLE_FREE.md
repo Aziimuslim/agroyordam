@@ -137,21 +137,30 @@ Tekshirish: telefon yoki kompyuter brauzerida **https://agroyordam.duckdns.org**
 
    Eski APK'ni o'chirmasangiz ham bo'ladi: birinchi ekrandagi **"Server: ..."** tugmasi orqali `https://agroyordam.duckdns.org` ni kiritsangiz yetarli.
 
-## 8-qadam (ixtiyoriy). Avtomatik yangilanish
+## 8-qadam. Avtomatik yangilanish (deploy) — bir marta, ~5 daqiqa
 
-Kodga o'zgarish push qilinganda serverning o'zi yangilanishi uchun kompyuteringizda alohida deploy kaliti yaratasiz:
-```bash
-ssh-keygen -t ed25519 -f ~/.ssh/agroyordam_deploy -N ""
-cat ~/.ssh/agroyordam_deploy.pub
-```
-Chiqqan qatorni serverdagi `~/.ssh/authorized_keys` fayliga qo'shing:
-```bash
-ssh -i ~/.ssh/agroyordam ubuntu@SERVER_IP "echo '<shu qator>' >> ~/.ssh/authorized_keys"
-```
-Keyin **https://github.com/Aziimuslim/agroyordam/settings/secrets/actions** → **New repository secret** orqali uchta secret qo'shasiz:
+Shundan keyin GitHub'ga har push qilinganda: testlar → smoke-test → server o'zi yangilanadi.
+Yangi versiya ishlamasa (health tekshiruvi o'tmasa), server **avtomatik oldingi versiyaga qaytadi**.
+
+1. Serverga kiring va shu buyruqni bajaring:
+   ```bash
+   cd /opt/agroyordam && sudo git pull && sudo bash deploy/enable-autodeploy.sh
+   ```
+   Skript faqat deploy uchun alohida SSH kalit yaratadi. Bu kalit bilan serverda **faqat** `deploy/deploy.sh`
+   ishga tushadi (shell ochib bo'lmaydi). Oxirida 3 ta qiymat chiqadi.
+2. **https://github.com/Aziimuslim/agroyordam/settings/secrets/actions** → **New repository secret** — uchtasini qo'shing:
 
 | Name | Value |
 |---|---|
+| `SERVER_HOST` | skript ko'rsatgan IP (`130.61.36.184`) |
+| `SERVER_USER` | `ubuntu` |
+| `SERVER_SSH_KEY` | skript chiqargan maxfiy kalit — `-----BEGIN` dan `-----END ...-----` gacha to'liq |
+
+3. Tekshirish: **Actions → "Docker stack (smoke test + deploy)" → Run workflow**. `deploy` bosqichi yashil bo'lsa — tayyor.
+
+Qo'lda yangilash ham shu skript bilan: `sudo /opt/agroyordam/deploy/deploy.sh`
+
+---|---|
 | `SERVER_HOST` | server Public IP |
 | `SERVER_USER` | `ubuntu` |
 | `SERVER_SSH_KEY` | `cat ~/.ssh/agroyordam_deploy` natijasi (maxfiy kalit to'liq, `-----BEGIN` dan `-----END` gacha) |

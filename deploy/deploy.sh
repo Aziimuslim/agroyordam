@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# AgroYordam — serverda yangilash (GitHub Actions avtomatik deploy shu skriptni chaqiradi).
+#
+# Deploy SSH kaliti authorized_keys'da `command="sudo /opt/agroyordam/deploy/deploy.sh"` bilan cheklangan:
+# kalit o'g'irlansa ham, u faqat shu skriptni ishga tushira oladi (shell, port-forward yo'q).
+#
+# Qadamlar: kod yangilanadi → image'lar yig'iladi → /health tekshiriladi →
+# o'tmasa, oldingi versiyaga avtomatik qaytariladi (rollback).
+#
+# Qo'lda: sudo /opt/agroyordam/deploy/deploy.sh [branch]
+set -euo pipefail
+
+# Skript o'zi `git reset` bilan yangilanadi — ishlayotgan faylni o'zgartirmaslik uchun nusxadan ishlaymiz
+if [ -z "${AGRO_DEPLOY_COPY:-}" ]; then
+  tmp="$(mktemp /tmp/agroyordam-deploy.XXXXXX.sh)"
+  cp "$0" "$tmp"
+  AGRO_DEPLOY_COPY=1 exec bash "$tmp" "$@"
+fi
+trap 'rm -f "$0"' EXIT
+
+DIR="${AGRO_DIR:-/opt/agroyordam}"
+REPO="${AGRO_REPO:-https://github.com/Aziimuslim/agroyordam.git}"
+COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.prod.yml)
+
+# Branch: argument yoki SSH buyrug'idan ("deploy <branch>"), aks holda hozirgi branch
+REQ="${1:-${SSH_ORIGINAL_COMMAND:-}}"
+REQ="${REQ#deploy}"; REQ="${REQ# }"
+cd "$DIR"
+BRANCH="${REQ:-$(git rev-parse --abbrev-ref HEAD)}"
+if ! [[ "$BRANCH" =~ ^[A-Za-z0-9._/-]{1,100}$ ]] || [[ "$BRANCH" == *..* ]]; then
+  echo "Noto'g'ri branch nomi: $BRANCH" >&2
+  exit 2
+fi
+
+# Bir vaqtda ikkita deploy bo'lmasin
+exec 9>/tmp/agroyordam-deploy.lock
+flock -n 9 || { echo "Boshqa deploy hali tugamagan" >&2; exit 3; }
+
+log() { echo "[$(date '+%F %T')] $*"; }
+
+PREV="$(git rev-parse HEAD)"
+git remote set-url origin "$REPO"
+git fetch --quiet origin "$BRANCH"
+git checkout --quiet --force -B "$BRANCH" "origin/$BRANCH"
+NEW="$(git rev-parse HEAD)"
+log "Deploy: ${PREV:0:7} → ${NEW:0:7} ($BRANCH)"
+
+DOMAIN="$(grep -E '^DOMAIN=' .env | cut -d= -f2-)"
+healthy() {
+  # Server o'z domeniga tashqi IP orqali chiqa olmasligi mumkin — to'g'ridan-to'g'ri 127.0.0.1 ga
+  for _ in $(seq 1 48); do
+    if out="$(curl -sfk --max-time 5 --resolve "$DOMAIN:443:127.0.0.1" "https://$DOMAIN/health")"; then
+      log "Health: $out"
+      return 0
+    fi
+    sleep 5
+  done
+  return 1
+}
+
+"${COMPOSE[@]}" up -d --build --remove-orphans
+if healthy; then
+  docker image prune -f >/dev/null || true
+  log "✅ Tayyor: https://$DOMAIN (${NEW:0:7})"
+  exit 0
+fi
+
+log "❌ Health tekshiruvi o'tmadi — ${PREV:0:7} ga qaytarilmoqda"
+"${COMPOSE[@]}" logs --tail=60 backend caddy || true
+git checkout --quiet --force --detach "$PREV"
+"${COMPOSE[@]}" up -d --build --remove-orphans
+healthy && log "Oldingi versiya tiklandi" || log "Oldingi versiya ham javob bermayapti — qo'lda tekshiring"
+exit 1

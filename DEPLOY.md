@@ -130,16 +130,24 @@ gunzip -c backups/agroyordam-2026-09-23.sql.gz | dc exec -T db psql -U agro agro
 
 ---
 
-## 4. Avtomatik yangilanish (ixtiyoriy, tavsiya)
+## 4. Avtomatik yangilanish (tavsiya)
 
-Asosiy (default) branch'ga push qilinganda GitHub Actions ("Docker stack" workflow) quyidagilarni bajaradi:
+Asosiy (default) branch'ga push qilinganda GitHub Actions ("Docker stack" workflow):
 1. Butun stack'ni production rejimida ko'tarib, smoke-test qiladi.
-2. Test o'tsa — serverga SSH orqali kirib, `/opt/agroyordam` da kodni yangilaydi va qayta yig'adi.
+2. Test o'tsa — serverga SSH orqali kirib `deploy/deploy.sh` ni ishga tushiradi: kod yangilanadi, image'lar
+   yig'iladi, `/health` tekshiriladi; **o'tmasa — oldingi versiyaga avtomatik qaytariladi**.
 
-Sozlash: GitHub → repo → **Settings → Secrets and variables → Actions**:
+Sozlash (bir marta): serverda `cd /opt/agroyordam && sudo git pull && sudo bash deploy/enable-autodeploy.sh`,
+so'ng chiqqan qiymatlarni GitHub → Settings → Secrets and variables → Actions ga qo'ying:
+`SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY`. Deploy kaliti `authorized_keys` da
+`command="sudo /opt/agroyordam/deploy/deploy.sh"` bilan cheklangan — u bilan shell ochib bo'lmaydi.
 
-| Nomi | Turi | Qiymati |
-|---|---|---|
+APK serverga ulanishi uchun `API_URL` (**Variable**) = `https://sizning-domen` (berilmasa — agroyordam.duckdns.org).
+
+⚠️ Rollback faqat kodni qaytaradi. Yangi versiyada baza migratsiyasi bo'lgan bo'lsa, ehtiyot uchun deploydan oldin
+`backups/` dagi oxirgi nusxa borligini tekshiring.
+
+---|---|---|
 | `SERVER_HOST` | Secret | server IP manzili |
 | `SERVER_USER` | Secret | `ubuntu` yoki `root` (serverga kiradigan foydalanuvchi) |
 | `SERVER_SSH_KEY` | Secret | **alohida** deploy kalitining *maxfiy* qismi (`~/.ssh/agroyordam_deploy`) |

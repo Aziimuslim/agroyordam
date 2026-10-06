@@ -51,26 +51,29 @@ jobs:
 
   deploy:
     needs: smoke
-    # Asosiy (default) branch'ga push bo'lganda serverga chiqariladi
+    # Asosiy (default) branch'ga push bo'lganda (yoki qo'lda "Run workflow") serverga chiqariladi
     if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
+    timeout-minutes: 60
+    concurrency: {group: production-deploy, cancel-in-progress: false}
+    environment:
+      name: production
+      url: https://agroyordam.duckdns.org
     env:
       HAS_SERVER: ${{ secrets.SERVER_HOST != '' && secrets.SERVER_SSH_KEY != '' }}
     steps:
       - name: Server sozlanmagan
         if: env.HAS_SERVER != 'true'
-        run: echo "SERVER_HOST / SERVER_USER / SERVER_SSH_KEY secret'lari yo'q — deploy o'tkazib yuborildi (DEPLOY.md ga qarang)"
-      - name: Serverga deploy
+        run: |
+          echo "::warning::SERVER_HOST / SERVER_USER / SERVER_SSH_KEY secret'lari yo'q — deploy o'tkazib yuborildi."
+          echo "Serverda bir marta: cd /opt/agroyordam && sudo git pull && sudo bash deploy/enable-autodeploy.sh"
+      - name: Serverga deploy (deploy/deploy.sh — xato bo'lsa avtomatik rollback)
         if: env.HAS_SERVER == 'true'
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            set -e
-            cd /opt/agroyordam
-            git fetch origin "${{ github.ref_name }}" && git reset --hard "origin/${{ github.ref_name }}"
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --remove-orphans
-            docker image prune -f
-            sleep 15 && curl -sf "https://$(grep ^DOMAIN= .env | cut -d= -f2)/health"
+          command_timeout: 50m
+          # Kalit serverda faqat deploy.sh'ni ishga tushirishga cheklangan; bu yerdagi matn branch nomi sifatida uzatiladi
+          script: deploy ${{ github.ref_name }}
