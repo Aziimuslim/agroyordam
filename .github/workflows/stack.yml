@@ -67,13 +67,31 @@ jobs:
         run: |
           echo "::warning::SERVER_HOST / SERVER_USER / SERVER_SSH_KEY secret'lari yo'q — deploy o'tkazib yuborildi."
           echo "Serverda bir marta: cd /opt/agroyordam && sudo git pull && sudo bash deploy/enable-autodeploy.sh"
+      - name: Deploy kalitini tayyorlash
+        if: env.HAS_SERVER == 'true'
+        env:
+          KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          # Kalit ikki ko'rinishda qabul qilinadi: to'liq matn (-----BEGIN ... -----END) yoki bitta qatorli base64.
+          # Windows'dan nusxalashdagi \r va qator oxiridagi bo'shliqlar tozalanadi.
+          mkdir -p ~/.ssh && umask 077
+          if printf '%s' "$KEY" | grep -q -- '-----BEGIN'; then
+            printf '%s\n' "$KEY" | tr -d '\r' | sed 's/[[:space:]]*$//' > ~/.ssh/deploy_key
+          else
+            printf '%s' "$KEY" | tr -d ' \r\n\t' | base64 -d > ~/.ssh/deploy_key 2>/dev/null || true
+          fi
+          if ! ssh-keygen -y -f ~/.ssh/deploy_key > /dev/null 2>&1; then
+            echo "::error::SERVER_SSH_KEY noto'g'ri. Serverda: sudo base64 -w0 /home/ubuntu/.ssh/agroyordam_deploy — chiqqan bitta qatorni secret'ga qo'ying."
+            exit 1
+          fi
+          echo "Kalit to'g'ri: $(ssh-keygen -l -f ~/.ssh/deploy_key | awk '{print $2}')"
       - name: Serverga deploy (deploy/deploy.sh — xato bo'lsa avtomatik rollback)
         if: env.HAS_SERVER == 'true'
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+          key_path: ~/.ssh/deploy_key
           command_timeout: 50m
           # Kalit serverda faqat deploy.sh'ni ishga tushirishga cheklangan; bu yerdagi matn branch nomi sifatida uzatiladi
           script: deploy ${{ github.ref_name }}

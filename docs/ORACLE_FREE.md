@@ -154,7 +154,7 @@ Yangi versiya ishlamasa (health tekshiruvi o'tmasa), server **avtomatik oldingi 
 |---|---|
 | `SERVER_HOST` | skript ko'rsatgan IP (`130.61.36.184`) |
 | `SERVER_USER` | `ubuntu` |
-| `SERVER_SSH_KEY` | skript chiqargan maxfiy kalit — `-----BEGIN` dan `-----END ...-----` gacha to'liq |
+| `SERVER_SSH_KEY` | skript chiqargan **bitta uzun qator** (base64) — to'liq nusxalang |
 
 3. Tekshirish: **Actions → "Docker stack (smoke test + deploy)" → Run workflow**. `deploy` bosqichi yashil bo'lsa — tayyor.
 

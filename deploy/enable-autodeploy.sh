@@ -40,9 +40,10 @@ cat <<EOF
 
    1) Name: SERVER_HOST      Value: $IP
    2) Name: SERVER_USER      Value: $USER_NAME
-   3) Name: SERVER_SSH_KEY   Value: pastdagi butun matn (-----BEGIN dan -----END gacha, ikkalasi ham kiradi)
+   3) Name: SERVER_SSH_KEY   Value: pastdagi BITTA UZUN QATOR (to'liq nusxalang, boshi va oxiri bilan):
 
-$(cat "$KEY")
+$(base64 -w0 "$KEY")
+
 
 ⚠️  Bu maxfiy kalitni faqat GitHub secret'iga qo'ying, boshqa hech kimga bermang.
     U faqat deploy skriptini ishga tushira oladi, lekin baribir maxfiy saqlang.
