@@ -160,13 +160,6 @@ Yangi versiya ishlamasa (health tekshiruvi o'tmasa), server **avtomatik oldingi 
 
 Qo'lda yangilash ham shu skript bilan: `sudo /opt/agroyordam/deploy/deploy.sh`
 
----|---|
-| `SERVER_HOST` | server Public IP |
-| `SERVER_USER` | `ubuntu` |
-| `SERVER_SSH_KEY` | `cat ~/.ssh/agroyordam_deploy` natijasi (maxfiy kalit to'liq, `-----BEGIN` dan `-----END` gacha) |
-
-Shundan keyin har push'da: testlar → smoke-test → serverda `git pull` va qayta yig'ish avtomatik bajariladi.
-
 ---
 
 ## Muammolar va yechimlar
@@ -177,6 +170,7 @@ Shundan keyin har push'da: testlar → smoke-test → serverda `git pull` va qay
 | `Permission denied (publickey)` | `-i ~/.ssh/agroyordam` yozilmagan yoki 3-qadamda boshqa kalit qo'yilgan |
 | Sayt ochilmaydi, skript "⚠️" deydi | 4-qadam (Security List) bajarilmagan yoki DuckDNS'dagi IP noto'g'ri |
 | Brauzer "sertifikat xato" deydi | DNS endi yangilangan bo'lsa, 5 daqiqa kutib `sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml restart caddy` |
+| Actions'da `ssh: no key found` | `SERVER_SSH_KEY` noto'g'ri nusxalangan. Serverda `sudo base64 -w0 /home/ubuntu/.ssh/agroyordam_deploy; echo` — chiqqan bitta qatorni secret'ga qayta qo'ying |
 | Loglarni ko'rish | `cd /opt/agroyordam && sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml logs --tail=100 backend caddy` |
 
 **Oracle bepul serverlar haqida eslatma.** Uzoq vaqt deyarli ishlatilmagan "Always Free" instance'larni Oracle qaytarib olishi mumkin.
