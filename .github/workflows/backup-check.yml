@@ -1,0 +1,62 @@
+name: Backup tekshiruvi
+
+# Har kuni serverdagi zaxira holatini tekshiradi. Oxirgi muvaffaqiyatli nusxa 26 soatdan eski bo'lsa yoki
+# xato bo'lsa — workflow qizil bo'ladi va GitHub sizga email yuboradi.
+# Qo'lda: Actions → "Backup tekshiruvi" → Run workflow (status | hozir zaxira olish | ro'yxat).
+on:
+  schedule:
+    - cron: "17 5 * * *"   # har kuni 10:17 (Toshkent)
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Nima qilinsin"
+        type: choice
+        options: [backup-status, backup-now, backup-list]
+        default: backup-status
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      HAS_SERVER: ${{ secrets.SERVER_HOST != '' && secrets.SERVER_SSH_KEY != '' }}
+    steps:
+      - name: Server sozlanmagan
+        if: env.HAS_SERVER != 'true'
+        run: echo "::warning::SERVER_HOST / SERVER_SSH_KEY secret'lari yo'q — tekshiruv o'tkazib yuborildi."
+      - name: Kalitni tayyorlash
+        if: env.HAS_SERVER == 'true'
+        env:
+          KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          umask 077
+          if printf '%s' "$KEY" | grep -q -- '-----BEGIN'; then
+            printf '%s\n' "$KEY" | tr -d '\r' | sed 's/[[:space:]]*$//' > "$RUNNER_TEMP/deploy_key"
+          else
+            printf '%s' "$KEY" | tr -d ' \r\n\t' | base64 -d > "$RUNNER_TEMP/deploy_key"
+          fi
+          ssh-keygen -y -f "$RUNNER_TEMP/deploy_key" > /dev/null
+      - name: Zaxira holati
+        if: env.HAS_SERVER == 'true'
+        env:
+          HOST: ${{ secrets.SERVER_HOST }}
+          USER_NAME: ${{ secrets.SERVER_USER }}
+          ACTION: ${{ inputs.action || 'backup-status' }}
+        run: |
+          HOST="$(printf '%s' "$HOST" | tr -d '[:space:]')"; USER_NAME="$(printf '%s' "$USER_NAME" | tr -d '[:space:]')"
+          out="$(ssh -i "$RUNNER_TEMP/deploy_key" -o IdentitiesOnly=yes -o BatchMode=yes \
+            -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 -o ServerAliveInterval=30 \
+            "${USER_NAME:-ubuntu}@$HOST" "$ACTION" 2>&1)" && rc=0 || rc=$?
+          echo "$out"
+          { echo "### Zaxira: \`$ACTION\`"; echo '```'; echo "$out"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::Zaxira muammosi: $(echo "$out" | head -1). Serverda: sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml logs --tail=50 backup"
+          fi
+          echo "$out" | grep -q "YOQILMAGAN" && echo "::warning::Tashqi xotiraga zaxira yoqilmagan — server yo'qolsa, nusxalar ham yo'qoladi. docs/BACKUP.md"
+          exit "$rc"
+      - name: Kalitni o'chirish
+        if: always()
+        run: rm -f "$RUNNER_TEMP/deploy_key"

@@ -7,7 +7,7 @@
 # Qadamlar: kod yangilanadi → image'lar yig'iladi → /health tekshiriladi →
 # o'tmasa, oldingi versiyaga avtomatik qaytariladi (rollback).
 #
-# Qo'lda: sudo /opt/agroyordam/deploy/deploy.sh [branch]
+# Qo'lda: sudo /opt/agroyordam/deploy/deploy.sh [branch | backup-status | backup-now | backup-list]
 set -euo pipefail
 
 # Skript o'zi `git reset` bilan yangilanadi — ishlayotgan faylni o'zgartirmaslik uchun nusxadan ishlaymiz
@@ -24,8 +24,14 @@ COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.prod.yml)
 
 # Branch: argument yoki SSH buyrug'idan ("deploy <branch>"), aks holda hozirgi branch
 REQ="${1:-${SSH_ORIGINAL_COMMAND:-}}"
-REQ="${REQ#deploy}"; REQ="${REQ# }"
 cd "$DIR"
+# Zaxira buyruqlari (GitHub Actions "Backup tekshiruvi" shu yerdan chaqiradi)
+case "$REQ" in
+  backup-status) "${COMPOSE[@]}" exec -T backup backup.sh check; exit ;;
+  backup-now)    "${COMPOSE[@]}" exec -T backup backup.sh now; exit ;;
+  backup-list)   "${COMPOSE[@]}" exec -T backup backup.sh list; exit ;;
+esac
+REQ="${REQ#deploy}"; REQ="${REQ# }"
 BRANCH="${REQ:-$(git rev-parse --abbrev-ref HEAD)}"
 if ! [[ "$BRANCH" =~ ^[A-Za-z0-9._/-]{1,100}$ ]] || [[ "$BRANCH" == *..* ]]; then
   echo "Noto'g'ri branch nomi: $BRANCH" >&2

@@ -16,6 +16,9 @@ jobs:
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      # CI'da tashqi zaxira xotirasi o'rniga MinIO (S3) ishlatiladi
+      COMPOSE: docker compose -f docker-compose.yml -f docker-compose.prod.yml -f deploy/ci/offsite-minio.yml
     steps:
       - uses: actions/checkout@v4
       - name: Production .env (DOMAIN=localhost)
@@ -24,6 +27,11 @@ jobs:
           sed -i "s/^DOMAIN=.*/DOMAIN=localhost/" .env
           sed -i "s/^SECRET_KEY=.*/SECRET_KEY=$(openssl rand -hex 32)/" .env
           sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 16)/" .env
+          sed -i -e "s|^OFFSITE_S3_ENDPOINT=.*|OFFSITE_S3_ENDPOINT=http://minio:9000|" \
+                 -e "s|^OFFSITE_S3_REGION=.*|OFFSITE_S3_REGION=us-east-1|" \
+                 -e "s|^OFFSITE_S3_BUCKET=.*|OFFSITE_S3_BUCKET=agro-ci|" \
+                 -e "s|^OFFSITE_S3_ACCESS_KEY=.*|OFFSITE_S3_ACCESS_KEY=ciaccesskey|" \
+                 -e "s|^OFFSITE_S3_SECRET_KEY=.*|OFFSITE_S3_SECRET_KEY=cisecretkey123|" .env
       - name: Image'larni yig'ish
         run: $COMPOSE build
       - name: Stack'ni ishga tushirish
@@ -41,8 +49,25 @@ jobs:
         run: python3 deploy/smoke_test.py https://localhost
       - name: Admin yaratish buyrug'i
         run: $COMPOSE exec -T backend python -m app.create_admin --username ciadmin --email ci@example.com --password "Ci-admin-12345"
-      - name: Backup servisi
-        run: sleep 5 && ls -la backups/ && test -n "$(ls backups/*.sql.gz)"
+      - name: Backup servisi (serverda + tashqi S3)
+        run: |
+          for i in $(seq 1 36); do test -f backups/status && break; sleep 5; done; cat backups/status
+          ls -la backups/
+          $COMPOSE exec -T backup backup.sh now
+          $COMPOSE exec -T backup backup.sh check
+          $COMPOSE exec -T backup backup.sh list | tee /tmp/list.txt
+          sed -n '/Tashqi/,$p' /tmp/list.txt | grep -q '^  20'
+      - name: Zaxiradan tiklash (restore.sh)
+        run: |
+          q() { $COMPOSE exec -T db psql -U agro agroyordam -tAc "$1"; }
+          before="$(q 'SELECT count(*) FROM users')"
+          q "TRUNCATE users CASCADE"
+          sudo rm -f backups/agroyordam-*.sql.gz   # tashqi xotiradan yuklab olishni ham sinaymiz
+          sudo bash deploy/restore.sh latest --yes
+          after="$(q 'SELECT count(*) FROM users')"
+          echo "users: $before → $after"
+          test "$before" -gt 0 && test "$before" = "$after"
+          for i in $(seq 1 30); do curl -skf https://localhost/health && exit 0; sleep 3; done; exit 1
       - name: Loglar (xato bo'lsa)
         if: failure()
         run: $COMPOSE ps && $COMPOSE logs --tail=150

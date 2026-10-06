@@ -174,7 +174,5 @@ Qo'lda yangilash ham shu skript bilan: `sudo /opt/agroyordam/deploy/deploy.sh`
 | Loglarni ko'rish | `cd /opt/agroyordam && sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml logs --tail=100 backend caddy` |
 
 **Oracle bepul serverlar haqida eslatma.** Uzoq vaqt deyarli ishlatilmagan "Always Free" instance'larni Oracle qaytarib olishi mumkin.
-Ilovadan muntazam foydalanilsa, bu muammo bo'lmaydi. Zaxira nusxalar `/opt/agroyordam/backups` papkasida saqlanadi — vaqti-vaqti bilan kompyuteringizga ko'chirib qo'ying:
-```bash
-scp -i ~/.ssh/agroyordam -r ubuntu@SERVER_IP:/opt/agroyordam/backups ./agroyordam-backups
-```
+Ilovadan muntazam foydalanilsa, bu muammo bo'lmaydi. Har ehtimolga qarshi zaxira nusxalarni server tashqarisiga
+avtomatik yuborishni yoqing (Oracle Object Storage, bepul 20 GB) — [BACKUP.md](BACKUP.md).

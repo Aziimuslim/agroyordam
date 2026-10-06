@@ -123,9 +123,10 @@ dc restart backend    # qayta ishga tushirish
 ls backups/           # kunlik zaxira nusxalar (baza + rasmlar)
 ```
 
-Zaxiradan tiklash:
+Zaxira nusxalar va tiklash — [docs/BACKUP.md](docs/BACKUP.md):
 ```bash
-gunzip -c backups/agroyordam-2026-09-23.sql.gz | dc exec -T db psql -U agro agroyordam
+sudo bash deploy/enable-offsite-backup.sh   # server tashqarisidagi xotiraga (Oracle Object Storage, bepul) — bir marta
+sudo bash deploy/restore.sh latest          # oxirgi nusxadan tiklash
 ```
 
 ---

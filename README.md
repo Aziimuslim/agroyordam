@@ -25,7 +25,7 @@ DEPLOY.md     Domen, VPS va serverga chiqarish bo'yicha to'liq yo'riqnoma
 
 ## Tez ishga tushirish
 
-> Internetga chiqarish: **[DEPLOY.md](DEPLOY.md)** · bepul server (Oracle Cloud + DuckDNS): **[docs/ORACLE_FREE.md](docs/ORACLE_FREE.md)**
+> Internetga chiqarish: **[DEPLOY.md](DEPLOY.md)** · bepul server (Oracle Cloud + DuckDNS): **[docs/ORACLE_FREE.md](docs/ORACLE_FREE.md)** · zaxira nusxalar: **[docs/BACKUP.md](docs/BACKUP.md)**
 
 ### Docker bilan (butun tizim bitta buyruqda)
 
