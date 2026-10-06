@@ -22,8 +22,21 @@ DIR="${AGRO_DIR:-/opt/agroyordam}"
 REPO="${AGRO_REPO:-https://github.com/Aziimuslim/agroyordam.git}"
 COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.prod.yml)
 
+# SSH orqali so'ralgan buyruq. `sudo` muhitni tozalaydi (SSH_ORIGINAL_COMMAND yo'qoladi) — shuning uchun
+# uni ota jarayonlardan (sshd ishga tushirgan shell) o'qiymiz. Qiymat pastda qat'iy tekshiriladi.
+ssh_command() {
+  if [ -n "${SSH_ORIGINAL_COMMAND:-}" ]; then printf '%s' "$SSH_ORIGINAL_COMMAND"; return 0; fi
+  local pid=$PPID v
+  for _ in 1 2 3 4 5 6; do
+    [ "${pid:-0}" -gt 1 ] 2>/dev/null || return 0
+    v="$( (tr '\0' '\n' < "/proc/$pid/environ" | sed -n 's/^SSH_ORIGINAL_COMMAND=//p' | head -n1) 2>/dev/null || true)"
+    if [ -n "$v" ]; then printf '%s' "$v"; return 0; fi
+    pid="$(sed 's/.*) //' "/proc/$pid/stat" 2>/dev/null | cut -d' ' -f2 || true)"
+  done
+}
+
 # Branch: argument yoki SSH buyrug'idan ("deploy <branch>"), aks holda hozirgi branch
-REQ="${1:-${SSH_ORIGINAL_COMMAND:-}}"
+REQ="${1:-$(ssh_command)}"
 cd "$DIR"
 # Zaxira buyruqlari (GitHub Actions "Backup tekshiruvi" shu yerdan chaqiradi)
 case "$REQ" in
