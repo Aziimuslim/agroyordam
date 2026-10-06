@@ -1,0 +1,12 @@
+# Faqat CI uchun: tashqi zaxira xotirasini (S3) sinash. S3 server sifatida `rclone serve s3` (backup image ichida).
+services:
+  s3:
+    build: ./deploy/backup
+    entrypoint: ["sh", "-c", "mkdir -p /data/agro-ci && exec rclone serve s3 --addr :9000 --auth-key ciaccesskey,cisecretkey123 /data"]
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "9000"]
+      interval: 2s
+      retries: 30
+  backup:
+    depends_on:
+      s3: {condition: service_healthy}
