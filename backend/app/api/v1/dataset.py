@@ -6,7 +6,6 @@ tasdiqlanganlar ZIP (label/rasm) → ai-service/training/train_plantvillage.py -
 import csv
 import io
 import os
-import re
 import tempfile
 import uuid
 import zipfile
@@ -21,9 +20,10 @@ from starlette.background import BackgroundTask
 
 from app.core.database import get_db
 from app.core.deps import require_admin
-from app.core.security import create_scoped_token, decode_scoped_token, utcnow
+from app.core.security import create_scoped_token, decode_scoped_token
 from app.models import Diagnosis, Disease, Plant, User
 from app.services.ai_client import get_ai_client
+from app.services.review_service import USABLE, apply_review
 from app.services.storage import get_storage
 
 router = APIRouter(prefix="/admin/dataset", tags=["Dataset"], dependencies=[Depends(require_admin)])
@@ -31,8 +31,6 @@ download_router = APIRouter(prefix="/dataset", tags=["Dataset"])
 
 TARGET_PER_LABEL = 200
 EXPORT_SCOPE = "dataset_export"
-LABEL_RE = re.compile(r"^[A-Z][A-Za-z]*_[A-Za-z0-9_]+$")
-USABLE = ("confirmed", "corrected")
 
 
 class DatasetItem(BaseModel):
@@ -102,20 +100,7 @@ async def review(diag_id: uuid.UUID, body: ReviewIn, reviewer: User = Depends(re
     d = await db.get(Diagnosis, diag_id)
     if d is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tashxis topilmadi")
-    if body.status == "confirmed":
-        label = d.ai_label or (await db.scalar(select(Disease.ai_label).where(Disease.id == d.disease_id)) if d.disease_id else None)
-        if not label:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "AI sinfi yo'q — to'g'ri sinfni tanlab \"corrected\" qiling")
-        d.verified_label = label
-    elif body.status == "corrected":
-        if not body.label or not LABEL_RE.match(body.label):
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Sinf nomi Ekin_Kasallik ko'rinishida bo'lsin (masalan Tomato_Late_blight)")
-        d.verified_label = body.label
-    else:
-        d.verified_label = None
-    d.review_status = body.status
-    d.reviewed_by = reviewer.id if body.status != "pending" else None
-    d.reviewed_at = utcnow() if body.status != "pending" else None
+    await apply_review(db, d, body.status, body.label, reviewer)
     await db.commit()
     return await _item(db, d)
 

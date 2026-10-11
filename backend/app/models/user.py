@@ -24,5 +24,8 @@ class User(Base):
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     premium_until: Mapped[datetime | None] = mapped_column(DateTime)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    # Agronom (role="agronomist"): mutaxassisligi va savol qabul qilyaptimi (onlayn/oflayn)
+    specialization: Mapped[str | None] = mapped_column(String(200))
+    accepting_questions: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     created_at: Mapped[datetime] = created_at_col()
     updated_at: Mapped[datetime] = updated_at_col()

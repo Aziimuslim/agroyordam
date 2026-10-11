@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     FREE_AI_DAILY_LIMIT: int = 3
     FREE_AI_CHAT_DAILY_LIMIT: int = 10
     FREE_CROP_LIMIT: int = 3
+    FREE_QUESTIONS_PER_MONTH: int = 2  # agronomga bepul savollar (Premium — cheksiz)
     LOGIN_RATE_LIMIT_PER_MINUTE: int = 5
 
     # To'lov provayderlari (sandbox kalitlari .env orqali beriladi)

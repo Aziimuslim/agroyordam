@@ -36,3 +36,8 @@ class Diagnosis(Base):
     verified_label: Mapped[str | None] = mapped_column(String(150), index=True)
     reviewed_by: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("users.id", ondelete="SET NULL"))
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    # Dehqon "Agronomga yuborish" bosgan: navbatda birinchi turadi
+    review_requested: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", index=True)
+    review_note: Mapped[str | None] = mapped_column(Text)  # dehqon izohi
+    expert_comment: Mapped[str | None] = mapped_column(Text)  # agronomning dehqonga izohi

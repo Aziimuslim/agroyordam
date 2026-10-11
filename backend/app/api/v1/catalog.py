@@ -6,8 +6,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import require_admin
-from app.models import Disease, DiseaseMedicine, Medicine, Plant
+from app.core.deps import require_admin, require_expert
+from app.models import CatalogChange, Disease, DiseaseMedicine, Medicine, Plant, User
 from app.repositories.catalog_repo import DiseaseRepository, MedicineRepository, PlantRepository
 from app.schemas.catalog import (
     DiseaseDetail, DiseaseIn, DiseaseMedicinesIn, DiseaseOut, DiseaseUpdate, MedicineIn, MedicineOut,
@@ -15,6 +15,10 @@ from app.schemas.catalog import (
 )
 
 router = APIRouter(tags=["Katalog"])
+
+
+async def _log(db: AsyncSession, user: User, entity: str, entity_id, action: str, summary: str) -> None:
+    db.add(CatalogChange(user_id=user.id, entity=entity, entity_id=entity_id, action=action, summary=summary[:255]))
 
 
 def _404(what: str):
@@ -47,30 +51,34 @@ async def plant_diseases(plant_id: uuid.UUID, db: AsyncSession = Depends(get_db)
     return [await _disease_out(db, d) for d in items]
 
 
-@router.post("/plants", response_model=PlantOut, status_code=201, dependencies=[Depends(require_admin)])
-async def create_plant(body: PlantIn, db: AsyncSession = Depends(get_db)):
+@router.post("/plants", response_model=PlantOut, status_code=201)
+async def create_plant(body: PlantIn, user: User = Depends(require_expert), db: AsyncSession = Depends(get_db)):
     p = await PlantRepository(db).create(**body.model_dump())
+    await _log(db, user, "plant", p.id, "create", f"O'simlik qo'shildi: {p.name}")
     await db.commit()
     return p
 
 
-@router.put("/plants/{plant_id}", response_model=PlantOut, dependencies=[Depends(require_admin)])
-async def update_plant(plant_id: uuid.UUID, body: PlantUpdate, db: AsyncSession = Depends(get_db)):
+@router.put("/plants/{plant_id}", response_model=PlantOut)
+async def update_plant(plant_id: uuid.UUID, body: PlantUpdate, user: User = Depends(require_expert), db: AsyncSession = Depends(get_db)):
     repo = PlantRepository(db)
     p = await repo.get(plant_id)
     if p is None:
         raise _404("O'simlik")
-    await repo.update(p, body.model_dump(exclude_unset=True))
+    changes = body.model_dump(exclude_unset=True)
+    await repo.update(p, changes)
+    await _log(db, user, "plant", p.id, "update", f"«{p.name}»: {', '.join(changes) or '—'}")
     await db.commit()
     return p
 
 
-@router.delete("/plants/{plant_id}", status_code=204, dependencies=[Depends(require_admin)])
-async def delete_plant(plant_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+@router.delete("/plants/{plant_id}", status_code=204)
+async def delete_plant(plant_id: uuid.UUID, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     repo = PlantRepository(db)
     p = await repo.get(plant_id)
     if p is None:
         raise _404("O'simlik")
+    await _log(db, user, "plant", p.id, "delete", f"O'simlik o'chirildi: {p.name}")
     await repo.delete(p)
     await db.commit()
 
@@ -99,10 +107,11 @@ async def get_disease(disease_id: uuid.UUID, db: AsyncSession = Depends(get_db))
     return DiseaseDetail(**base.model_dump(), medicines=meds)
 
 
-@router.post("/diseases", response_model=DiseaseOut, status_code=201, dependencies=[Depends(require_admin)])
-async def create_disease(body: DiseaseIn, db: AsyncSession = Depends(get_db)):
+@router.post("/diseases", response_model=DiseaseOut, status_code=201)
+async def create_disease(body: DiseaseIn, user: User = Depends(require_expert), db: AsyncSession = Depends(get_db)):
     try:
         d = await DiseaseRepository(db).create(**body.model_dump())
+        await _log(db, user, "disease", d.id, "create", f"Kasallik qo'shildi: {d.name}")
         await db.commit()
     except IntegrityError:
         await db.rollback()
@@ -110,14 +119,16 @@ async def create_disease(body: DiseaseIn, db: AsyncSession = Depends(get_db)):
     return await _disease_out(db, d)
 
 
-@router.put("/diseases/{disease_id}", response_model=DiseaseOut, dependencies=[Depends(require_admin)])
-async def update_disease(disease_id: uuid.UUID, body: DiseaseUpdate, db: AsyncSession = Depends(get_db)):
+@router.put("/diseases/{disease_id}", response_model=DiseaseOut)
+async def update_disease(disease_id: uuid.UUID, body: DiseaseUpdate, user: User = Depends(require_expert), db: AsyncSession = Depends(get_db)):
     repo = DiseaseRepository(db)
     d = await repo.get(disease_id)
     if d is None:
         raise _404("Kasallik")
     try:
-        await repo.update(d, body.model_dump(exclude_unset=True))
+        changes = body.model_dump(exclude_unset=True)
+        await repo.update(d, changes)
+        await _log(db, user, "disease", d.id, "update", f"«{d.name}»: {', '.join(changes) or '—'}")
         await db.commit()
     except IntegrityError:
         await db.rollback()
@@ -125,21 +136,25 @@ async def update_disease(disease_id: uuid.UUID, body: DiseaseUpdate, db: AsyncSe
     return await _disease_out(db, d)
 
 
-@router.delete("/diseases/{disease_id}", status_code=204, dependencies=[Depends(require_admin)])
-async def delete_disease(disease_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+@router.delete("/diseases/{disease_id}", status_code=204)
+async def delete_disease(disease_id: uuid.UUID, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     repo = DiseaseRepository(db)
     d = await repo.get(disease_id)
     if d is None:
         raise _404("Kasallik")
+    await _log(db, user, "disease", d.id, "delete", f"Kasallik o'chirildi: {d.name}")
     await repo.delete(d)
     await db.commit()
 
 
-@router.put("/diseases/{disease_id}/medicines", response_model=list[MedicineRecommendation], dependencies=[Depends(require_admin)])
-async def set_disease_medicines(disease_id: uuid.UUID, body: DiseaseMedicinesIn, db: AsyncSession = Depends(get_db)):
+@router.put("/diseases/{disease_id}/medicines", response_model=list[MedicineRecommendation])
+async def set_disease_medicines(disease_id: uuid.UUID, body: DiseaseMedicinesIn, user: User = Depends(require_expert),
+                                db: AsyncSession = Depends(get_db)):
     repo = DiseaseRepository(db)
-    if await repo.get(disease_id) is None:
+    d = await repo.get(disease_id)
+    if d is None:
         raise _404("Kasallik")
+    await _log(db, user, "disease", d.id, "update", f"«{d.name}»: dorilar ({len(body.items)} ta)")
     for item in body.items:
         if await db.get(Medicine, item.medicine_id) is None:
             raise _404(f"Dori {item.medicine_id}")
@@ -166,29 +181,33 @@ async def get_medicine(medicine_id: uuid.UUID, db: AsyncSession = Depends(get_db
     return m
 
 
-@router.post("/medicines", response_model=MedicineOut, status_code=201, dependencies=[Depends(require_admin)])
-async def create_medicine(body: MedicineIn, db: AsyncSession = Depends(get_db)):
+@router.post("/medicines", response_model=MedicineOut, status_code=201)
+async def create_medicine(body: MedicineIn, user: User = Depends(require_expert), db: AsyncSession = Depends(get_db)):
     m = await MedicineRepository(db).create(**body.model_dump())
+    await _log(db, user, "medicine", m.id, "create", f"Dori qo'shildi: {m.name}")
     await db.commit()
     return m
 
 
-@router.put("/medicines/{medicine_id}", response_model=MedicineOut, dependencies=[Depends(require_admin)])
-async def update_medicine(medicine_id: uuid.UUID, body: MedicineIn, db: AsyncSession = Depends(get_db)):
+@router.put("/medicines/{medicine_id}", response_model=MedicineOut)
+async def update_medicine(medicine_id: uuid.UUID, body: MedicineIn, user: User = Depends(require_expert), db: AsyncSession = Depends(get_db)):
     repo = MedicineRepository(db)
     m = await repo.get(medicine_id)
     if m is None:
         raise _404("Dori")
-    await repo.update(m, body.model_dump(exclude_unset=True))
+    changes = body.model_dump(exclude_unset=True)
+    await repo.update(m, changes)
+    await _log(db, user, "medicine", m.id, "update", f"«{m.name}»: {', '.join(changes) or '—'}")
     await db.commit()
     return m
 
 
-@router.delete("/medicines/{medicine_id}", status_code=204, dependencies=[Depends(require_admin)])
-async def delete_medicine(medicine_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+@router.delete("/medicines/{medicine_id}", status_code=204)
+async def delete_medicine(medicine_id: uuid.UUID, user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     repo = MedicineRepository(db)
     m = await repo.get(medicine_id)
     if m is None:
         raise _404("Dori")
+    await _log(db, user, "medicine", m.id, "delete", f"Dori o'chirildi: {m.name}")
     await repo.delete(m)
     await db.commit()

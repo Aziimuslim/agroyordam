@@ -2,14 +2,17 @@ import uuid
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import require_admin, require_superadmin
 from app.core.security import utcnow
-from app.models import Comment, Crop, Diagnosis, Disease, Post, Report, Subscription, User
+from app.models import CatalogChange, Comment, Crop, Diagnosis, Disease, ExpertApplication, Post, Question, Report, Subscription, User
+from app.api.v1.experts import ApplicationOut
 from app.schemas.user import UserMe
+from app.services.notification_service import notify
 
 router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(require_admin)])
 
@@ -67,9 +70,11 @@ async def revenue_stats(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/users", response_model=list[UserMe])
-async def list_users(q: str | None = None, limit: int = Query(default=50, le=200), offset: int = 0,
-                     db: AsyncSession = Depends(get_db)):
+async def list_users(q: str | None = None, role: str | None = Query(default=None, pattern=r"^(user|agronomist|moderator|admin)$"),
+                     limit: int = Query(default=50, le=200), offset: int = 0, db: AsyncSession = Depends(get_db)):
     stmt = select(User).order_by(User.created_at.desc()).limit(limit).offset(offset)
+    if role:
+        stmt = stmt.where(User.role == role)
     if q:
         stmt = stmt.where(or_(User.full_name.ilike(f"%{q}%"), User.username.ilike(f"%{q}%"),
                               User.email.ilike(f"%{q}%"), User.phone.ilike(f"%{q}%")))
@@ -87,3 +92,119 @@ async def toggle_block(user_id: uuid.UUID, blocked: bool = True, db: AsyncSessio
     await db.commit()
     await db.refresh(u)
     return u
+
+
+class RoleIn(BaseModel):
+    role: str = Field(pattern=r"^(user|agronomist|moderator|admin)$")
+
+
+@router.put("/users/{user_id}/role", response_model=UserMe)
+async def set_role(user_id: uuid.UUID, body: RoleIn, admin: User = Depends(require_superadmin), db: AsyncSession = Depends(get_db)):
+    u = await db.get(User, user_id)
+    if u is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Foydalanuvchi topilmadi")
+    if u.id == admin.id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "O'z rolingizni o'zgartira olmaysiz")
+    u.role = body.role
+    await db.commit()
+    await db.refresh(u)
+    return u
+
+
+# ---------- Agronom arizalari ----------
+class RejectIn(BaseModel):
+    reason: str = Field(min_length=3, max_length=255)
+
+
+class ApplicationAdminOut(ApplicationOut):
+    full_name: str
+    region: str | None = None
+    phone: str | None = None
+
+
+async def _app_out(db: AsyncSession, a: ExpertApplication) -> ApplicationAdminOut:
+    u = await db.get(User, a.user_id)
+    return ApplicationAdminOut(**ApplicationOut.model_validate(a).model_dump(), full_name=u.full_name, region=u.region, phone=u.phone)
+
+
+async def _pending_app(db: AsyncSession, app_id: uuid.UUID) -> ExpertApplication:
+    a = await db.get(ExpertApplication, app_id)
+    if a is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Ariza topilmadi")
+    if a.status != "pending":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Ariza allaqachon ko'rib chiqilgan")
+    return a
+
+
+@router.get("/expert-applications", response_model=list[ApplicationAdminOut])
+async def expert_applications(status_: str = Query(default="pending", alias="status", pattern=r"^(pending|approved|rejected|all)$"),
+                              db: AsyncSession = Depends(get_db)):
+    stmt = select(ExpertApplication).order_by(ExpertApplication.created_at.asc())
+    if status_ != "all":
+        stmt = stmt.where(ExpertApplication.status == status_)
+    return [await _app_out(db, a) for a in (await db.scalars(stmt)).all()]
+
+
+@router.post("/expert-applications/{app_id}/approve", response_model=ApplicationAdminOut)
+async def approve_application(app_id: uuid.UUID, admin: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    a = await _pending_app(db, app_id)
+    u = await db.get(User, a.user_id)
+    a.status, a.reviewed_by, a.reviewed_at = "approved", admin.id, utcnow()
+    if u.role == "user":
+        u.role = "agronomist"
+    u.specialization = a.specialization
+    await notify(db, u.id, "expert_approved", "Siz endi agronomsiz",
+                 "Ilovani qayta oching — agronom rejimi yoqildi.", a.id)
+    await db.commit()
+    return await _app_out(db, a)
+
+
+@router.post("/expert-applications/{app_id}/reject", response_model=ApplicationAdminOut)
+async def reject_application(app_id: uuid.UUID, body: RejectIn, admin: User = Depends(require_admin),
+                             db: AsyncSession = Depends(get_db)):
+    a = await _pending_app(db, app_id)
+    a.status, a.reason, a.reviewed_by, a.reviewed_at = "rejected", body.reason, admin.id, utcnow()
+    await notify(db, a.user_id, "expert_rejected", "Agronom arizangiz rad etildi", body.reason, a.id)
+    await db.commit()
+    return await _app_out(db, a)
+
+
+# ---------- Bilimlar bazasi jurnali va agronomlar ko'rsatkichlari ----------
+class CatalogChangeOut(BaseModel):
+    id: uuid.UUID
+    user_name: str | None = None
+    user_role: str | None = None
+    entity: str
+    entity_id: uuid.UUID | None = None
+    action: str
+    summary: str
+    created_at: str | None = None
+
+
+@router.get("/catalog-changes", response_model=list[CatalogChangeOut])
+async def catalog_changes(limit: int = Query(default=50, le=200), db: AsyncSession = Depends(get_db)):
+    rows = (await db.scalars(select(CatalogChange).order_by(CatalogChange.created_at.desc()).limit(limit))).all()
+    out = []
+    for c in rows:
+        u = await db.get(User, c.user_id) if c.user_id else None
+        out.append(CatalogChangeOut(id=c.id, user_name=u.full_name if u else None, user_role=u.role if u else None,
+                                    entity=c.entity, entity_id=c.entity_id, action=c.action, summary=c.summary,
+                                    created_at=c.created_at.isoformat() if c.created_at else None))
+    return out
+
+
+@router.get("/stats/experts")
+async def expert_stats(db: AsyncSession = Depends(get_db)):
+    stale = utcnow() - timedelta(hours=4)
+    reviewed = (Diagnosis.review_status.in_(("confirmed", "corrected")), Diagnosis.reviewed_by.is_not(None))
+    confirmed = await _count(db, Diagnosis, Diagnosis.review_status == "confirmed", Diagnosis.reviewed_by.is_not(None))
+    total = await _count(db, Diagnosis, *reviewed)
+    return {
+        "agronomists": await _count(db, User, User.role == "agronomist"),
+        "applications_pending": await _count(db, ExpertApplication, ExpertApplication.status == "pending"),
+        "queue_pending": await _count(db, Diagnosis, Diagnosis.review_status == "pending"),
+        "queue_requested": await _count(db, Diagnosis, Diagnosis.review_status == "pending", Diagnosis.review_requested.is_(True)),
+        "questions_new": await _count(db, Question, Question.status == "new"),
+        "questions_stale": await _count(db, Question, Question.status == "new", Question.created_at < stale),
+        "ai_agreement": round(confirmed / total * 100) if total else None,
+    }

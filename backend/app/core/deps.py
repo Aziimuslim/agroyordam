@@ -42,3 +42,6 @@ def require_roles(*roles: str) -> Callable:
 
 require_admin = require_roles("admin", "moderator")
 require_superadmin = require_roles("admin")
+# Agronom: tashxislarni tekshiradi, savollarga javob beradi, bilimlar bazasini yuritadi (admin ham qila oladi)
+require_expert = require_roles("agronomist", "admin", "moderator")
+EXPERT_ROLES = ("agronomist", "admin", "moderator")

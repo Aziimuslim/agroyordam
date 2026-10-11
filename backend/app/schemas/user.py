@@ -13,6 +13,7 @@ class UserPublic(ORMModel):
     avatar_url: str | None = None
     region: str | None = None
     is_premium: bool = False
+    role: str = "user"  # user | agronomist | admin — jamoatda "Agronom" belgisi uchun
     created_at: datetime | None = None
 
 
@@ -20,7 +21,8 @@ class UserMe(UserPublic):
     email: str | None = None
     phone: str | None = None
     language: str = "uz"
-    role: str = "user"
+    specialization: str | None = None
+    accepting_questions: bool = True
     premium_until: datetime | None = None
     is_active: bool = True
 

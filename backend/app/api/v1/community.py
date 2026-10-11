@@ -25,9 +25,10 @@ async def get_post(db: AsyncSession, post_id: uuid.UUID) -> Post:
 @router.get("/posts", response_model=list[PostOut])
 async def list_posts(
     category: str | None = None, user_id: uuid.UUID | None = None, feed: str = Query(default="all", pattern="^(all|following)$"),
-    q: str | None = None, limit: int = 30, offset: int = 0,
+    q: str | None = None, unanswered: bool = False, limit: int = 30, offset: int = 0,
     user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
 ):
+    """unanswered=true — agronom hali izoh yozmagan postlar (agronomlar uchun "Javobsiz" filtri)."""
     stmt = select(Post).order_by(Post.created_at.desc()).limit(min(limit, 100)).offset(offset)
     if category:
         stmt = stmt.where(Post.category == category)
@@ -35,6 +36,10 @@ async def list_posts(
         stmt = stmt.where(Post.user_id == user_id)
     if q:
         stmt = stmt.where(or_(Post.title.ilike(f"%{q}%"), Post.content.ilike(f"%{q}%")))
+    if unanswered:
+        expert_comment = select(Comment.id).join(User, User.id == Comment.user_id).where(
+            Comment.post_id == Post.id, User.role == "agronomist")
+        stmt = stmt.where(~expert_comment.exists())
     if feed == "following":
         stmt = stmt.where(Post.user_id.in_(select(Follower.following_id).where(Follower.follower_id == user.id)))
     return [await post_out(db, p, user) for p in (await db.scalars(stmt)).all()]

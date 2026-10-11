@@ -6,6 +6,7 @@ from app.models.crop_log import CropLog
 from app.models.diagnosis import Diagnosis
 from app.models.disease import Disease
 from app.models.disease_medicine import DiseaseMedicine
+from app.models.expert import CatalogChange, ExpertApplication, Question, QuestionMessage
 from app.models.follower import Follower
 from app.models.like import Like
 from app.models.medicine import Medicine
@@ -21,7 +22,7 @@ from app.models.subscription import Subscription
 from app.models.user import User
 
 __all__ = [
-    "AIChatMessage", "Comment", "Conversation", "ConversationParticipant", "Crop", "CropLog",
+    "AIChatMessage", "CatalogChange", "Comment", "ExpertApplication", "Question", "QuestionMessage", "Conversation", "ConversationParticipant", "Crop", "CropLog",
     "Diagnosis", "Disease", "DiseaseMedicine", "Follower", "Like", "Medicine", "Message",
     "Notification", "PaymentTransaction", "Plant", "Post", "RefreshToken", "Reminder", "Report", "Subscription", "User",
 ]

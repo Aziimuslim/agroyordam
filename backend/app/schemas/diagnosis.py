@@ -28,7 +28,14 @@ class DiagnosisOut(ORMModel):
     low_confidence: bool = False
     medicines: list[MedicineRecommendation] = []
     user_feedback: bool | None = None
+    review_status: str = "pending"
+    review_requested: bool = False
+    expert_comment: str | None = None
     diagnosed_at: datetime | None = None
+
+
+class ReviewRequestIn(BaseModel):
+    note: str | None = Field(default=None, max_length=1000)
 
 
 class FeedbackIn(BaseModel):

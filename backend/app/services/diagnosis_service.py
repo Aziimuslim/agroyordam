@@ -119,8 +119,13 @@ async def to_out(db: AsyncSession, diag: Diagnosis, ai_label: str | None = None)
         prevention=disease.prevention if disease else None,
         recommendations=diag.recommendations,
         is_healthy=healthy,
-        low_confidence=(not healthy and disease is None) or conf < settings.AI_MIN_CONFIDENCE,
+        # Agronom tasdiqlagan/tuzatgan natija endi taxminiy emas
+        low_confidence=diag.review_status not in ("confirmed", "corrected") and (
+            (not healthy and disease is None) or conf < settings.AI_MIN_CONFIDENCE),
         medicines=meds,
         user_feedback=diag.user_feedback,
+        review_status=diag.review_status,
+        review_requested=diag.review_requested,
+        expert_comment=diag.expert_comment,
         diagnosed_at=diag.diagnosed_at,
     )
