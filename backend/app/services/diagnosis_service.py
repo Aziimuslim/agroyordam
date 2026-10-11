@@ -110,6 +110,7 @@ async def to_out(db: AsyncSession, diag: Diagnosis, ai_label: str | None = None)
         disease_id=diag.disease_id,
         disease_name=disease.name if disease else None,
         ai_label=ai_label or diag.ai_label or (disease.ai_label if disease else None),
+        disease_label=disease.ai_label if disease else None,
         image_url=diag.image_url,
         confidence=diag.confidence,
         risk_level=diag.risk_level,

@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import delete, or_
+from sqlalchemy import delete, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,7 +10,7 @@ from app.core.deps import require_admin, require_expert
 from app.models import CatalogChange, Disease, DiseaseMedicine, Medicine, Plant, User
 from app.repositories.catalog_repo import DiseaseRepository, MedicineRepository, PlantRepository
 from app.schemas.catalog import (
-    DiseaseDetail, DiseaseIn, DiseaseMedicinesIn, DiseaseOut, DiseaseUpdate, MedicineIn, MedicineOut,
+    DiseaseDetail, DiseaseIn, DiseaseUse, DiseaseMedicinesIn, DiseaseOut, DiseaseUpdate, MedicineIn, MedicineOut,
     MedicineRecommendation, PlantIn, PlantOut, PlantUpdate,
 )
 
@@ -49,6 +49,15 @@ async def _disease_out(db: AsyncSession, d: Disease) -> DiseaseOut:
 async def plant_diseases(plant_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     items = await DiseaseRepository(db).list(Disease.plant_id == plant_id, order_by=Disease.name, limit=500)
     return [await _disease_out(db, d) for d in items]
+
+
+@router.get("/plants/{plant_id}/medicines", response_model=list[MedicineOut])
+async def plant_medicines(plant_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """Shu ekin kasalliklariga qarshi ishlatiladigan dorilar."""
+    stmt = (select(Medicine).join(DiseaseMedicine, DiseaseMedicine.medicine_id == Medicine.id)
+            .join(Disease, Disease.id == DiseaseMedicine.disease_id).where(Disease.plant_id == plant_id)
+            .distinct().order_by(Medicine.name))
+    return list((await db.scalars(stmt)).all())
 
 
 @router.post("/plants", response_model=PlantOut, status_code=201)
@@ -179,6 +188,17 @@ async def get_medicine(medicine_id: uuid.UUID, db: AsyncSession = Depends(get_db
     if m is None:
         raise _404("Dori")
     return m
+
+
+@router.get("/medicines/{medicine_id}/diseases", response_model=list[DiseaseUse])
+async def medicine_diseases(medicine_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """Bu dori qaysi kasalliklarga qarshi tavsiya etilgan (me'yori bilan)."""
+    if await MedicineRepository(db).get(medicine_id) is None:
+        raise _404("Dori")
+    rows = (await db.execute(select(Disease, DiseaseMedicine.recommendation)
+                             .join(DiseaseMedicine, DiseaseMedicine.disease_id == Disease.id)
+                             .where(DiseaseMedicine.medicine_id == medicine_id).order_by(Disease.name))).all()
+    return [DiseaseUse(**(await _disease_out(db, d)).model_dump(), recommendation=r) for d, r in rows]
 
 
 @router.post("/medicines", response_model=MedicineOut, status_code=201)

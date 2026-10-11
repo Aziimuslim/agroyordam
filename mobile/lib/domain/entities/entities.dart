@@ -3,6 +3,7 @@ export 'chat.dart';
 export 'community.dart';
 export 'crop.dart';
 export 'diagnosis.dart';
+export 'expert.dart';
 export 'reminder.dart';
 export 'subscription.dart';
 export 'user.dart';

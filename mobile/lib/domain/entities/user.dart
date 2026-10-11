@@ -15,6 +15,8 @@ class AppUser {
     this.premiumUntil,
     this.isActive = true,
     this.createdAt,
+    this.specialization,
+    this.acceptingQuestions = true,
   });
 
   final String id, fullName, username;
@@ -23,6 +25,11 @@ class AppUser {
   final bool isPremium, isActive;
   final DateTime? premiumUntil, createdAt;
 
+  /// Agronom: mutaxassisligi va savol qabul qilyaptimi (onlayn/oflayn).
+  final String? specialization;
+  final bool acceptingQuestions;
+
+  bool get isExpert => role == 'agronomist';
   bool get isAdmin => role == 'admin' || role == 'moderator';
   String get initials => initialsOf(fullName);
 
@@ -40,6 +47,8 @@ class AppUser {
         premiumUntil: parseDate(j['premium_until']),
         isActive: j['is_active'] ?? true,
         createdAt: parseDate(j['created_at']),
+        specialization: j['specialization'],
+        acceptingQuestions: j['accepting_questions'] ?? true,
       );
 }
 

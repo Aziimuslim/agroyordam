@@ -22,6 +22,11 @@ class Diagnosis {
     this.medicines = const [],
     this.userFeedback,
     this.diagnosedAt,
+    this.aiLabel,
+    this.diseaseLabel,
+    this.reviewStatus = 'pending',
+    this.reviewRequested = false,
+    this.expertComment,
   });
   final String id, imageUrl;
   final String? cropId, plantId, plantName, diseaseId, diseaseName, riskLevel, symptoms, causes, treatment, prevention, recommendations;
@@ -30,6 +35,17 @@ class Diagnosis {
   final List<Medicine> medicines;
   final bool? userFeedback;
   final DateTime? diagnosedAt;
+
+  /// AI sinfi (ma'lumotnoma rasmi uchun) va agronom tekshiruvi: pending | confirmed | corrected | rejected.
+  final String? aiLabel, expertComment;
+
+  /// Bilimlar bazasidagi kasallik sinfi — agronom tuzatgan bo'lsa ham to'g'ri ma'lumotnoma rasmi uchun.
+  final String? diseaseLabel;
+  final String reviewStatus;
+  final bool reviewRequested;
+
+  bool get expertChecked => reviewStatus == 'confirmed' || reviewStatus == 'corrected';
+  bool get canAskExpert => reviewStatus == 'pending' && !reviewRequested;
 
   String get title => isHealthy ? "O'simlik sog'lom" : (diseaseName ?? 'Aniqlanmadi');
 
@@ -53,6 +69,11 @@ class Diagnosis {
         medicines: [for (final m in (j['medicines'] as List? ?? [])) Medicine.fromJson(m)],
         userFeedback: j['user_feedback'],
         diagnosedAt: parseDate(j['diagnosed_at']),
+        aiLabel: j['ai_label'],
+        diseaseLabel: j['disease_label'],
+        reviewStatus: j['review_status'] ?? 'pending',
+        reviewRequested: j['review_requested'] ?? false,
+        expertComment: j['expert_comment'],
       );
 }
 

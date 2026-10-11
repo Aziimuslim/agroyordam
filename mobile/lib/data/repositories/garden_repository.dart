@@ -44,6 +44,10 @@ class GardenRepository extends BaseRepository {
         if (plantId != null) 'plant_id': plantId,
       }))
           .data['crop_id'] as String);
+  /// "Agronomga yuborish": tashxis agronomlar navbatida birinchi turadi.
+  Future<Diagnosis> requestReview(String id, {String? note}) => call(() async =>
+      Diagnosis.fromJson((await dio.post('/diagnoses/$id/request-review', data: {if (note != null && note.isNotEmpty) 'note': note})).data));
+
   Future<Diagnosis> feedback(String id, bool correct) =>
       call(() async => Diagnosis.fromJson((await dio.post('/diagnoses/$id/feedback', data: {'correct': correct})).data));
   Future<Post> shareDiagnosis(String id) => call(() async => Post.fromJson((await dio.post('/diagnoses/$id/share')).data));

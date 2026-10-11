@@ -9,6 +9,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/bottom_nav.dart';
+import '../../../core/widgets/ds.dart';
 import '../../../core/widgets/widgets.dart';
 import '../auth/server_settings.dart';
 
@@ -65,7 +66,9 @@ class ProfileScreen extends ConsumerWidget {
           trailing: Icon(AppIcons.chevron, color: c.onDark),
           onTap: () => context.push('/premium'),
         ),
-        SectionTitle('Mening postlarim', action: "Jamoatda ko'rish", onAction: () => context.go('/community')),
+        const SizedBox(height: 4),
+        const _ExpertEntry(),
+        SectionTitle('Mening postlarim', action: "Jamoatda ko'rish", onAction: () => context.go('/help?tab=comm')),
         myPosts.maybeWhen(
           data: (posts) => posts.isEmpty
               ? const EmptyNote("Hali post yo'q")
@@ -85,12 +88,12 @@ class ProfileScreen extends ConsumerWidget {
         ListRow(icon: AppIcons.bell, label: 'Eslatmalar va vazifalar', onTap: () => context.push('/reminders')),
         ListRow(icon: AppIcons.chat, label: 'Xabarlar', onTap: () => context.push('/messages')),
         ListRow(icon: Icons.notifications_none_rounded, label: 'Bildirishnomalar', onTap: () => context.push('/notifications')),
-        ListRow(icon: AppIcons.book, label: 'Ensiklopediya', onTap: () => context.push('/catalog')),
+        ListRow(icon: AppIcons.book, label: "Ma'lumotnoma", value: "O'simlik, kasallik, dori", onTap: () => context.push('/catalog')),
         ListRow(
           icon: Icons.dark_mode_outlined,
           label: 'Mavzu',
           value: switch (mode) { ThemeMode.dark => "Qorong'i", ThemeMode.light => "Yorug'", _ => 'Tizim' },
-          onTap: () => ref.read(themeModeProvider.notifier).cycle(),
+          onTap: () => _themeSheet(context, ref),
         ),
         ListRow(icon: Icons.dns_outlined, label: 'Server manzili', onTap: () => showServerSettings(context, ref)),
         ListRow(icon: AppIcons.globe, label: 'Til', value: "O'zbekcha", onTap: () => showToast(context, "Hozircha faqat o'zbek tili")),
@@ -110,6 +113,73 @@ class ProfileScreen extends ConsumerWidget {
         Center(child: Text('Versiya ${AppConfig.version} · Barcha huquqlar himoyalangan.', style: TextStyle(color: c.muted, fontSize: 11))),
       ]),
     );
+  }
+}
+
+void _themeSheet(BuildContext context, WidgetRef ref) {
+  showSheet(context, title: 'Mavzu', builder: (ctx) => Consumer(builder: (ctx, ref, _) {
+        final mode = ref.watch(themeModeProvider);
+        final c = ctx.c;
+        return Row(children: [
+          for (final (m, icon, label) in [
+            (ThemeMode.light, Icons.light_mode_outlined, "Yorug'"),
+            (ThemeMode.dark, Icons.dark_mode_outlined, "Qorong'i"),
+            (ThemeMode.system, Icons.brightness_auto_outlined, 'Tizimga qarab'),
+          ]) ...[
+            if (m != ThemeMode.light) const SizedBox(width: 8),
+            Expanded(
+              child: Material(
+                color: mode == m ? c.primaryLight : c.card,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14), side: BorderSide(color: mode == m ? c.primary : c.lineStrong, width: 1.5)),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => ref.read(themeModeProvider.notifier).set(m),
+                  child: SizedBox(
+                    height: 76,
+                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Icon(icon, color: mode == m ? c.primary : c.text),
+                      const SizedBox(height: 4),
+                      Text(label, textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: mode == m ? c.primary : c.text)),
+                    ]),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ]);
+      }));
+}
+
+/// "Men agronomman": ariza yuborish yoki holatini ko'rish. Agronom bo'lsa — agronom rejimi haqida.
+class _ExpertEntry extends ConsumerWidget {
+  const _ExpertEntry();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
+    if (user == null || user.isAdmin) return const SizedBox.shrink();
+    if (user.isExpert) {
+      return const Padding(
+        padding: EdgeInsets.only(bottom: 14),
+        child: NoteBox(kind: NoteKind.expert, title: 'Siz agronomsiz', text: "Agronom rejimi keyingi yangilanishda shu ilovada ochiladi."),
+      );
+    }
+    final app = ref.watch(myApplicationProvider).value;
+    if (app != null && app.pending) {
+      return const Padding(
+        padding: EdgeInsets.only(bottom: 14),
+        child: NoteBox(title: "Agronom arizangiz ko'rib chiqilmoqda", text: 'Javob 1–2 kunda bildirishnoma bo\'lib keladi.', icon: Icons.hourglass_top_rounded),
+      );
+    }
+    return Column(children: [
+      if (app != null && app.status == 'rejected')
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: NoteBox(kind: NoteKind.risk, title: 'Oldingi ariza rad etildi', text: app.reason),
+        ),
+      ListRow(icon: Icons.verified_user_outlined, label: 'Men agronomman', value: 'Ariza', onTap: () => context.push('/profile/expert')),
+    ]);
   }
 }
 

@@ -112,3 +112,8 @@ class DiseaseMedicineLink(BaseModel):
 
 class DiseaseMedicinesIn(BaseModel):
     items: list[DiseaseMedicineLink]
+
+
+class DiseaseUse(DiseaseOut):
+    """Dori sahifasi: shu dori qaysi kasallikka qarshi va qanday me'yorda."""
+    recommendation: str | None = None

@@ -19,8 +19,10 @@ class ThemeModeController extends Notifier<ThemeMode> {
     } catch (_) {}
   }
 
-  Future<void> cycle() async {
-    state = switch (state) { ThemeMode.system => ThemeMode.light, ThemeMode.light => ThemeMode.dark, _ => ThemeMode.system };
+  Future<void> cycle() => set(switch (state) { ThemeMode.system => ThemeMode.light, ThemeMode.light => ThemeMode.dark, _ => ThemeMode.system });
+
+  Future<void> set(ThemeMode mode) async {
+    state = mode;
     try {
       (await SharedPreferences.getInstance()).setString(_key, state.name);
     } catch (_) {}

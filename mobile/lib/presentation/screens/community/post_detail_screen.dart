@@ -53,15 +53,26 @@ class _PostDetailState extends ConsumerState<PostDetailScreen> {
                     data: (list) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       SectionTitle('Izohlar (${list.length})'),
                       if (list.isEmpty) const EmptyNote("Hali izoh yo'q"),
-                      for (final cm in list)
+                      // Agronom javoblari tepada, "Agronom javobi" belgisi bilan
+                      for (final cm in [...list.where((x) => x.author.isExpert), ...list.where((x) => !x.author.isExpert)])
                         AppCard(
+                          color: cm.author.isExpert ? c.expertBg : null,
                           margin: const EdgeInsets.only(bottom: 10),
                           padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
                           radius: 14,
                           onTap: () => context.push('/users/${cm.author.id}'),
                           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            if (cm.author.isExpert)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Row(children: [
+                                  Icon(Icons.verified_user_outlined, size: 15, color: c.expert),
+                                  const SizedBox(width: 5),
+                                  Text('Agronom javobi', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: c.expert)),
+                                ]),
+                              ),
                             Row(children: [
-                              Avatar(name: cm.author.fullName, url: cm.author.avatarUrl, size: 28),
+                              Avatar(name: cm.author.fullName, url: cm.author.avatarUrl, size: 28, color: cm.author.isExpert ? c.expert : null),
                               const SizedBox(width: 9),
                               Text(cm.author.fullName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
                               const SizedBox(width: 8),
@@ -76,7 +87,7 @@ class _PostDetailState extends ConsumerState<PostDetailScreen> {
                                 ),
                             ]),
                             const SizedBox(height: 6),
-                            Text(cm.content, style: const TextStyle(fontSize: 13.5, height: 1.4)),
+                            Text(cm.content, style: const TextStyle(fontSize: 15, height: 1.45)),
                           ]),
                         ),
                     ]),

@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.1.4+5
+version: 0.2.0+6
 
 environment:
   sdk: ^3.9.2
@@ -70,18 +70,21 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  assets:
+    - assets/catalog/
+
   fonts:
-    - family: PlusJakartaSans
+    - family: Onest
       fonts:
-        - asset: assets/fonts/PlusJakartaSans-400.ttf
+        - asset: assets/fonts/Onest-400.ttf
           weight: 400
-        - asset: assets/fonts/PlusJakartaSans-500.ttf
+        - asset: assets/fonts/Onest-500.ttf
           weight: 500
-        - asset: assets/fonts/PlusJakartaSans-600.ttf
+        - asset: assets/fonts/Onest-600.ttf
           weight: 600
-        - asset: assets/fonts/PlusJakartaSans-700.ttf
+        - asset: assets/fonts/Onest-700.ttf
           weight: 700
-        - asset: assets/fonts/PlusJakartaSans-800.ttf
+        - asset: assets/fonts/Onest-800.ttf
           weight: 800
 
   # To add assets to your application, add an assets section, like this:

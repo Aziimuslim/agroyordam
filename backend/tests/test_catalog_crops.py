@@ -71,3 +71,17 @@ async def test_crop_isolation(client, user_headers):
     other = auth(await register(client, "intruder"))
     assert (await client.get(f"/api/v1/crops/{crop['id']}", headers=other)).status_code == 404
     assert (await client.delete(f"/api/v1/crops/{crop['id']}", headers=other)).status_code == 404
+
+
+async def test_catalog_relations(client, user_headers):
+    meds = (await client.get("/api/v1/medicines?q=Mis oksixlorid", headers=user_headers)).json()
+    uses = (await client.get(f"/api/v1/medicines/{meds[0]['id']}/diseases", headers=user_headers)).json()
+    names = {u["name"] for u in uses}
+    assert "Fitoftoroz (kech kuyish)" in names
+    late = next(u for u in uses if u["name"] == "Fitoftoroz (kech kuyish)")
+    assert "40 g" in late["recommendation"] and late["plant_name"] == "Pomidor"
+
+    plants = (await client.get("/api/v1/plants?q=Pomidor", headers=user_headers)).json()
+    pm = {m["name"] for m in (await client.get(f"/api/v1/plants/{plants[0]['id']}/medicines", headers=user_headers)).json()}
+    assert {"Mis oksixlorid", "Mankoseb"} <= pm
+    assert (await client.get("/api/v1/medicines/00000000-0000-0000-0000-000000000000/diseases", headers=user_headers)).status_code == 404

@@ -60,9 +60,13 @@ class Disease {
     this.prevention,
     this.riskLevel,
     this.medicines = const [],
+    this.recommendation,
   });
   final String id, name;
   final String? plantId, plantName, aiLabel, description, symptoms, causes, treatment, prevention, riskLevel;
+
+  /// Dori sahifasida: shu kasallikka qarshi me'yor.
+  final String? recommendation;
   final List<Medicine> medicines;
 
   factory Disease.fromJson(Map<String, dynamic> j) => Disease(
@@ -78,5 +82,6 @@ class Disease {
         prevention: j['prevention'],
         riskLevel: j['risk_level'],
         medicines: [for (final m in (j['medicines'] as List? ?? [])) Medicine.fromJson(m)],
+        recommendation: j['recommendation'],
       );
 }

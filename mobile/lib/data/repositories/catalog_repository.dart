@@ -11,6 +11,12 @@ class CatalogRepository extends BaseRepository {
       });
   Future<Disease> disease(String id) => call(() async => Disease.fromJson((await dio.get('/diseases/$id')).data));
   Future<List<Medicine>> medicines() => call(() async => list((await dio.get('/medicines')).data, Medicine.fromJson));
+  Future<Medicine> medicine(String id) => call(() async => Medicine.fromJson((await dio.get('/medicines/$id')).data));
+  Future<Plant> plant(String id) => call(() async => Plant.fromJson((await dio.get('/plants/$id')).data));
+
+  /// Dori qaysi kasalliklarga qarshi (me'yori bilan) va ekin kasalliklariga qarshi dorilar.
+  Future<List<Disease>> medicineDiseases(String id) => call(() async => list((await dio.get('/medicines/$id/diseases')).data, Disease.fromJson));
+  Future<List<Medicine>> plantMedicines(String id) => call(() async => list((await dio.get('/plants/$id/medicines')).data, Medicine.fromJson));
 
   // Admin
   Future<void> savePlant(Map<String, dynamic> data, {String? id}) =>

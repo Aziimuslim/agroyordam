@@ -6,6 +6,7 @@ import '../data/repositories/admin_repository.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/catalog_repository.dart';
 import '../data/repositories/community_repository.dart';
+import '../data/repositories/expert_repository.dart';
 import '../data/repositories/garden_repository.dart';
 import '../data/repositories/subscription_repository.dart';
 import '../domain/entities/entities.dart';
@@ -24,6 +25,7 @@ final gardenRepoProvider = Provider((ref) => GardenRepository(ref.watch(apiClien
 final communityRepoProvider = Provider((ref) => CommunityRepository(ref.watch(apiClientProvider)));
 final subscriptionRepoProvider = Provider((ref) => SubscriptionRepository(ref.watch(apiClientProvider)));
 final adminRepoProvider = Provider((ref) => AdminRepository(ref.watch(apiClientProvider)));
+final expertRepoProvider = Provider((ref) => ExpertRepository(ref.watch(apiClientProvider)));
 
 // ---------- Auth ----------
 enum AuthStatus { unknown, authenticated, unauthenticated }
@@ -94,6 +96,14 @@ final plantsProvider = FutureProvider<List<Plant>>((ref) => ref.watch(catalogRep
 final diseasesProvider = FutureProvider.autoDispose<List<Disease>>((ref) => ref.watch(catalogRepoProvider).diseases());
 final medicinesProvider = FutureProvider.autoDispose<List<Medicine>>((ref) => ref.watch(catalogRepoProvider).medicines());
 final diseaseProvider = FutureProvider.autoDispose.family<Disease, String>((ref, id) => ref.watch(catalogRepoProvider).disease(id));
+final plantProvider = FutureProvider.autoDispose.family<Plant, String>((ref, id) => ref.watch(catalogRepoProvider).plant(id));
+final medicineProvider = FutureProvider.autoDispose.family<Medicine, String>((ref, id) => ref.watch(catalogRepoProvider).medicine(id));
+final plantDiseasesProvider =
+    FutureProvider.autoDispose.family<List<Disease>, String>((ref, id) => ref.watch(catalogRepoProvider).diseases(plantId: id));
+final plantMedicinesProvider =
+    FutureProvider.autoDispose.family<List<Medicine>, String>((ref, id) => ref.watch(catalogRepoProvider).plantMedicines(id));
+final medicineDiseasesProvider =
+    FutureProvider.autoDispose.family<List<Disease>, String>((ref, id) => ref.watch(catalogRepoProvider).medicineDiseases(id));
 
 /// Ob-havo ixtiyoriy: xato bo'lsa null (bosh sahifada karta ko'rsatilmaydi).
 final weatherProvider = FutureProvider.autoDispose<Weather?>((ref) async {
@@ -128,3 +138,10 @@ final notificationsProvider = FutureProvider.autoDispose<List<AppNotification>>(
 final plansProvider = FutureProvider.autoDispose<List<Plan>>((ref) => ref.watch(subscriptionRepoProvider).plans());
 final mySubscriptionProvider = FutureProvider.autoDispose<MySubscription>((ref) => ref.watch(subscriptionRepoProvider).me());
 final paymentsProvider = FutureProvider.autoDispose<List<Subscription>>((ref) => ref.watch(subscriptionRepoProvider).history());
+
+// ---------- Agronomlar va savollar ----------
+final expertsProvider = FutureProvider.autoDispose<List<Expert>>((ref) => ref.watch(expertRepoProvider).experts());
+final myQuestionsProvider = FutureProvider.autoDispose<List<Question>>((ref) => ref.watch(expertRepoProvider).mine());
+final questionProvider = FutureProvider.autoDispose.family<Question, String>((ref, id) => ref.watch(expertRepoProvider).question(id));
+final questionQuotaProvider = FutureProvider.autoDispose<QuestionQuota>((ref) => ref.watch(expertRepoProvider).quota());
+final myApplicationProvider = FutureProvider.autoDispose<ExpertApplication?>((ref) => ref.watch(expertRepoProvider).myApplication());

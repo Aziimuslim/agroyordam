@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_icons.dart';
 
-/// Pastki navigatsiya: Bosh sahifa, Bog'im, [Tashxis kamerasi], Jamoat, Profil.
+/// Pastki navigatsiya: Bosh sahifa, Bog'im, [Tashxis kamerasi], Maslahat (agronom · AI · jamoat), Profil.
 /// Eslatmalar — ekin sahifasida, bosh sahifadagi "Bugungi vazifalar"da va Profil menyusida.
 /// Dizayn: Figma "Yashil dala" — faol bo'lim yumshoq yashil "pill" ichida, markazda suzuvchi kamera tugmasi.
 class AppBottomNav extends StatelessWidget {
@@ -90,7 +90,7 @@ class AppBottomNav extends StatelessWidget {
                     ),
                   ),
                 ),
-                item('/community', 'Jamoat', AppIcons.users),
+                item('/help', 'Maslahat', AppIcons.chat),
                 item('/profile', 'Profil', AppIcons.sliders),
               ]),
             ),

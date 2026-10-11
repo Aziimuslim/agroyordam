@@ -16,6 +16,7 @@ class DiagnosisOut(ORMModel):
     disease_id: uuid.UUID | None = None
     disease_name: str | None = None
     ai_label: str | None = None
+    disease_label: str | None = None  # bilimlar bazasidagi kasallik sinfi (ma'lumotnoma rasmi uchun)
     image_url: str
     confidence: Decimal | None = None
     risk_level: str | None = None

@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/catalog_images.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_icons.dart';
-import '../../../core/utils/format.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/ds.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 
-/// Ensiklopediya: O'simliklar / Kasalliklar / Dorilar (bilimlar bazasi).
+/// Ma'lumotnoma — to'liq katalog: O'simliklar · Kasalliklar · Dorilar, rasmlari bilan. Qidiruv uchala bo'limdan.
 class CatalogScreen extends ConsumerStatefulWidget {
   const CatalogScreen({super.key, this.tab = 'plants'});
   final String tab;
@@ -16,132 +18,238 @@ class CatalogScreen extends ConsumerStatefulWidget {
   ConsumerState<CatalogScreen> createState() => _CatalogState();
 }
 
+const _riskOrder = {'high': 0, 'medium': 1, 'low': 2};
+
 class _CatalogState extends ConsumerState<CatalogScreen> {
-  late String _tab = widget.tab;
+  late String _tab = const {'plants', 'diseases', 'medicines'}.contains(widget.tab) ? widget.tab : 'plants';
   String _q = '';
+  String _plant = 'all';
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    bool match(String? s) => _q.isEmpty || (s ?? '').toLowerCase().contains(_q.toLowerCase());
+    final plants = ref.watch(plantsProvider);
+    final diseases = ref.watch(diseasesProvider);
+    final medicines = ref.watch(medicinesProvider);
+    final counts = [plants.value?.length, diseases.value?.length, medicines.value?.length];
     return PageShell(
       padBottom: false,
+      onRefresh: () async {
+        ref.invalidate(plantsProvider);
+        ref.invalidate(diseasesProvider);
+        ref.invalidate(medicinesProvider);
+      },
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const TopBar(title: 'Ensiklopediya'),
+        TopBar(
+          title: "Ma'lumotnoma",
+          subtitle: counts.contains(null) ? null : "${counts[0]} o'simlik · ${counts[1]} kasallik · ${counts[2]} dori",
+        ),
         TextField(
-          onChanged: (v) => setState(() => _q = v),
-          decoration: InputDecoration(hintText: 'Qidirish...', prefixIcon: Icon(Icons.search_rounded, color: c.muted)),
+          onChanged: (v) => setState(() => _q = v.trim()),
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(hintText: "O'simlik, kasallik yoki dori nomi", prefixIcon: Icon(Icons.search_rounded, color: c.muted)),
         ),
-        const SizedBox(height: 14),
-        ChipTabs(
-          tabs: const [('plants', "O'simliklar"), ('diseases', 'Kasalliklar'), ('medicines', 'Dorilar')],
-          selected: _tab,
-          onSelect: (v) => setState(() => _tab = v),
-        ),
-        if (_tab == 'plants')
-          AsyncView(
-            value: ref.watch(plantsProvider),
-            onRetry: () => ref.invalidate(plantsProvider),
-            data: (list) {
-              final diseases = ref.watch(diseasesProvider).value ?? [];
-              return Column(children: [
-                for (final p in list.where((p) => match(p.name) || match(p.scientificName)))
-                  RowCard(
-                    leading: ThumbIcon(icon: AppIcons.forPlant(p.name), size: 46),
-                    title: p.name,
-                    subtitle: p.scientificName,
-                    trailing: Text('${diseases.where((d) => d.plantId == p.id).length} kasallik', style: TextStyle(color: c.muted, fontSize: 13)),
-                    onTap: () => _plantSheet(context, p, diseases.where((d) => d.plantId == p.id).toList()),
-                  ),
-              ]);
-            },
+        const SizedBox(height: 12),
+        if (_q.isNotEmpty)
+          _SearchResults(q: _q.toLowerCase())
+        else ...[
+          SegmentTabs(
+            tabs: const [('plants', "O'simliklar"), ('diseases', 'Kasalliklar'), ('medicines', 'Dorilar')],
+            selected: _tab,
+            onSelect: (v) => setState(() => _tab = v),
           ),
-        if (_tab == 'diseases')
-          AsyncView(
-            value: ref.watch(diseasesProvider),
-            onRetry: () => ref.invalidate(diseasesProvider),
-            data: (list) => Column(children: [
-              for (final d in list.where((d) => match(d.name) || match(d.symptoms) || match(d.plantName)))
-                AppCard(
-                  onTap: () => showDiseaseSheet(context, ref, d.id),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Icon(AppIcons.bug, size: 20, color: c.primaryDark),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(d.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800))),
-                      if (d.riskLevel != null)
-                        Tag(riskLabels[d.riskLevel]!, bg: d.riskLevel == 'high' ? c.dangerBg : c.primaryLight, fg: d.riskLevel == 'high' ? c.danger : c.primaryDark),
-                    ]),
-                    if (d.plantName != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(d.plantName!, style: TextStyle(color: c.primary, fontSize: 12.5, fontWeight: FontWeight.w700))),
-                    const SizedBox(height: 6),
-                    Text(d.symptoms ?? '', style: TextStyle(color: c.muted, fontSize: 13, height: 1.4), maxLines: 3, overflow: TextOverflow.ellipsis),
-                  ]),
-                ),
-            ]),
-          ),
-        if (_tab == 'medicines')
-          AsyncView(
-            value: ref.watch(medicinesProvider),
-            onRetry: () => ref.invalidate(medicinesProvider),
-            data: (list) => Column(children: [
-              for (final m in list.where((m) => match(m.name) || match(m.activeIngredient)))
-                AppCard(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Icon(AppIcons.pill, size: 20, color: c.primaryDark),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(m.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800))),
-                    ]),
-                    if (m.activeIngredient != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(m.activeIngredient!, style: TextStyle(color: c.muted, fontSize: 12.5))),
-                    if (m.description != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text(m.description!, style: const TextStyle(fontSize: 13))),
-                    if (m.usage != null) InfoBox(label: "Qo'llash", value: m.usage!),
-                    if (m.precautions != null) Text('Ehtiyot choralari: ${m.precautions}', style: TextStyle(fontSize: 12.5, color: c.primary, fontWeight: FontWeight.w700)),
-                  ]),
-                ),
-            ]),
-          ),
+          const SizedBox(height: 14),
+          if (_tab == 'plants')
+            AsyncView(
+              value: plants,
+              onRetry: () => ref.invalidate(plantsProvider),
+              data: (list) => _PlantGrid(plants: list, diseases: diseases.value ?? const []),
+            ),
+          if (_tab == 'diseases')
+            AsyncView(
+              value: diseases,
+              onRetry: () => ref.invalidate(diseasesProvider),
+              data: (list) {
+                final names = {for (final d in list) if (d.plantName != null) d.plantName!}.toList()..sort();
+                final shown = list.where((d) => _plant == 'all' || d.plantName == _plant).toList()
+                  ..sort((a, b) => (_riskOrder[a.riskLevel] ?? 1).compareTo(_riskOrder[b.riskLevel] ?? 1));
+                return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  ChipTabs(tabs: [('all', 'Barchasi'), for (final n in names) (n, n)], selected: _plant, onSelect: (v) => setState(() => _plant = v)),
+                  Text('${shown.length} ta kasallik · avval xavflilari', style: Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height: 10),
+                  for (final d in shown) DiseaseRow(d),
+                ]);
+              },
+            ),
+          if (_tab == 'medicines')
+            AsyncView(
+              value: medicines,
+              onRetry: () => ref.invalidate(medicinesProvider),
+              data: (list) => Column(children: [
+                const NoteBox(kind: NoteKind.risk, title: "Ehtiyot bo'ling", text: "Har doim yorliqdagi me'yorga amal qiling, qo'lqop va niqob taqing."),
+                const SizedBox(height: 12),
+                for (final m in list) MedicineRow(m),
+              ]),
+            ),
+        ],
       ]),
     );
   }
+}
 
-  void _plantSheet(BuildContext context, Plant p, List<Disease> diseases) {
-    final c = context.c;
-    showSheet(context, title: p.name, builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          if (p.scientificName != null) Text(p.scientificName!, style: TextStyle(color: c.muted, fontStyle: FontStyle.italic)),
-          if (p.description != null) Padding(padding: const EdgeInsets.only(top: 10), child: Text(p.description!)),
-          if (p.careInfo != null) InfoBox(label: 'Parvarish', value: p.careInfo!),
-          if (diseases.isNotEmpty) const FieldLabel('Uchraydigan kasalliklar'),
-          for (final d in diseases)
-            ListRow(icon: AppIcons.bug, label: d.name, onTap: () {
-              Navigator.pop(ctx);
-              showDiseaseSheet(context, ref, d.id);
-            }),
-        ]));
+class _SearchResults extends ConsumerWidget {
+  const _SearchResults({required this.q});
+  final String q;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    bool has(String? s) => (s ?? '').toLowerCase().contains(q);
+    final plants = (ref.watch(plantsProvider).value ?? []).where((p) => has(p.name)).toList();
+    final diseases = (ref.watch(diseasesProvider).value ?? []).where((d) => has(d.name) || has(d.symptoms)).toList();
+    final meds = (ref.watch(medicinesProvider).value ?? []).where((m) => has(m.name) || has(m.activeIngredient) || has(m.description)).toList();
+    if (plants.isEmpty && diseases.isEmpty && meds.isEmpty) {
+      return const EmptyNote("Hech narsa topilmadi. Boshqacha yozib ko'ring, masalan «zang» yoki «mis».", icon: Icons.search_off_rounded);
+    }
+    Widget head(String t) => Padding(padding: const EdgeInsets.only(top: 6, bottom: 8), child: Text(t.toUpperCase(), style: Theme.of(context).textTheme.labelSmall));
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (plants.isNotEmpty) ...[head("O'simliklar · ${plants.length}"), for (final p in plants) PlantRow(p)],
+      if (diseases.isNotEmpty) ...[head('Kasalliklar · ${diseases.length}'), for (final d in diseases) DiseaseRow(d)],
+      if (meds.isNotEmpty) ...[head('Dorilar · ${meds.length}'), for (final m in meds) MedicineRow(m)],
+    ]);
   }
 }
 
-void showDiseaseSheet(BuildContext context, WidgetRef ref, String id) {
-  showSheet(context, title: 'Kasallik', builder: (ctx) => Consumer(builder: (ctx, ref, _) {
-        final c = ctx.c;
-        return AsyncView(
-          value: ref.watch(diseaseProvider(id)),
-          data: (d) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(d.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-            if (d.plantName != null) Text(d.plantName!, style: TextStyle(color: c.primary, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 10),
-            if (d.symptoms != null) Text.rich(TextSpan(children: [const TextSpan(text: 'Alomatlari: ', style: TextStyle(fontWeight: FontWeight.w800)), TextSpan(text: d.symptoms)]), style: const TextStyle(height: 1.5)),
-            const SizedBox(height: 8),
-            if (d.causes != null) Text.rich(TextSpan(children: [const TextSpan(text: 'Sababi: ', style: TextStyle(fontWeight: FontWeight.w800)), TextSpan(text: d.causes)]), style: const TextStyle(height: 1.5)),
-            const SizedBox(height: 8),
-            if (d.treatment != null) Text.rich(TextSpan(children: [const TextSpan(text: 'Davolash: ', style: TextStyle(fontWeight: FontWeight.w800)), TextSpan(text: d.treatment)]), style: const TextStyle(height: 1.5)),
-            for (final m in d.medicines) InfoBox(label: 'Tavsiya etilgan dori', value: '${m.name}${m.recommendation != null ? ', ${m.recommendation}' : ''}'),
-            if (d.prevention != null) ...[
-              const FieldLabel("Oldini olish"),
-              Text(d.prevention!, style: const TextStyle(height: 1.5)),
-            ],
-            const SizedBox(height: 16),
-            PillButton(label: 'Yopish', block: true, onPressed: () => Navigator.pop(ctx)),
-          ]),
-        );
-      }));
+class _PlantGrid extends StatelessWidget {
+  const _PlantGrid({required this.plants, required this.diseases});
+  final List<Plant> plants;
+  final List<Disease> diseases;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return LayoutBuilder(builder: (context, box) {
+      final w = (box.maxWidth - 12) / 2;
+      return Wrap(spacing: 12, runSpacing: 12, children: [
+        for (final p in plants)
+          SizedBox(
+            width: w,
+            child: Material(
+              color: c.card,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg), side: BorderSide(color: c.border)),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => context.push('/catalog/plant/${p.id}'),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  CatalogImage(asset: CatalogImages.plant(p.name), url: p.imageUrl, width: w, height: w * 0.75, radius: 0, placeholderText: "Rasm hali yo'q"),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(p.name, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700)),
+                      Text('${diseases.where((d) => d.plantId == p.id).length} ta kasallik', style: Theme.of(context).textTheme.bodySmall),
+                    ]),
+                  ),
+                ]),
+              ),
+            ),
+          ),
+      ]);
+    });
+  }
 }
+
+// ---------- Ro'yxat qatorlari (boshqa ekranlarda ham ishlatiladi) ----------
+class _Row extends StatelessWidget {
+  const _Row({required this.leading, required this.title, this.sub, this.tags = const [], required this.onTap});
+  final Widget leading;
+  final String title;
+  final String? sub;
+  final List<Widget> tags;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: c.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg), side: BorderSide(color: c.border)),
+        child: InkWell(
+          customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(children: [
+              leading,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(title, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700, height: 1.3)),
+                  if (sub != null) Padding(padding: const EdgeInsets.only(top: 2), child: Text(sub!, style: Theme.of(context).textTheme.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis)),
+                  if (tags.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Wrap(spacing: 6, runSpacing: 6, children: tags)),
+                ]),
+              ),
+              Icon(Icons.chevron_right_rounded, color: c.subtle),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PlantRow extends StatelessWidget {
+  const PlantRow(this.p, {super.key});
+  final Plant p;
+  @override
+  Widget build(BuildContext context) => _Row(
+        leading: CatalogImage(asset: CatalogImages.plant(p.name), url: p.imageUrl, width: 72, height: 72),
+        title: p.name,
+        sub: p.scientificName,
+        onTap: () => context.push('/catalog/plant/${p.id}'),
+      );
+}
+
+class DiseaseRow extends StatelessWidget {
+  const DiseaseRow(this.d, {super.key, this.showPlant = true, this.sub});
+  final Disease d;
+  final bool showPlant;
+  final String? sub;
+  @override
+  Widget build(BuildContext context) {
+    final img = CatalogImages.disease(d.aiLabel);
+    return _Row(
+      leading: CatalogImage(asset: img, width: 72, height: 72),
+      title: d.name,
+      sub: sub ?? (showPlant ? d.plantName : null),
+      tags: [RiskTag(d.riskLevel), if (img == null) const StatusTag("Rasm yo'q", kind: StatusKind.neutral)],
+      onTap: () => context.push('/catalog/disease/${d.id}'),
+    );
+  }
+}
+
+/// Dori turi: fungitsid (zamburug'ga qarshi), insektitsid (hasharot/kana), biologik.
+(String, IconData, Color, Color) medicineType(BuildContext context, Medicine m) {
+  final c = context.c;
+  final t = '${m.name} ${m.description ?? ''}'.toLowerCase();
+  if (t.contains('bio')) return ('Biologik', Icons.spa_outlined, c.successBg, c.success);
+  if (t.contains('insektitsid') || t.contains('kana') || t.contains('qurt')) return ('Insektitsid', Icons.pest_control_outlined, c.warningBg, c.warning);
+  return ('Fungitsid', Icons.science_outlined, c.infoBg, c.info);
+}
+
+class MedicineRow extends StatelessWidget {
+  const MedicineRow(this.m, {super.key, this.sub});
+  final Medicine m;
+  final String? sub;
+  @override
+  Widget build(BuildContext context) {
+    final (label, icon, bg, fg) = medicineType(context, m);
+    return _Row(
+      leading: Container(width: 56, height: 56, decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(AppRadius.md)), child: Icon(icon, color: fg)),
+      title: m.name,
+      sub: sub ?? m.activeIngredient,
+      tags: [StatusTag(label, kind: label == 'Biologik' ? StatusKind.healthy : label == 'Insektitsid' ? StatusKind.risk : StatusKind.info, icon: icon)],
+      onTap: () => context.push('/catalog/medicine/${m.id}'),
+    );
+  }
+}
+
+/// Eski chaqiruvlar uchun: kasallik sahifasini ochadi.
+void showDiseaseSheet(BuildContext context, WidgetRef ref, String id) => context.push('/catalog/disease/$id');

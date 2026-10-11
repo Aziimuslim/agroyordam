@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/catalog_images.dart';
 import '../../../core/config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/widgets/ds.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 import 'diagnosis_actions.dart';
@@ -111,6 +113,8 @@ class _BodyState extends ConsumerState<_Body> {
                         fg: d.riskLevel == 'high' ? c.danger : c.warning,
                       ),
                     if (d.lowConfidence && !d.isHealthy) _IconChip(icon: Icons.help_outline_rounded, label: 'Taxminiy', bg: c.accentSoft, fg: c.warning),
+                    if (d.expertChecked)
+                      _IconChip(icon: Icons.verified_user_outlined, label: 'Agronom tasdiqladi', bg: c.expertBg, fg: c.expert),
                   ]),
                   const SizedBox(height: 10),
                   Text(d.title, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 25, height: 30 / 25)),
@@ -118,6 +122,8 @@ class _BodyState extends ConsumerState<_Body> {
                   Text(formatDate(d.diagnosedAt), style: TextStyle(color: c.muted, fontSize: 13.5, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 16),
                   _ConfidenceCard(d: d),
+                  _ExpertBlock(d: d),
+                  if (d.diseaseId != null) _CatalogLink(d: d),
                   if (d.isHealthy)
                     AppCard(
                       child: Text(d.recommendations ?? "Parvarishni davom ettiring: muntazam sug'orish va haftalik ko'rik.",
@@ -335,4 +341,114 @@ class _PlanBar extends StatelessWidget {
       ),
     );
   }
+}
+
+
+/// Agronom bilan bog'liq holat: javob, kutilmoqda yoki "Agronomga yuborish" taklifi (ishonch past bo'lsa ustuvor).
+class _ExpertBlock extends ConsumerStatefulWidget {
+  const _ExpertBlock({required this.d});
+  final Diagnosis d;
+  @override
+  ConsumerState<_ExpertBlock> createState() => _ExpertBlockState();
+}
+
+class _ExpertBlockState extends ConsumerState<_ExpertBlock> {
+  bool _busy = false;
+
+  Future<void> _send() async {
+    final note = TextEditingController();
+    final ok = await showSheet<bool>(context, title: 'Agronomga yuborish', builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text("Rasm va AI natijasi biriktiriladi. Agronom tasdiqlaydi yoki to'g'ri kasallikni ko'rsatadi — javob bildirishnoma bo'lib keladi.",
+              style: Theme.of(ctx).textTheme.bodyMedium),
+          const SizedBox(height: 12),
+          TextField(controller: note, maxLines: 3, decoration: const InputDecoration(hintText: 'Izoh (ixtiyoriy): qachondan beri, qancha joyda')),
+          const SizedBox(height: 16),
+          PillButton(label: 'Yuborish', icon: Icons.send_rounded, style: PillStyle.primary, block: true, onPressed: () => Navigator.pop(ctx, true)),
+        ]));
+    if (ok != true || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await ref.read(gardenRepoProvider).requestReview(widget.d.id, note: note.text.trim());
+      ref.invalidate(diagnosisProvider(widget.d.id));
+      if (mounted) showToast(context, 'Agronomga yuborildi. Javob kelsa xabar beramiz.');
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final d = widget.d;
+    Widget pad(Widget w) => Padding(padding: const EdgeInsets.only(bottom: 14), child: w);
+    if (d.expertChecked) {
+      return pad(NoteBox(kind: NoteKind.expert, title: d.reviewStatus == 'corrected' ? 'Agronom tashxisni tuzatdi' : 'Agronom tashxisni tasdiqladi',
+          text: d.expertComment));
+    }
+    if (d.reviewStatus == 'rejected') {
+      return pad(NoteBox(kind: NoteKind.risk, title: 'Agronom: rasmni qayta oling',
+          text: d.expertComment ?? "Bargni yorug' joyda, yaqinroqdan, tiniq qilib suratga oling."));
+    }
+    if (d.reviewRequested) {
+      return pad(const NoteBox(title: 'Agronomga yuborildi', text: "Agronom tekshirib javob beradi. Javob kelsa bildirishnoma keladi.",
+          icon: Icons.hourglass_top_rounded));
+    }
+    final expertButton = TextButton.icon(
+      onPressed: _busy ? null : _send,
+      style: TextButton.styleFrom(
+        backgroundColor: c.expert,
+        foregroundColor: c.onExpert,
+        minimumSize: const Size.fromHeight(52),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+      ),
+      icon: _busy ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.4, color: c.onExpert)) : const Icon(Icons.send_rounded),
+      label: const Text('Agronomga yuborish', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+    );
+    final askLink = TextButton(
+      onPressed: () => context.push('/help/ask?diagnosis=${d.id}${d.cropId != null ? '&crop=${d.cropId}' : ''}'),
+      child: Text('Yoki agronomga savol bering', style: TextStyle(color: c.expert, fontWeight: FontWeight.w700)),
+    );
+    if (d.lowConfidence && !d.isHealthy) {
+      return pad(Column(children: [
+        const NoteBox(kind: NoteKind.risk, title: 'AI ishonchi past',
+            text: "Natija taxminiy. Agronomga yuboring yoki bargni yorug' joyda yaqinroqdan qayta oling."),
+        const SizedBox(height: 10),
+        expertButton,
+        askLink,
+      ]));
+    }
+    return pad(Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: _busy ? null : _send,
+        icon: Icon(Icons.verified_user_outlined, color: c.expert),
+        label: Text("Agronomga ko'rsatish", style: TextStyle(color: c.expert, fontWeight: FontWeight.w700)),
+      ),
+    ));
+  }
+}
+
+/// Kasallik sahifasiga o'tish (ma'lumotnoma rasmi bilan solishtirish).
+class _CatalogLink extends StatelessWidget {
+  const _CatalogLink({required this.d});
+  final Diagnosis d;
+  @override
+  Widget build(BuildContext context) => AppCard(
+        shadow: false,
+        padding: const EdgeInsets.all(10),
+        onTap: () => context.push('/catalog/disease/${d.diseaseId}'),
+        child: Row(children: [
+          CatalogImage(asset: CatalogImages.disease(d.diseaseLabel ?? d.aiLabel), width: 60, height: 60),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text("Ma'lumotnomada ko'rish", style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700)),
+              Text("Rasm bilan solishtiring, dorilar va me'yorlar", style: Theme.of(context).textTheme.bodySmall),
+            ]),
+          ),
+          Icon(Icons.chevron_right_rounded, color: context.c.subtle),
+        ]),
+      );
 }

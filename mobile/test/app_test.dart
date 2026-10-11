@@ -1,5 +1,6 @@
 import 'package:agroyordam/app.dart';
 import 'package:agroyordam/application/providers.dart';
+import 'package:agroyordam/core/catalog_images.dart';
 import 'package:agroyordam/core/storage/token_storage.dart';
 import 'package:agroyordam/core/theme/app_colors.dart';
 import 'package:agroyordam/core/utils/format.dart';
@@ -89,6 +90,18 @@ void main() {
       expect(contrast(c.dark, c.onDarkMuted), greaterThanOrEqualTo(3));
       // to'q tugma sahifa fonidan ajralib turishi kerak
       expect(contrast(c.dark, c.cream), greaterThanOrEqualTo(1.4));
+      // Yashil dala 2.0: agronom rangi va holat ranglari o'z fonlarida o'qiladi
+      expect(contrast(c.expert, c.onExpert), greaterThanOrEqualTo(4.5));
+      expect(contrast(c.expert, c.expertBg), greaterThanOrEqualTo(4.5));
+      expect(contrast(c.warning, c.warningBg), greaterThanOrEqualTo(4.5));
+      expect(contrast(c.danger, c.dangerBg), greaterThanOrEqualTo(4.5));
+      expect(contrast(c.success, c.successBg), greaterThanOrEqualTo(4.5));
+      expect(contrast(c.text, c.card), greaterThanOrEqualTo(4.5));
+      expect(contrast(c.muted, c.cream), greaterThanOrEqualTo(4.5));
+      // asosiy tugma: c.card yozuvi c.primary ustida
+      expect(contrast(c.primary, c.card), greaterThanOrEqualTo(4.5));
+      // kiritish maydoni chegarasi sirtda 3:1
+      expect(contrast(c.lineStrong, c.card), greaterThanOrEqualTo(3));
     }
   });
 
@@ -133,5 +146,51 @@ void main() {
     expect(it.confidence, 61.7);
     expect(it.userFeedback, false);
     expect(it.verifiedLabel, isNull);
+  });
+
+  test('Katalog rasmlari: kasallik va ekin', () {
+    expect(CatalogImages.disease('Tomato_Late_blight'), 'assets/catalog/Tomato_Late_blight.jpg');
+    expect(CatalogImages.disease('Cucumber_Powdery_mildew'), isNull); // datasetda yo'q
+    expect(CatalogImages.disease(null), isNull);
+    expect(CatalogImages.plant('Pomidor'), 'assets/catalog/Tomato_healthy.jpg');
+    expect(CatalogImages.plant("Makkajo'xori"), 'assets/catalog/Corn_healthy.jpg');
+    expect(CatalogImages.plant('Bodring'), isNull);
+  });
+
+  test('Savol, agronom va ariza JSON', () {
+    final author = {'id': 'u1', 'full_name': 'Akmal To\'xtayev', 'username': 'akmal', 'role': 'user'};
+    final expert = {'id': 'e1', 'full_name': 'Dilnoza Karimova', 'username': 'dilnoza', 'role': 'agronomist'};
+    final q = Question.fromJson({
+      'id': 'q1', 'author': author, 'expert': expert, 'title': "Barglarda dog'lar", 'status': 'answered',
+      'diagnosis_id': 'd1', 'diagnosis_name': 'Fitoftoroz', 'diagnosis_confidence': 64.0, 'messages_count': 1,
+      'messages': [
+        {'id': 'm1', 'sender': expert, 'body': 'Fitoftoroz.', 'medicine': {'id': 'x', 'name': 'Mis oksixlorid', 'usage': '40 g / 10 l'}},
+      ],
+    });
+    expect(q.expert!.isExpert, isTrue);
+    expect(q.author.isExpert, isFalse);
+    expect(q.messages.single.medicineName, 'Mis oksixlorid');
+    expect(q.diagnosisConfidence, 64);
+
+    final quota = QuestionQuota.fromJson({'used': 1, 'limit': 2, 'remaining': 1});
+    expect(quota.unlimited, isFalse);
+    expect(QuestionQuota.fromJson({'used': 5, 'limit': null, 'remaining': null}).unlimited, isTrue);
+
+    final e = Expert.fromJson({'id': 'e1', 'full_name': 'Dilnoza', 'answers': 3, 'rating': 4.8, 'accepting_questions': false});
+    expect(e.rating, 4.8);
+    expect(e.acceptingQuestions, isFalse);
+    expect(ExpertApplication.fromJson({'id': 'a', 'status': 'pending', 'specialization': 'Bog\'lar'}).pending, isTrue);
+  });
+
+  test('Tashxis: agronom tekshiruvi maydonlari', () {
+    final d = Diagnosis.fromJson({
+      'id': 'd1', 'image_url': '/media/x.jpg', 'confidence': '54.0', 'low_confidence': false,
+      'ai_label': 'Tomato_Late_blight', 'disease_label': 'Tomato_Early_blight',
+      'review_status': 'corrected', 'review_requested': true, 'expert_comment': 'Bu alternarioz',
+    });
+    expect(d.expertChecked, isTrue);
+    expect(d.canAskExpert, isFalse);
+    expect(d.diseaseLabel, 'Tomato_Early_blight');
+    expect(Diagnosis.fromJson({'id': 'd2', 'image_url': '/m.jpg'}).canAskExpert, isTrue);
   });
 }

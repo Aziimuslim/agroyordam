@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/catalog_images.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/bottom_nav.dart';
+import '../../../core/widgets/ds.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 import '../garden/crop_photo.dart';
@@ -58,6 +60,9 @@ class HomeScreen extends ConsumerWidget {
           onCamera: () => context.push('/diagnose?source=camera'),
           onGallery: () => context.push('/diagnose?source=gallery'),
         ),
+        SectionTitle("Ma'lumotnoma", action: 'Ochish', onAction: () => context.push('/catalog')),
+        const _CatalogTiles(),
+        const SizedBox(height: 22),
         _TasksSection(),
         SectionTitle("Mening bog'im", action: 'Barchasi', onAction: () => context.go('/garden')),
         AsyncView(
@@ -68,7 +73,7 @@ class HomeScreen extends ConsumerWidget {
         const SizedBox(height: 8),
         const SectionTitle("Bo'limlar"),
         Row(children: [
-          _Shortcut(icon: AppIcons.book, label: 'Ensiklopediya', onTap: () => context.push('/catalog')),
+          _Shortcut(icon: Icons.verified_user_outlined, label: 'Agronom', onTap: () => context.go('/help')),
           const SizedBox(width: 10),
           _Shortcut(icon: AppIcons.bot, label: 'AI yordamchi', onTap: () => context.push('/assistant')),
           const SizedBox(width: 10),
@@ -76,6 +81,59 @@ class HomeScreen extends ConsumerWidget {
         ]),
       ]),
     );
+  }
+}
+
+/// Ma'lumotnoma: O'simliklar · Kasalliklar · Dorilar — rasmli kartochkalar, son bilan.
+class _CatalogTiles extends ConsumerWidget {
+  const _CatalogTiles();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
+    final counts = [ref.watch(plantsProvider).value?.length, ref.watch(diseasesProvider).value?.length, ref.watch(medicinesProvider).value?.length];
+    final tiles = [
+      ("O'simliklar", 'plants', CatalogImages.disease('Tomato_healthy'), null),
+      ('Kasalliklar', 'diseases', CatalogImages.disease('Tomato_Late_blight'), null),
+      ('Dorilar', 'medicines', null, Icons.science_outlined),
+    ];
+    return Row(children: [
+      for (var i = 0; i < tiles.length; i++) ...[
+        if (i > 0) const SizedBox(width: 10),
+        Expanded(
+          child: Semantics(
+            button: true,
+            label: tiles[i].$1,
+            child: GestureDetector(
+              onTap: () => context.push('/catalog?tab=${tiles[i].$2}'),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                AspectRatio(
+                  aspectRatio: 1,
+                  child: Stack(fit: StackFit.expand, children: [
+                    tiles[i].$3 != null
+                        ? CatalogImage(asset: tiles[i].$3, radius: AppRadius.lg)
+                        : Container(
+                            decoration: BoxDecoration(color: c.infoBg, borderRadius: BorderRadius.circular(AppRadius.lg)),
+                            child: Icon(tiles[i].$4, color: c.info, size: 34)),
+                    if (counts[i] != null)
+                      Positioned(
+                        left: 8,
+                        bottom: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(color: const Color(0x99000000), borderRadius: BorderRadius.circular(AppRadius.pill)),
+                          child: Text('${counts[i]}', style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 12, fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                  ]),
+                ),
+                const SizedBox(height: 6),
+                Text(tiles[i].$1, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
+              ]),
+            ),
+          ),
+        ),
+      ],
+    ]);
   }
 }
 
