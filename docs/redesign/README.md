@@ -29,7 +29,8 @@ To'liq qoidalar va komponentlar — yuqoridagi 2-bosqich havolasida.
 
 ## 3-bosqich: qo'shimcha talab
 
-- **Ma'lumotnoma (ensiklopediya)** rasmli bo'ladi: har bir ekinning sog'lom barg rasmi va har bir kasallikning belgilari ko'rinadigan rasmi.
+- **Ma'lumotnoma — to'liq katalog**, bosh ekrandan ochiladi, uch bo'lim: **O'simliklar** (har birida uchraydigan kasalliklar va ishlatiladigan dorilar), **Kasalliklar** (ekin bo'yicha filtr, xavflilari birinchi), **Dorilar** (turi, me'yori, ehtiyot choralari, qaysi kasalliklarga qarshi). Umumiy qidiruv uchala bo'limdan.
+- Rasmli bo'ladi: har bir ekinning sog'lom barg rasmi va har bir kasallikning belgilari ko'rinadigan rasmi.
   Manba — PlantVillage dataseti (AI modeli shu rasmlarda o'qitilgan). Hozir 28 kasallikdan 25 tasining rasmi bor;
   bodring un shudringi, uzum oidiumi va bodring ildiz chirishi uchun rasm dala datasetidan to'ldiriladi.
 - Kasallik sahifasida sog'lom va kasal bargni yonma-yon solishtirish.
