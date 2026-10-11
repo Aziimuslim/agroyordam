@@ -40,7 +40,18 @@ class FakeAI:
         return ["Tomato_Late_blight", "Tomato_healthy"]
 
     async def health(self):
-        return {"status": "ok", "model": "FakeAI"}
+        return {"status": "ok", "model": "FakeAI", "model_tag": self.active_tag}
+
+    active_tag = "model-v1"
+    activated: list[str] = []
+
+    async def model(self):
+        return {"model": "FakeAI", "model_tag": self.active_tag}
+
+    async def activate(self, tag):
+        self.activated.append(tag)
+        self.active_tag = tag
+        return {"model": "FakeAI", "model_tag": tag}
 
 
 @pytest.fixture

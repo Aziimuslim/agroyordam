@@ -9,7 +9,7 @@ Bosqichma-bosqich: har bir bosqich prototipda ko'rib chiqiladi va tasdiqlanganda
 | 3 | Dehqon ekranlari | ✅ tasdiqlandi | https://claude.ai/artifact/Eem1jBJwa5EAb5S8cjPrjj |
 | 4 | Agronom ekranlari | ✅ tasdiqlandi | https://claude.ai/artifact/Px2tiYxY4rb6E2AXVX3aVP |
 | 5 | Admin web panel | ✅ tasdiqlandi | https://claude.ai/artifact/8CVbovqt2vT7EDjSBQauZz |
-| 6 | Kod: rollar, ekranlar, admin panel; so'ng AI va dataset | jarayonda (1–4-qism tayyor) | |
+| 6 | Kod: rollar, ekranlar, admin panel; so'ng AI va dataset | ✅ 1–5-qism tayyor | |
 
 ## 1-bosqichda tasdiqlangan qarorlar
 
@@ -70,7 +70,7 @@ Yangi model faqat shu raqam yaxshilansa ishga tushiriladi.
 | 2 | Mobil: "Yashil dala 2.0", rasmli ma'lumotnoma, "Maslahat" (agronomga savol) | 0.2.0 |
 | 3 | Mobil: agronom rejimi — navbat (AI ning 3 ta muqobili), savollar, jamoat, bilimlar bazasi, profil | 0.3.0 |
 | 4 | Alohida admin web panel (`/admin`): boshqaruv paneli, foydalanuvchilar, agronomlar, AI va dataset, bilimlar bazasi (qaytarish), moderatsiya, to'lovlar va tariflar, tizim (zaxira, ommaviy xabar, harakatlar jurnali) | 0.4.0 |
-| 5 | Dala dataseti va qayta o'qitish ("dala rasmlari testi") | — |
+| 5 | Dala dataseti va qayta o'qitish: o'qitish/test bo'linishi, "dala rasmlari testi", model-vN versiyalari, admin paneldan o'qitish, ishga tushirish va qaytarish | 0.5.0 |
 
 Agronom rejimi: agronom (yoki admin) kirganda ilova navbatdan ochiladi; Profil → "Dehqon rejimiga o'tish" bilan
 dehqon menyusiga qaytadi (tanlov qurilmada saqlanadi). AI har tashxisda eng ehtimolli 3 sinfni qaytaradi (`diagnoses.ai_top`),

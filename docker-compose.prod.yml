@@ -22,6 +22,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agro}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-agroyordam}
       CORS_ORIGINS: https://${DOMAIN}
       PAYMENT_RETURN_URL: https://${DOMAIN}/premium
+      PUBLIC_URL: https://${DOMAIN}
     # Admin panel zaxira holatini o'qiydi; "Hozir olish" uchun faqat req/ ga yoza oladi
     volumes:
       - ./backups:/backups:ro

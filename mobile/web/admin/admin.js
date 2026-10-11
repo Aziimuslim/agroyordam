@@ -283,28 +283,73 @@
   };
 
   // ---------- AI va dataset ----------
+  const isRunning = t => (t?.runs || []).some(r => r.status !== 'completed');
   SEC.ai = {
-    label: 'AI va dataset', ic: 'ai', load: () => api('/admin/ai'),
-    render(a) {
-      const m = a.model || {};
+    label: 'AI va dataset', ic: 'ai',
+    async load() {
+      const [a, models, training, coverage] = await Promise.all([api('/admin/ai'), api('/admin/ai/models'), api('/admin/ai/training'), api('/admin/ai/coverage')]);
+      return { a, models, training, coverage };
+    },
+    render({ a, models, training, coverage }) {
+      const m = models.active || a.model || {};
+      const activeN = +(models.active_tag || '').replace('model-v', '') || 0;
+      const pctTxt = v => (v == null ? '—' : (Math.round(v * 1000) / 10).toString().replace('.', ',') + '%');
+      const bar = (v, warn = 0.8) => (v == null ? '<span class="muted small">—</span>'
+        : `<div class="row" style="flex-wrap:nowrap"><div class="meter ${v < warn ? 'risk' : ''}" style="width:80px"><i style="width:${Math.round(v * 100)}%"></i></div><span class="num small"><b>${pctTxt(v)}</b></span></div>`);
+      const runs = training.runs || [], last = runs[0], running = isRunning(training);
+      const usable = a.confirmed + a.corrected;
+      const missing = coverage.classes.filter(c => !c.in_model);
+      const missingImgs = missing.reduce((s, c) => s + c.train + c.test, 0);
       return `${head('AI va dataset', "Model qanchalik yaxshi ishlayapti va qanday yaxshilanadi: dala rasmlari → agronom tasdig'i → qayta o'qitish.", `<button class="btn out" data-act="export">${I('download')}Dataset eksporti</button>`)}
       <div class="grid g4">
         <div class="card tile"><span class="l">Datasetdagi dala rasmlari</span><span class="v num">${fmt(a.total)}</span><span class="muted small">oxirgi 30 kunda +${fmt(a.new_30d)}</span></div>
-        <div class="card tile"><span class="l">Agronom tasdiqlagan</span><span class="v num">${fmt(a.confirmed + a.corrected)}</span><span class="muted small">o'qitishga tayyor · navbatda ${fmt(a.pending)}</span></div>
+        <div class="card tile"><span class="l">Agronom tasdiqlagan</span><span class="v num">${fmt(usable)}</span><span class="muted small">o'qitishga tayyor · navbatda ${fmt(a.pending)}</span></div>
         <div class="card tile"><span class="l">Tuzatilgan (AI adashgan)</span><span class="v num">${fmt(a.corrected)}</span><span class="muted small">eng qimmatli rasmlar</span></div>
-        <div class="card tile"><span class="l">Yaroqsiz rasm</span><span class="v num">${fmt(a.rejected)}</span><span class="muted small">xira, barg yo'q</span></div>
+        <div class="card tile"><span class="l">Hozir ishlayapti</span><span class="v mono" style="font-size:22px">${esc(models.active_tag || m.model || '—')}</span><span class="muted small">${m.classes ? m.classes + ' sinf · ' : ''}agronom bilan mos ${a.field_accuracy == null ? '—' : a.field_accuracy + '%'}</span></div>
       </div>
-      <div class="card"><div class="ch"><div><h2>Ishlayotgan model</h2><div class="sub">AI xizmati holati</div></div>${a.model ? tag('t-ok', 'check', 'Ishlayapti') : tag('t-bad', 'x', 'Javob bermayapti')}</div>
-        <dl class="model"><div><dt>Model</dt><dd>${esc(m.model || '—')}</dd></div><div><dt>Fayl</dt><dd class="mono">${esc(m.model_file || '—')}</dd></div>
-        <div><dt>Yangilangan</dt><dd>${m.model_updated ? fmtDate(m.model_updated) : '—'}${m.model_size_mb ? ` · ${String(m.model_size_mb).replace('.', ',')} MB` : ''}</dd></div><div><dt>Sinflar</dt><dd>${m.classes ?? '—'}</dd></div>
-        <div><dt>Dala aniqligi (agronom bilan mos)</dt><dd>${a.field_accuracy == null ? '—' : a.field_accuracy + '%'} <span class="muted small">· ${fmt(a.reviewed)} tekshiruv</span></dd></div></dl>
-      </div>
-      <div class="banner b-info">${I('info')}<p><b>Dala rasmlari testi</b>, model versiyalari va qayta o'qitish keyingi bosqichda shu bo'limga qo'shiladi. Hozircha agronom tasdiqlagan rasmlar yig'ilmoqda; «Dataset eksporti» ularni o'qitish uchun ZIP qilib beradi.</p><span></span></div>
-      <div class="card"><div class="ch"><div><h2>AI eng ko'p adashtiradigan juftliklar</h2><div class="sub">Agronom tuzatgan holatlar, oxirgi 90 kun</div></div></div>
-        ${a.pairs.length ? `<div class="pairs">${a.pairs.map(p => `<div class="pair">${thumb(catImg(p.ai_label), p.ai_name)}${I('arrow', 'ico s')}${thumb(catImg(p.label), p.name)}<span class="small"><b>${esc(p.ai_name.split(' (')[0])}</b> deb o'yladi, aslida <b>${esc(p.name.split(' (')[0])}</b></span><span class="num" style="text-align:right;font-weight:700">${p.count}</span></div>`).join('')}</div>
-          <p class="muted small" style="margin:0">Shu juftliklarga ko'proq dala rasmi yig'ish modelni eng tez yaxshilaydi.</p>`
+      ${models.error ? `<div class="banner b-risk">${I('alert')}<p>Model versiyalari ro'yxatini olib bo'lmadi: ${esc(models.error)}</p><button class="btn out sm" data-act="reload">Qayta urinish</button></div>` : ''}
+      <div class="tw"><table><thead><tr><th>Versiya</th><th>Sana</th><th>O'qitish ma'lumoti</th><th>PlantVillage testi</th><th>Dala rasmlari testi</th><th>Holat</th><th></th></tr></thead><tbody>
+      ${models.models.map(r => {
+        const n = +r.tag.replace('model-v', '');
+        const st = r.active ? tag('t-ok', 'check', 'Ishlayapti') : n > activeN ? tag('t-info', 'info', 'Nomzod') : tag('t-neu', '', 'Arxiv');
+        const btn = r.can_activate ? `<button class="btn ${n > activeN ? 'pri' : 'ghost'} sm" data-act="activate" data-v="${esc(r.tag)}">${n > activeN ? 'Ishga tushirish' : 'Qaytarish'}</button>`
+          : r.can_force ? `<button class="btn ghost sm" data-act="activate" data-v="${esc(r.tag)}" data-force="1" title="${esc(r.reason)}">Dala testisiz ishga tushirish</button>`
+            : (r.reason && !r.active ? `<span class="muted small">${esc(r.reason)}</span>` : '');
+        return `<tr><td class="mono"><b>${esc(r.tag)}</b></td><td>${r.created_at ? fmtDate(r.created_at) : '—'}</td>
+          <td class="small">PlantVillage${r.field_train_images ? ` + ${fmt(r.field_train_images)} dala rasmi` : ''}${r.classes ? ` · ${r.classes} sinf` : ''}</td>
+          <td>${bar(r.val_accuracy, 0.9)}</td>
+          <td>${r.field_test_accuracy == null ? '<span class="muted small">test rasmlari yo\'q</span>' : bar(r.field_test_accuracy)}${r.baseline_field_test_accuracy != null ? `<div class="muted small">${esc(r.baseline_model ? 'hozirgi' : 'oldingi')}: ${pctTxt(r.baseline_field_test_accuracy)} · ${r.field_test_samples} rasm</div>` : ''}</td>
+          <td>${st}</td><td>${btn}</td></tr>`;
+      }).join('') || '<tr><td colspan="7" class="muted">Versiyalar topilmadi.</td></tr>'}
+      </tbody></table></div>
+      <div class="banner b-info">${I('info')}<p><b>Dala rasmlari testi</b> — agronom tasdiqlagan, o'qitishda hech qachon ishlatilmaydigan telefon rasmlari (har 5 tadan biri). Haqiqiy foydalanuvchi sifati shu raqamda ko'rinadi; PlantVillage (laboratoriya rasmlari) bo'yicha 97% bo'lsa ham, dalada pastroq. Yangi model faqat shu test yomonlashmasa ishga tushiriladi.</p><span></span></div>
+      <div class="grid g2">
+        <div class="card"><div class="ch"><div><h2>Qayta o'qitish</h2><div class="sub">GitHub Actions'da, ~1 soat · natija — yangi nomzod versiya</div></div>${last ? `<a class="btn ghost sm" href="${esc(last.url)}" target="_blank" rel="noopener">GitHub'da</a>` : ''}</div>
+          ${!training.configured ? `<div class="banner b-risk">${I('alert')}<p>Sozlanmagan. Serverda bir marta: <span class="mono">sudo bash deploy/enable-training.sh</span> (GitHub token kerak — docs/DATASET.md).</p><span></span></div>` : ''}
+          ${training.error ? `<p class="muted small" style="margin:0">${esc(training.error)}</p>` : ''}
+          ${last ? `<div class="steps">${last.steps.map(st => `<div class="step ${st.status === 'completed' && st.conclusion !== 'failure' ? 'done' : st.status === 'in_progress' ? 'run' : ''}"><span class="st">${I(st.conclusion === 'failure' ? 'x' : 'check', 'ico s')}</span><span>${esc(st.title)}</span><span class="muted small">${st.conclusion === 'skipped' ? "o'tkazildi" : st.conclusion === 'failure' ? 'xato' : ''}</span></div>`).join('')}</div>
+            <p class="muted small" style="margin:0">Oxirgi: ${ago(last.created_at)} · ${last.status !== 'completed' ? 'ketyapti…' : last.conclusion === 'success' ? 'muvaffaqiyatli' : 'xato bilan tugadi'}</p>` : ''}
+          ${!running ? `<p class="muted" style="margin:0">${fmt(usable)} ta tasdiqlangan dala rasmi${missingImgs ? ` (shundan ${fmt(missingImgs)} tasi model hali bilmaydigan sinflarda)` : ''}. Yangi versiya o'qitiladi va «Dala rasmlari testi»da hozirgi model bilan solishtiriladi.</p>
+            <div><button class="btn pri" data-act="train" ${training.configured ? '' : 'disabled'}>${I('refresh')}Qayta o'qitishni boshlash</button></div>` : ''}
+        </div>
+        <div class="card"><div class="ch"><div><h2>AI eng ko'p adashtiradigan juftliklar</h2><div class="sub">Agronom tuzatgan holatlar, oxirgi 90 kun</div></div></div>
+          ${a.pairs.length ? `<div class="pairs">${a.pairs.map(p => `<div class="pair">${thumb(catImg(p.ai_label), p.ai_name)}${I('arrow', 'ico s')}${thumb(catImg(p.label), p.name)}<span class="small"><b>${esc(p.ai_name.split(' (')[0])}</b> deb o'yladi, aslida <b>${esc(p.name.split(' (')[0])}</b></span><span class="num" style="text-align:right;font-weight:700">${p.count}</span></div>`).join('')}</div>
+            <p class="muted small" style="margin:0">Shu juftliklarga ko'proq dala rasmi yig'ish modelni eng tez yaxshilaydi.</p>`
           : '<p class="empty">Hali agronom tuzatgan tashxis yo\'q.</p>'}
+        </div>
+      </div>
+      <div class="card"><div class="ch"><div><h2>Sinflar bo'yicha dala rasmlari</h2><div class="sub">Maqsad — har sinfga ${coverage.target} ta tasdiqlangan rasm (o'qitish + test)</div></div></div>
+        ${missing.length ? `<div class="banner b-risk">${I('alert')}<p><b>${missing.length} ta sinfni model hali bilmaydi</b> (${esc(missing.map(c => c.name).slice(0, 4).join(', '))}${missing.length > 4 ? '…' : ''}). Agronomlar navbatda shu ekin rasmlarini «Boshqa kasallik» orqali to'g'ri sinf bilan tasdiqlasa, keyingi o'qitishda model ularni ham o'rganadi (kamida 30–50 ta rasm).</p><span></span></div>` : ''}
+        <div class="tw" style="border:0"><table><thead><tr><th>Sinf</th><th>Ekin</th><th>Model</th><th class="n">O'qitish</th><th class="n">Test</th><th>Maqsadga</th></tr></thead><tbody>
+        ${coverage.classes.map(c => { const n = c.train + c.test, p = Math.min(100, Math.round(n / coverage.target * 100)); return `<tr><td><div class="who">${thumb(catImg(c.label), c.name)}<div><b>${esc(c.name)}</b><div class="muted small mono">${esc(c.label)}</div></div></div></td><td>${esc(c.plant || '—')}</td>
+          <td>${c.in_model ? tag('t-ok', 'check', 'Biladi') : tag('t-risk', 'alert', 'Yangi sinf')}</td><td class="n">${c.train}</td><td class="n">${c.test}</td>
+          <td><div class="row" style="flex-wrap:nowrap"><div class="meter ${p < 25 ? 'risk' : ''}" style="width:90px"><i style="width:${p}%"></i></div><span class="num small">${n}/${coverage.target}</span></div></td></tr>`; }).join('')}
+        </tbody></table></div>
       </div>`;
+    },
+    after(d) {
+      clearTimeout(S.trainTimer);
+      if (isRunning(d.training)) S.trainTimer = setTimeout(() => { if (S.sec === 'ai') load(true); }, 20000);
     },
   };
 
@@ -449,6 +494,7 @@
   }
   function go(sec) {
     if (!SEC[sec]) sec = 'dash';
+    clearTimeout(S.trainTimer);
     S.sec = sec; closeDrawer();
     if (location.hash !== '#' + sec) history.replaceState(null, '', '#' + sec);
     window.scrollTo({ top: 0 }); load();
@@ -486,6 +532,17 @@
       case 'hide': { const r = d[+v]; if (confirm(`${r.kind === 'post' ? 'Post' : 'Izoh'} o'chiriladi va muallifga xabar boradi. Davom etasizmi?`)) act(() => api('/admin/reports/hide', { method: 'POST', body: { kind: r.kind, target_id: r.target_id } }), 'Yashirildi, muallifga xabar berildi'); } break;
       case 'dismiss': { const r = d[+v]; act(() => api('/admin/reports/dismiss', { method: 'POST', body: { kind: r.kind, target_id: r.target_id } }), 'Shikoyat rad etildi'); } break;
       case 'backup': act(() => api('/admin/system/backup-now', { method: 'POST' }), "Zaxira so'raldi: 1–5 daqiqada boshlanadi"); break;
+      case 'activate': {
+        const force = !!t.dataset.force;
+        const msg = force ? `${v} dala rasmlari testisiz ishga tushiriladi. Ishonchingiz komilmi?` : `${v} ishga tushirilsinmi? Kerak bo'lsa eski versiyaga bir bosishda qaytish mumkin.`;
+        if (!confirm(msg)) break;
+        t.disabled = true; t.textContent = 'Yuklanmoqda…';
+        act(() => api(`/admin/ai/models/${v}/activate`, { method: 'POST', body: { force } }), `${v} ishga tushirildi`).finally(() => { t.disabled = false; });
+      } break;
+      case 'train':
+        if (!confirm("Qayta o'qitish boshlansinmi? GitHub Actions'da ~1 soat davom etadi; tayyor bo'lgach yangi nomzod versiya shu jadvalda paydo bo'ladi.")) break;
+        act(() => api('/admin/ai/training', { method: 'POST' }), "O'qitish boshlandi. Holati shu yerda yangilanib turadi");
+        break;
       case 'export': api('/admin/dataset/export-link', { method: 'POST' }).then(r => { location.href = API + r.url; toast('Yuklab olish boshlandi (havola 10 daqiqa amal qiladi)'); }).catch(fail); break;
     }
   });

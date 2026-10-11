@@ -51,6 +51,32 @@ class AIClient:
         except (httpx.HTTPError, ValueError):
             return None
 
+    async def model(self) -> dict | None:
+        """Faol model versiyasi va metrikalari."""
+        try:
+            async with httpx.AsyncClient(base_url=settings.AI_SERVICE_URL, timeout=5) as client:
+                resp = await client.get("/model")
+            resp.raise_for_status()
+            return resp.json()
+        except (httpx.HTTPError, ValueError):
+            return None
+
+    async def activate(self, tag: str) -> dict:
+        """Boshqa model versiyasiga o'tish (ai-service release'dan yuklab oladi va tekshiradi)."""
+        headers = {"X-Admin-Token": settings.AI_ADMIN_TOKEN} if settings.AI_ADMIN_TOKEN else {}
+        try:
+            async with httpx.AsyncClient(base_url=settings.AI_SERVICE_URL, timeout=300) as client:
+                resp = await client.post("/model/activate", json={"tag": tag}, headers=headers)
+        except httpx.HTTPError as exc:
+            raise AIServiceError(f"AI xizmati javob bermadi: {exc}") from exc
+        if resp.status_code != 200:
+            try:
+                detail = resp.json().get("detail")
+            except ValueError:
+                detail = None
+            raise AIServiceError(detail or f"AI xizmati xatosi ({resp.status_code})")
+        return resp.json()
+
     async def labels(self) -> list[str]:
         """Model biladigan sinflar ro'yxati (dataset belgilash uchun)."""
         try:

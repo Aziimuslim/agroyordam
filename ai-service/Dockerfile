@@ -11,7 +11,8 @@ for f in ("agro-mobilenetv3.onnx", "agro-mobilenetv3.labels.txt"):
     urllib.request.urlretrieve("${MODEL_BASE}/" + f, "models/" + f)
 print("model yuklandi")
 PY
-ENV MODEL_PATH=/srv/models/agro-mobilenetv3.onnx
+ENV MODEL_PATH=/srv/models/agro-mobilenetv3.onnx MODEL_TAG=model-v1 MODEL_STORE=/srv/models-store
+RUN mkdir -p /srv/models-store
 
 COPY app ./app
 EXPOSE 8001

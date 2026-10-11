@@ -1,3 +1,4 @@
+import uuid
 import csv
 import io
 import zipfile
@@ -59,7 +60,8 @@ async def test_feedback_review_stats_and_export(client, user_headers, admin_head
     assert r.status_code == 200 and r.headers["x-dataset-items"] == "3"
     zf = zipfile.ZipFile(io.BytesIO(r.content))
     names = set(zf.namelist())
-    assert f"Tomato_Septoria_leaf_spot/{c['id']}.png" in names and "manifest.csv" in names
+    split = "test" if uuid.UUID(c["id"]).int % 5 == 0 else "train"
+    assert f"{split}/Tomato_Septoria_leaf_spot/{c['id']}.png" in names and "manifest.csv" in names
     rows = list(csv.DictReader(io.StringIO(zf.read("manifest.csv").decode())))
     assert len(rows) == 3 and {r["label"] for r in rows} >= {"Tomato_healthy"}
 

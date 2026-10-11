@@ -6,15 +6,22 @@ so'ng ustiga chiziqli klassifikator o'qitiladi. Natija bitta ONNX faylga yig'ila
 
     python training/train_plantvillage.py --data /path/PlantVillage-Dataset/raw/color --out models/agro.onnx
 
-Dala dataseti (admin panel → Dataset → eksport ZIP, ochilgan papka: <label>/<rasm>) qo'shish:
+Dala dataseti (admin panel → AI va dataset → eksport ZIP). ZIP ichida ikki qism:
+  train/<label>/<rasm> — o'qitishga qo'shiladi;
+  test/<label>/<rasm>  — "dala rasmlari testi": hech qachon o'qitilmaydi, faqat baholanadi.
+Rasm qaysi qismga tushishi tashxis id'siga bog'liq va o'zgarmaydi — test har safar halol bo'ladi.
 
-    python training/train_plantvillage.py --data .../raw/color --extra /path/agroyordam-dataset
+    python training/train_plantvillage.py --data .../raw/color --extra /path/ds/train --field-test /path/ds/test \
+        --baseline-model models/hozirgi.onnx
 
 Dala rasmlari o'qitishda --extra-weight marta takrorlanadi (ular kamroq, lekin haqiqiy sharoitga yaqin),
-yangi sinflar (masalan Cucumber_Powdery_mildew) avtomatik qo'shiladi, metrics.json da dala rasmlaridagi aniqlik
-alohida ko'rsatiladi.
+yangi sinflar (masalan Cucumber_Powdery_mildew) avtomatik qo'shiladi. metrics.json da:
+  val_accuracy_onnx            — PlantVillage (+ dala) validatsiyasi;
+  field_test_accuracy          — yangi modelning dala rasmlari testidagi aniqligi (asosiy ko'rsatkich);
+  baseline_field_test_accuracy — hozir ishlayotgan modelning aynan o'sha rasmlardagi aniqligi.
+Yangi model faqat field_test_accuracy baseline'dan past bo'lmasa ishga tushiriladi (admin panel).
 
-GitHub Actions: .github/workflows/train-model.yml (model-v1 release'ga yuklaydi).
+GitHub Actions: .github/workflows/train-model.yml (model-vN release'ga yuklaydi).
 """
 import argparse
 import json
@@ -88,17 +95,25 @@ def main():
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--extra", action="append", default=[], help="dala dataseti papkasi (<label>/<rasm>), bir necha marta berish mumkin")
     ap.add_argument("--extra-weight", type=int, default=3, help="dala rasmlarini o'qitishda necha marta takrorlash")
+    ap.add_argument("--field-test", action="append", default=[], help="dala rasmlari testi papkasi (<label>/<rasm>) — o'qitilmaydi")
+    ap.add_argument("--baseline-model", help="hozir ishlayotgan model (.onnx, yonida .labels.txt) — dala testida solishtirish uchun")
+    ap.add_argument("--min-accuracy", type=float, default=0.85, help="ONNX validatsiya aniqligi shundan past bo'lsa — xato")
     args = ap.parse_args()
 
     random.seed(args.seed)
     torch.manual_seed(args.seed)
     torch.set_num_threads(max(1, torch.get_num_threads()))
     exts = {".jpg", ".jpeg", ".png", ".webp"}
-    extra: dict[str, list[Path]] = {}
-    for root in args.extra:
-        for d in sorted(p for p in Path(root).iterdir() if p.is_dir()):
-            extra.setdefault(d.name, []).extend(sorted(f for f in d.iterdir() if f.suffix.lower() in exts))
-    labels = sorted(set(PLANTVILLAGE_CLASSES.values()) | set(extra))
+    def folders(roots) -> dict[str, list[Path]]:
+        out: dict[str, list[Path]] = {}
+        for root in roots:
+            for d in sorted(p for p in Path(root).iterdir() if p.is_dir()):
+                out.setdefault(d.name, []).extend(sorted(f for f in d.iterdir() if f.suffix.lower() in exts))
+        return out
+
+    extra = folders(args.extra)
+    field_test = folders(args.field_test)
+    labels = sorted(set(PLANTVILLAGE_CLASSES.values()) | set(extra) | set(field_test))
     idx = {lbl: i for i, lbl in enumerate(labels)}
 
     train, val, field_val = [], [], []
@@ -185,6 +200,15 @@ def main():
     field_ok = sum(
         int(sess.run(None, {"input": to_tensor(Image.open(p))})[0][0].argmax()) == yi for p, yi in field_val
     ) if field_val else 0
+
+    # Dala rasmlari testi: yangi model va hozirgi (baseline) model aynan bir xil rasmlarda
+    test_items = [(f, lbl) for lbl, files in field_test.items() for f in files]
+    new_test = evaluate(str(out), labels, test_items)
+    base_test = None
+    if args.baseline_model and test_items:
+        bpath = Path(args.baseline_model)
+        blabels = bpath.with_suffix(".labels.txt").read_text().split()
+        base_test = evaluate(str(bpath), blabels, test_items)
     metrics = {
         "arch": "mobilenet_v3_large (ImageNet) + linear head",
         "dataset": "PlantVillage (raw/color)",
@@ -196,12 +220,36 @@ def main():
         "field_train_images": sum(len(v) for v in extra.values()) - len(field_set),
         "field_val_samples": len(field_val),
         "val_accuracy_field": round(field_ok / len(field_val), 4) if field_val else None,
+        "field_test_samples": len(test_items),
+        "field_test_accuracy": new_test["accuracy"],
+        "field_test_per_class": new_test["per_class"],
+        "baseline_model": Path(args.baseline_model).name if args.baseline_model else None,
+        "baseline_field_test_accuracy": base_test["accuracy"] if base_test else None,
+        "baseline_field_test_per_class": base_test["per_class"] if base_test else None,
         "per_class_accuracy": {k: round(c / t, 4) for k, (c, t) in per_class.items()},
     }
     out.with_suffix(".metrics.json").write_text(json.dumps(metrics, indent=2, ensure_ascii=False))
     print(json.dumps(metrics, indent=2, ensure_ascii=False))
-    if onnx_acc < 0.85:
+    if onnx_acc < args.min_accuracy:
         sys.exit(f"ONNX aniqligi juda past: {onnx_acc:.3f}")
+
+
+def evaluate(model_path: str, labels: list[str], items: list[tuple[Path, str]]) -> dict:
+    """ONNX modelni servisdagi preprocessing bilan baholaydi. Model bilmaydigan sinf — xato hisoblanadi (halol)."""
+    if not items:
+        return {"accuracy": None, "per_class": {}}
+    import onnxruntime as ort
+
+    sess = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
+    ok, per = 0, {}
+    for path, lbl in items:
+        pred = labels[int(sess.run(None, {"input": to_tensor(Image.open(path))})[0][0].argmax())]
+        hit = pred == lbl
+        ok += hit
+        c = per.setdefault(lbl, [0, 0])
+        c[0] += hit
+        c[1] += 1
+    return {"accuracy": round(ok / len(items), 4), "per_class": {k: {"correct": c, "total": t} for k, (c, t) in per.items()}}
 
 
 if __name__ == "__main__":

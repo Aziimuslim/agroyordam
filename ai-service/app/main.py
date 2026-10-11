@@ -1,12 +1,14 @@
 """AgroYordam AI Service — ichki mikroservis (tashqariga yopiq)."""
+import asyncio
 import io
 import os
-from datetime import datetime, timezone
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from PIL import Image, ImageOps, UnidentifiedImageError
+from pydantic import BaseModel
 
-from app.inference.classifier import OnnxClassifier, load_classifier
+from app.inference import registry
+from app.inference.classifier import OnnxClassifier
 from app.inference.validation import validate
 from app.models.labels import ALL_LABELS
 from app.schemas import PredictResponse, TopPrediction
@@ -14,18 +16,43 @@ from app.schemas import PredictResponse, TopPrediction
 MAX_BYTES = 10 * 1024 * 1024
 
 app = FastAPI(title="AgroYordam AI Service", version="0.1.4")
-classifier = load_classifier()
+classifier, model_tag, model_path = registry.load_active()
+_switch = asyncio.Lock()
 
 
 @app.get("/health")
 async def health():
-    info = {"status": "ok", "model": type(classifier).__name__}
-    path = os.getenv("MODEL_PATH")
-    if isinstance(classifier, OnnxClassifier) and path and os.path.exists(path):
-        st = os.stat(path)
-        info |= {"model_file": os.path.basename(path), "model_size_mb": round(st.st_size / 1e6, 1),
-                 "model_updated": datetime.fromtimestamp(st.st_mtime, timezone.utc).isoformat(), "classes": len(classifier.labels)}
-    return info
+    out = {"status": "ok"} | registry.info(classifier, model_tag, model_path)
+    out.pop("metrics", None)
+    return out
+
+
+@app.get("/model")
+async def model_info():
+    """Faol model versiyasi va uning metrikalari (admin panel)."""
+    return registry.info(classifier, model_tag, model_path)
+
+
+class ActivateIn(BaseModel):
+    tag: str
+
+
+@app.post("/model/activate")
+async def activate(body: ActivateIn, x_admin_token: str | None = Header(default=None)):
+    """Boshqa versiyaga o'tish (yangi nomzod yoki qaytarish). Faqat ichki tarmoq; AI_ADMIN_TOKEN berilsa — tekshiriladi."""
+    global classifier, model_tag, model_path
+    expected = os.getenv("AI_ADMIN_TOKEN")
+    if expected and x_admin_token != expected:
+        raise HTTPException(403, "Ruxsat yo'q")
+    if not registry.TAG_RE.match(body.tag):
+        raise HTTPException(422, "Noto'g'ri versiya nomi")
+    async with _switch:
+        try:
+            clf, path = await asyncio.to_thread(registry.activate, body.tag)
+        except Exception as exc:  # yuklab bo'lmadi / fayl buzilgan — eski model ishlashda davom etadi
+            raise HTTPException(502, f"{body.tag} ni ishga tushirib bo'lmadi: {exc}") from exc
+        classifier, model_tag, model_path = clf, body.tag, path
+    return registry.info(classifier, model_tag, model_path)
 
 
 @app.get("/labels")

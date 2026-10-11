@@ -141,21 +141,40 @@ async def export_link(user: User = Depends(require_admin)):
     return {"url": f"/api/v1/dataset/export?token={token}"}
 
 
+def field_split(diag_id: uuid.UUID) -> str:
+    """Rasm datasetning qaysi qismida: har 5 tadan biri — "dala rasmlari testi" (hech qachon o'qitilmaydi).
+    id'ga bog'liq, shuning uchun rasm bir marta testga tushsa, keyingi o'qitishlarda ham testda qoladi."""
+    return "test" if diag_id.int % 5 == 0 else "train"
+
+
 @download_router.get("/export")
 async def export(token: str, db: AsyncSession = Depends(get_db)):
-    """Tasdiqlangan rasmlar: <label>/<id>.<ext> + manifest.csv — train_plantvillage.py --extra uchun tayyor tuzilma."""
+    """Tasdiqlangan rasmlar: train|test/<label>/<id>.<ext> + manifest.csv — train_plantvillage.py uchun tayyor tuzilma."""
     uid = decode_scoped_token(token, EXPORT_SCOPE)
     user = await db.get(User, uuid.UUID(uid)) if uid else None
     if user is None or user.role not in ("admin", "moderator") or not user.is_active:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Havola yaroqsiz yoki muddati o'tgan")
+    return await build_export(db)
 
+
+@download_router.get("/ticket/{ticket}")
+async def export_by_ticket(ticket: str, db: AsyncSession = Depends(get_db)):
+    """GitHub Actions (qayta o'qitish) uchun bir martalik havola: admin panel "Qayta o'qitish" bosilganda yaratiladi."""
+    from app.services.model_ops import use_ticket
+
+    if not await use_ticket(db, ticket):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Havola yaroqsiz, ishlatilgan yoki muddati o'tgan")
+    return await build_export(db)
+
+
+async def build_export(db: AsyncSession) -> FileResponse:
     rows = (await db.scalars(select(Diagnosis).where(Diagnosis.review_status.in_(USABLE))
                              .order_by(Diagnosis.verified_label, Diagnosis.diagnosed_at))).all()
     storage = get_storage()
     tmp = tempfile.NamedTemporaryFile(prefix="agro-dataset-", suffix=".zip", delete=False)
     manifest = io.StringIO()
     w = csv.writer(manifest)
-    w.writerow(["file", "label", "ai_label", "confidence", "review_status", "diagnosed_at"])
+    w.writerow(["file", "split", "label", "ai_label", "confidence", "review_status", "diagnosed_at"])
     written = 0
     with zipfile.ZipFile(tmp, "w", zipfile.ZIP_STORED) as zf:  # JPEG allaqachon siqilgan
         for d in rows:
@@ -163,16 +182,17 @@ async def export(token: str, db: AsyncSession = Depends(get_db)):
             if not data:
                 continue
             ext = d.image_url.rsplit(".", 1)[-1].lower()
-            name = f"{d.verified_label}/{d.id}.{ext}"
+            split = field_split(d.id)
+            name = f"{split}/{d.verified_label}/{d.id}.{ext}"
             zf.writestr(name, data)
-            w.writerow([name, d.verified_label, d.ai_label or "", d.confidence or "", d.review_status,
+            w.writerow([name, split, d.verified_label, d.ai_label or "", d.confidence or "", d.review_status,
                         d.diagnosed_at.isoformat() if d.diagnosed_at else ""])
             written += 1
         zf.writestr("manifest.csv", manifest.getvalue())
         zf.writestr("README.txt", (
             "AgroYordam dala dataseti (mutaxassis tasdiqlagan).\n"
-            "Har bir papka — model sinfi (ai_label). Qayta o'qitish:\n"
-            "  python training/train_plantvillage.py --data <PlantVillage/raw/color> --extra <shu papka>\n"
+            "train/<sinf>/ — o'qitish uchun; test/<sinf>/ — dala rasmlari testi (o'qitilmaydi). Qayta o'qitish:\n"
+            "  python training/train_plantvillage.py --data <PlantVillage/raw/color> --extra train --field-test test\n"
         ))
     tmp.close()
     return FileResponse(

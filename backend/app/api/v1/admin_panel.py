@@ -19,7 +19,10 @@ from app.models import (
     AppSetting, AuditLog, CatalogChange, Comment, Diagnosis, Disease, DiseaseMedicine, ExpertApplication, Medicine, Plant, Post,
     Question, QuestionMessage, Report, Subscription, User,
 )
-from app.services.ai_client import get_ai_client
+from app.api.v1.dataset import field_split
+from app.services import model_ops
+from app.services.ai_client import AIServiceError, get_ai_client
+from app.services.review_service import USABLE
 from app.services.app_settings import EDITABLE, all_settings, audit, get_int
 from app.services.notification_service import notify
 
@@ -154,6 +157,112 @@ async def ai_overview(db: AsyncSession = Depends(get_db)):
         "pairs": [{"ai_label": a, "ai_name": nm(a), "label": b, "name": nm(b), "count": n} for a, b, n in pairs],
         "model": await get_ai_client().health(),
     }
+
+
+# ---------- Model versiyalari va qayta o'qitish ----------
+@router.get("/ai/models")
+async def ai_models():
+    """GitHub'dagi model-vN versiyalari, dala rasmlari testi natijalari va qaysi biri ishlayapti."""
+    active = await get_ai_client().model()
+    active_tag = (active or {}).get("model_tag")
+    try:
+        rels = await model_ops.releases()
+        error = None
+    except model_ops.GitHubError as exc:
+        rels, error = [], str(exc)
+    for r in rels:
+        r["active"] = r["tag"] == active_tag
+        r["can_activate"], r["reason"], r["can_force"] = model_ops.can_activate(r, active_tag)
+    return {"active_tag": active_tag, "active": active, "models": rels, "error": error}
+
+
+class ActivateIn(BaseModel):
+    force: bool = False
+
+
+@router.post("/ai/models/{tag}/activate")
+async def ai_activate(tag: str, body: ActivateIn | None = None, admin: User = Depends(require_superadmin),
+                      db: AsyncSession = Depends(get_db)):
+    if not model_ops.TAG_RE.match(tag):
+        raise HTTPException(422, "Noto'g'ri versiya nomi")
+    active_tag = ((await get_ai_client().model()) or {}).get("model_tag")
+    try:
+        rel = next((r for r in await model_ops.releases() if r["tag"] == tag), None)
+    except model_ops.GitHubError as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
+    if rel is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Bunday versiya yo'q")
+    ok, reason, can_force = model_ops.can_activate(rel, active_tag)
+    if not ok and not (can_force and body and body.force):
+        raise HTTPException(status.HTTP_409_CONFLICT, reason)
+    try:
+        info = await get_ai_client().activate(tag)
+    except AIServiceError as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
+    rollback = active_tag and model_ops.version(tag) < model_ops.version(active_tag)
+    await audit(db, admin, "model_activate", f"AI model: {active_tag or '—'} → {tag}"
+                + (" (qaytarildi)" if rollback else f", dala testi {model_ops.pct(rel['field_test_accuracy'])}")
+                + (" — dala testisiz, majburan" if not ok else ""))
+    await db.commit()
+    return info
+
+
+@router.get("/ai/training")
+async def ai_training():
+    try:
+        runs, error = await model_ops.runs(), None
+    except model_ops.GitHubError as exc:
+        runs, error = [], str(exc)
+    return {"configured": bool(settings.GITHUB_TRAIN_TOKEN and model_ops.public_url()), "runs": runs, "error": error,
+            "repo": settings.GITHUB_REPO}
+
+
+@router.post("/ai/training")
+async def ai_train(admin: User = Depends(require_superadmin), db: AsyncSession = Depends(get_db)):
+    """Qayta o'qitishni boshlash: GitHub Actions bir martalik havoladan datasetni oladi va model-vN nomzodini chiqaradi."""
+    base = model_ops.public_url()
+    if not settings.GITHUB_TRAIN_TOKEN or not base:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE,
+                            "Qayta o'qitish sozlanmagan: serverda deploy/enable-training.sh ni ishga tushiring")
+    try:
+        if any(r["status"] != "completed" for r in await model_ops.runs()):
+            raise HTTPException(status.HTTP_409_CONFLICT, "O'qitish allaqachon ketyapti")
+    except model_ops.GitHubError:
+        pass
+    usable = await _count(db, Diagnosis, Diagnosis.review_status.in_(USABLE))
+    ticket = await model_ops.new_ticket(db)
+    await db.commit()
+    active_tag = ((await get_ai_client().model()) or {}).get("model_tag")
+    try:
+        await model_ops.dispatch(f"{base}/api/v1/dataset/ticket/{ticket}" if usable else "", active_tag)
+    except model_ops.GitHubError as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
+    await audit(db, admin, "model_train", f"Qayta o'qitish boshlandi: {usable} ta tasdiqlangan dala rasmi, solishtirish — {active_tag or 'model-v1'}")
+    await db.commit()
+    return {"ok": True, "field_images": usable}
+
+
+@router.get("/ai/coverage")
+async def ai_coverage(db: AsyncSession = Depends(get_db)):
+    """Har sinf bo'yicha tasdiqlangan dala rasmlari (o'qitish / test) va model bu sinfni biladimi."""
+    known = set(await get_ai_client().labels())
+    counts: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+    for did, lbl in (await db.execute(select(Diagnosis.id, Diagnosis.verified_label)
+                                      .where(Diagnosis.review_status.in_(USABLE)))).all():
+        counts[lbl][0 if field_split(did) == "train" else 1] += 1
+    kb = (await db.execute(select(Disease.ai_label, Disease.name, Plant.name).outerjoin(Plant, Plant.id == Disease.plant_id)
+                           .where(Disease.ai_label.is_not(None)))).all()
+    names = {lbl: (n, p) for lbl, n, p in kb}
+    prefix_plant = {lbl.split("_")[0]: p for lbl, (_, p) in names.items() if p}  # Tomato → Pomidor (sog'lom sinflar uchun)
+    labels = set(names) | set(counts) | known
+    rows = []
+    for lbl in labels:
+        n, p = names.get(lbl, ("Sog'lom" if lbl.endswith("healthy") else lbl, prefix_plant.get(lbl.split("_")[0])))
+        tr, te = counts.get(lbl, [0, 0])
+        rows.append({"label": lbl, "name": n, "plant": p, "train": tr, "test": te, "in_model": lbl in known})
+    # Avval model bilmaydigan sinflar (masalan bodring), keyin rasmi kamlar
+    rows.sort(key=lambda r: (r["in_model"], r["train"] + r["test"], r["label"]))
+    return {"target": 200, "classes": rows}
 
 
 # ---------- Bilimlar bazasi ----------

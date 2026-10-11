@@ -1,12 +1,18 @@
 name: Train AI model
 
+# Admin panel → AI va dataset → "Qayta o'qitish" shu workflow'ni ishga tushiradi (serverdagi GITHUB_TRAIN_TOKEN bilan).
+# Natija — yangi "model-vN" release (nomzod). Uni admin panelda "dala rasmlari testi" bo'yicha solishtirib, ishga tushiriladi.
 on:
   workflow_dispatch:
     inputs:
       dataset_url:
-        description: "Dala dataseti ZIP havolasi (admin panel → Dataset → eksport; masalan GitHub Release'ga yuklangan fayl). Bo'sh — faqat PlantVillage"
+        description: "Dala dataseti ZIP havolasi (admin panel beradi; ichida train/ va test/). Bo'sh — faqat PlantVillage"
         required: false
         default: ""
+      baseline_tag:
+        description: "Hozir ishlayotgan model versiyasi — dala testida solishtirish uchun"
+        required: false
+        default: "model-v1"
   push:
     branches: [main, "claude/**"]
     paths: ["ai-service/training/**", "ai-service/app/models/labels.py", "ai-service/app/inference/preprocess.py", ".github/workflows/train-model.yml"]
@@ -20,6 +26,19 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+      # Birinchi qadam: havola bir martalik va qisqa muddatli (server uni yuklab olingach o'chiradi)
+      - name: Dala dataseti (ixtiyoriy)
+        if: ${{ github.event.inputs.dataset_url != '' }}
+        env:
+          DATASET_URL: ${{ github.event.inputs.dataset_url }}
+        run: |
+          echo "::add-mask::$DATASET_URL"
+          curl -fsSL -o /tmp/field.zip "$DATASET_URL"
+          mkdir -p /tmp/field && unzip -q /tmp/field.zip -d /tmp/field
+          for part in train test; do
+            [ -d /tmp/field/$part ] || continue
+            echo "== $part"; find /tmp/field/$part -mindepth 1 -maxdepth 1 -type d -exec sh -c 'echo "$(basename "$1"): $(ls "$1" | wc -l)"' _ {} \;
+          done
       - uses: actions/setup-python@v5
         with: {python-version: "3.11", cache: pip}
       - run: pip install -r ai-service/training/requirements.txt
@@ -63,30 +82,56 @@ jobs:
             "raw/color/Strawberry___healthy" \
             "raw/color/Squash___Powdery_mildew"
           du -sh raw/color
-      - name: Dala dataseti (ixtiyoriy)
-        if: ${{ github.event.inputs.dataset_url != '' }}
-        env:
-          DATASET_URL: ${{ github.event.inputs.dataset_url }}
+      # Push'da (kod tekshiruvi) dala dataseti yo'q — dala testi va solishtirish yo'lini PlantVillage'dan kichik to'plam bilan sinaymiz
+      - name: Sinov dala to'plami (faqat push)
+        if: github.event_name == 'push'
         run: |
-          curl -fsSL -o /tmp/field.zip "$DATASET_URL"
-          mkdir -p /tmp/field && unzip -q /tmp/field.zip -d /tmp/field
-          find /tmp/field -mindepth 1 -maxdepth 1 -type d -exec sh -c 'echo "$(basename "$1"): $(ls "$1" | wc -l)"' _ {} \;
+          for c in "Tomato___Late_blight:Tomato_Late_blight" "Tomato___healthy:Tomato_healthy" "Grape___Black_rot:Grape_Black_rot"; do
+            src="/tmp/pv/raw/color/${c%%:*}"; lbl="${c##*:}"
+            mkdir -p /tmp/field/train/$lbl /tmp/field/test/$lbl
+            ls "$src" | tail -n 30 | head -n 20 | while read -r f; do cp "$src/$f" /tmp/field/train/$lbl/; done
+            ls "$src" | tail -n 10 | while read -r f; do cp "$src/$f" /tmp/field/test/$lbl/; done
+          done
+          find /tmp/field -type f | wc -l
+      - name: Hozirgi model (solishtirish uchun)
+        env:
+          BASELINE: ${{ github.event.inputs.baseline_tag || 'model-v1' }}
+        run: |
+          mkdir -p /tmp/baseline
+          for f in agro-mobilenetv3.onnx agro-mobilenetv3.labels.txt; do
+            curl -sfL -o /tmp/baseline/$f "https://github.com/${{ github.repository }}/releases/download/$BASELINE/$f" || rm -f /tmp/baseline/$f
+          done
+          ls -la /tmp/baseline
       - name: O'qitish va ONNX eksport
         working-directory: ai-service
         run: |
-          EXTRA=""
-          [ -d /tmp/field ] && EXTRA="--extra /tmp/field"
-          python training/train_plantvillage.py --data /tmp/pv/raw/color --out models/agro-mobilenetv3.onnx $EXTRA
+          ARGS=""
+          [ -d /tmp/field/train ] && ARGS="$ARGS --extra /tmp/field/train"
+          [ -d /tmp/field/test ] && ARGS="$ARGS --field-test /tmp/field/test"
+          [ -f /tmp/baseline/agro-mobilenetv3.labels.txt ] && ARGS="$ARGS --baseline-model /tmp/baseline/agro-mobilenetv3.onnx"
+          python training/train_plantvillage.py --data /tmp/pv/raw/color --out models/agro-mobilenetv3.onnx $ARGS
       - uses: actions/upload-artifact@v4
         with:
           name: agro-model
           path: ai-service/models/
-      - name: Release'ga yuklash (model-v1)
+      # Faqat qo'lda / admin paneldan ishga tushirilganda yangi versiya chiqariladi (push — faqat tekshiruv)
+      - name: Yangi versiya (model-vN) sifatida chiqarish
+        if: github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view model-v1 >/dev/null 2>&1 || gh release create model-v1 --prerelease --target "$GITHUB_SHA" \
-            --title "AgroYordam AI model v1 (PlantVillage, MobileNetV3)" \
-            --notes "PlantVillage'da o'qitilgan kasallik klassifikatori (34 sinf, 11 ekin). Aniqlik: agro-mobilenetv3.metrics.json"
-          gh release upload model-v1 ai-service/models/agro-mobilenetv3.onnx ai-service/models/agro-mobilenetv3.labels.txt \
-            ai-service/models/agro-mobilenetv3.metrics.json --clobber
+          N=$(gh release list --limit 200 --json tagName -q '[.[].tagName | select(test("^model-v[0-9]+$")) | ltrimstr("model-v") | tonumber] | (max // 0) + 1')
+          TAG="model-v$N"
+          NOTES=$(python3 - <<'PY'
+          import json
+          m = json.load(open("ai-service/models/agro-mobilenetv3.metrics.json"))
+          pct = lambda v: "—" if v is None else f"{v * 100:.1f}%"
+          print(f"Nomzod model. Sinflar: {m['classes']}. PlantVillage validatsiyasi: {pct(m['val_accuracy_onnx'])}. "
+                f"Dala rasmlari testi ({m['field_test_samples']} rasm): yangi {pct(m['field_test_accuracy'])}, "
+                f"hozirgi ({m['baseline_model'] or '—'}) {pct(m['baseline_field_test_accuracy'])}. "
+                f"O'qitishdagi dala rasmlari: {m['field_train_images']}. Batafsil: agro-mobilenetv3.metrics.json")
+          PY
+          )
+          gh release create "$TAG" --prerelease --target "$GITHUB_SHA" --title "AgroYordam AI $TAG" --notes "$NOTES" \
+            ai-service/models/agro-mobilenetv3.onnx ai-service/models/agro-mobilenetv3.labels.txt ai-service/models/agro-mobilenetv3.metrics.json
+          echo "### $TAG chiqarildi" >> "$GITHUB_STEP_SUMMARY"; echo "$NOTES" >> "$GITHUB_STEP_SUMMARY"

@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     APP_NAME: str = "AgroYordam"
-    APP_VERSION: str = "0.4.0"
+    APP_VERSION: str = "0.5.0"
     ENVIRONMENT: str = "development"  # development | production | test
 
     # Dev'da Docker'siz ishga tushirish uchun SQLite; docker-compose PostgreSQL beradi
@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:8080,http://localhost:3000,http://localhost:5173"
 
     AI_SERVICE_URL: str = "http://localhost:8001"
+    AI_ADMIN_TOKEN: str = ""  # ai-service'da model almashtirish uchun (ixtiyoriy, ichki tarmoq)
+    # AI qayta o'qitish: GitHub Actions "Train AI model" (admin panel → AI va dataset)
+    GITHUB_REPO: str = "Aziimuslim/agroyordam"
+    GITHUB_TRAIN_TOKEN: str = ""  # fine-grained token: shu repo, Actions — read/write (deploy/enable-training.sh)
+    GITHUB_TRAIN_REF: str = ""  # bo'sh — repo'ning asosiy branch'i
+    PUBLIC_URL: str = ""  # https://domen — GitHub Actions datasetni shu manzildan yuklaydi
     AI_MIN_CONFIDENCE: float = 60.0
 
     # Storage: local | s3
