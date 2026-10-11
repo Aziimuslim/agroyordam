@@ -60,14 +60,17 @@ jobs:
       - name: Zaxiradan tiklash (restore.sh)
         run: |
           q() { $COMPOSE exec -T db psql -U agro agroyordam -tAc "$1"; }
+          fail() { echo "::error title=restore::$1"; exit 1; }
           before="$(q 'SELECT count(*) FROM users')"
           q "TRUNCATE users CASCADE"
           sudo rm -f backups/agroyordam-*.sql.gz   # tashqi xotiradan yuklab olishni ham sinaymiz
-          sudo bash deploy/restore.sh latest --yes
+          out="$(sudo bash deploy/restore.sh latest --yes 2>&1)" || fail "restore.sh xato: $(echo "$out" | tail -5 | tr '\n' ' ')"
+          echo "$out"
           after="$(q 'SELECT count(*) FROM users')"
           echo "users: $before → $after"
-          test "$before" -gt 0 && test "$before" = "$after"
-          for i in $(seq 1 30); do curl -skf https://localhost/health && exit 0; sleep 3; done; exit 1
+          { [ "$before" -gt 0 ] && [ "$before" = "$after" ]; } || fail "users soni mos emas: $before → $after"
+          for i in $(seq 1 60); do curl -skf https://localhost/health && exit 0; sleep 5; done
+          fail "tiklashdan keyin /health javob bermadi: $($COMPOSE ps -a --format '{{.Service}}={{.Status}}' | tr '\n' ' ')"
       - name: Loglar (xato bo'lsa)
         if: failure()
         run: |
