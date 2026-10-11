@@ -1,0 +1,28 @@
+# Qayta loyihalash (0.2)
+
+Bosqichma-bosqich: har bir bosqich prototipda ko'rib chiqiladi va tasdiqlangandan keyin keyingisiga o'tiladi.
+
+| # | Bosqich | Holat | Prototip |
+|---|---|---|---|
+| 1 | Tuzilma: rollar, ekranlar, yo'llar | ✅ tasdiqlandi | https://claude.ai/artifact/31r6AYudsnhp5mjyRw34F9 |
+| 2 | Dizayn tizimi "Yashil dala 2.0" | ko'rib chiqilmoqda | https://claude.ai/artifact/YDVzxLYy3nk3wcimFtsohM |
+| 3 | Dehqon ekranlari | — | |
+| 4 | Agronom ekranlari | — | |
+| 5 | Admin web panel | — | |
+| 6 | Kod: rollar, ekranlar, admin panel; so'ng AI va dataset | — | |
+
+## 1-bosqichda tasdiqlangan qarorlar
+
+- **Rollar:** dehqon (`user`), agronom (`agronomist`, yangi), admin. Moderator roli admin ichiga kiradi.
+- **Agronom vazifalari:** AI tashxisini tasdiqlash/tuzatish, dehqonga chatda maslahat, bilimlar bazasini yuritish, jamoatda "Agronom javobi".
+- **Bitta mobil ilova:** agronom kirganda o'z menyusi ochiladi (Savollar · Jamoat · [Navbat] · Bilimlar · Profil).
+- **Dehqon menyusi:** Bosh · Bog'im · [Tashxis] · Maslahat · Profil. "Maslahat" = Agronomlar + AI yordamchi + Jamoat.
+- **Agronom maslahati:** oyiga 2 ta savol bepul, Premium'da cheksiz.
+- **Agronom bo'lish:** Profil → "Men agronomman" arizasi → admin tasdiqlaydi.
+- **Admin:** alohida web panel `/admin` (faqat kompyuter); mobil ilovadan admin bo'limi olib tashlanadi.
+- **Tashxis → agronom:** AI ishonchi 70% dan past bo'lsa "Agronomga yuborish" taklif qilinadi; agronom tasdiqlagan rasm datasetga "tasdiqlangan" bo'lib tushadi.
+
+## Dizayn tizimi
+
+`tokens.json` — "Yashil dala 2.0" tokenlari (ranglar ikki mavzuda, tipografiya, bo'shliq, radius, soya, o'lcham, harakat).
+To'liq qoidalar va komponentlar — yuqoridagi 2-bosqich havolasida.
