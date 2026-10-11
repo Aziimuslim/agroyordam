@@ -12,6 +12,7 @@ from app.core.security import utcnow
 from app.models import CatalogChange, Comment, Crop, Diagnosis, Disease, ExpertApplication, Post, Question, Report, Subscription, User
 from app.api.v1.experts import ApplicationOut
 from app.schemas.user import UserMe
+from app.services.app_settings import audit
 from app.services.notification_service import notify
 
 router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(require_admin)])
@@ -69,29 +70,50 @@ async def revenue_stats(db: AsyncSession = Depends(get_db)):
     }
 
 
-@router.get("/users", response_model=list[UserMe])
+class AdminUserOut(UserMe):
+    diagnoses: int = 0
+    crops: int = 0
+
+
+async def _user_out(db: AsyncSession, u: User) -> AdminUserOut:
+    return AdminUserOut(**UserMe.model_validate(u).model_dump(), diagnoses=await _count(db, Diagnosis, Diagnosis.user_id == u.id),
+                        crops=await _count(db, Crop, Crop.user_id == u.id))
+
+
+@router.get("/users", response_model=list[AdminUserOut])
 async def list_users(q: str | None = None, role: str | None = Query(default=None, pattern=r"^(user|agronomist|moderator|admin)$"),
-                     limit: int = Query(default=50, le=200), offset: int = 0, db: AsyncSession = Depends(get_db)):
+                     blocked: bool = False, limit: int = Query(default=50, le=200), offset: int = 0,
+                     db: AsyncSession = Depends(get_db)):
     stmt = select(User).order_by(User.created_at.desc()).limit(limit).offset(offset)
     if role:
         stmt = stmt.where(User.role == role)
+    if blocked:
+        stmt = stmt.where(User.is_active.is_(False))
     if q:
-        stmt = stmt.where(or_(User.full_name.ilike(f"%{q}%"), User.username.ilike(f"%{q}%"),
+        stmt = stmt.where(or_(User.full_name.ilike(f"%{q}%"), User.username.ilike(f"%{q}%"), User.region.ilike(f"%{q}%"),
                               User.email.ilike(f"%{q}%"), User.phone.ilike(f"%{q}%")))
-    return list((await db.scalars(stmt)).all())
+    return [await _user_out(db, u) for u in (await db.scalars(stmt)).all()]
 
 
-@router.put("/users/{user_id}/block", response_model=UserMe, dependencies=[Depends(require_superadmin)])
-async def toggle_block(user_id: uuid.UUID, blocked: bool = True, db: AsyncSession = Depends(get_db)):
+@router.get("/users/count")
+async def users_count(db: AsyncSession = Depends(get_db)):
+    return {"total": await _count(db, User), "blocked": await _count(db, User, User.is_active.is_(False))}
+
+
+@router.put("/users/{user_id}/block", response_model=AdminUserOut)
+async def toggle_block(user_id: uuid.UUID, blocked: bool = True, reason: str | None = Query(default=None, max_length=255),
+                       admin: User = Depends(require_superadmin), db: AsyncSession = Depends(get_db)):
     u = await db.get(User, user_id)
     if u is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Foydalanuvchi topilmadi")
     if u.role == "admin":
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Adminni bloklab bo'lmaydi")
     u.is_active = not blocked
+    await audit(db, admin, "block" if blocked else "unblock",
+                f"«{u.full_name}» {'bloklandi' + (': ' + reason if reason else '') if blocked else 'blokdan chiqarildi'}", u.id)
     await db.commit()
     await db.refresh(u)
-    return u
+    return await _user_out(db, u)
 
 
 class RoleIn(BaseModel):
@@ -105,7 +127,9 @@ async def set_role(user_id: uuid.UUID, body: RoleIn, admin: User = Depends(requi
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Foydalanuvchi topilmadi")
     if u.id == admin.id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "O'z rolingizni o'zgartira olmaysiz")
+    old = u.role
     u.role = body.role
+    await audit(db, admin, "role", f"«{u.full_name}»: rol {old} → {body.role}", u.id)
     await db.commit()
     await db.refresh(u)
     return u
@@ -155,6 +179,7 @@ async def approve_application(app_id: uuid.UUID, admin: User = Depends(require_a
     u.specialization = a.specialization
     await notify(db, u.id, "expert_approved", "Siz endi agronomsiz",
                  "Ilovani qayta oching — agronom rejimi yoqildi.", a.id)
+    await audit(db, admin, "expert_approve", f"«{u.full_name}» agronom bo'ldi ({a.specialization})", u.id)
     await db.commit()
     return await _app_out(db, a)
 
@@ -165,6 +190,8 @@ async def reject_application(app_id: uuid.UUID, body: RejectIn, admin: User = De
     a = await _pending_app(db, app_id)
     a.status, a.reason, a.reviewed_by, a.reviewed_at = "rejected", body.reason, admin.id, utcnow()
     await notify(db, a.user_id, "expert_rejected", "Agronom arizangiz rad etildi", body.reason, a.id)
+    u = await db.get(User, a.user_id)
+    await audit(db, admin, "expert_reject", f"«{u.full_name if u else '?'}» arizasi rad etildi: {body.reason}", a.user_id)
     await db.commit()
     return await _app_out(db, a)
 
@@ -179,6 +206,8 @@ class CatalogChangeOut(BaseModel):
     action: str
     summary: str
     created_at: str | None = None
+    revertible: bool = False
+    reverted: bool = False
 
 
 @router.get("/catalog-changes", response_model=list[CatalogChangeOut])
@@ -189,7 +218,8 @@ async def catalog_changes(limit: int = Query(default=50, le=200), db: AsyncSessi
         u = await db.get(User, c.user_id) if c.user_id else None
         out.append(CatalogChangeOut(id=c.id, user_name=u.full_name if u else None, user_role=u.role if u else None,
                                     entity=c.entity, entity_id=c.entity_id, action=c.action, summary=c.summary,
-                                    created_at=c.created_at.isoformat() if c.created_at else None))
+                                    created_at=c.created_at.isoformat() if c.created_at else None,
+                                    revertible=bool(c.before) and c.reverted_at is None, reverted=c.reverted_at is not None))
     return out
 
 

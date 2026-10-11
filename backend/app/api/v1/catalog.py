@@ -10,15 +10,24 @@ from app.core.deps import require_admin, require_expert
 from app.models import CatalogChange, Disease, DiseaseMedicine, Medicine, Plant, User
 from app.repositories.catalog_repo import DiseaseRepository, MedicineRepository, PlantRepository
 from app.schemas.catalog import (
-    DiseaseDetail, DiseaseIn, DiseaseUse, DiseaseMedicinesIn, DiseaseOut, DiseaseUpdate, MedicineIn, MedicineOut,
+    DiseaseDetail, DiseaseIn, DiseaseUse, DiseaseMedicinesIn, DiseaseOut, DiseaseUpdate, MedicineIn, MedicineOut, MedicineUpdate,
     MedicineRecommendation, PlantIn, PlantOut, PlantUpdate,
 )
 
 router = APIRouter(tags=["Katalog"])
 
 
-async def _log(db: AsyncSession, user: User, entity: str, entity_id, action: str, summary: str) -> None:
-    db.add(CatalogChange(user_id=user.id, entity=entity, entity_id=entity_id, action=action, summary=summary[:255]))
+async def _log(db: AsyncSession, user: User, entity: str, entity_id, action: str, summary: str, before: dict | None = None) -> None:
+    db.add(CatalogChange(user_id=user.id, entity=entity, entity_id=entity_id, action=action, summary=summary[:255], before=before))
+
+
+def _snap(obj, keys) -> dict:
+    """O'zgarishdan oldingi qiymatlar (JSON) — admin paneldan qaytarish uchun."""
+    out = {}
+    for k in keys:
+        v = getattr(obj, k, None)
+        out[k] = str(v) if isinstance(v, uuid.UUID) else v
+    return out
 
 
 _FIELDS = {"name": "nomi", "scientific_name": "ilmiy nomi", "description": "tavsifi", "care_info": "parvarishi",
@@ -86,8 +95,9 @@ async def update_plant(plant_id: uuid.UUID, body: PlantUpdate, user: User = Depe
     if p is None:
         raise _404("O'simlik")
     changes = body.model_dump(exclude_unset=True)
+    before = _snap(p, changes)
     await repo.update(p, changes)
-    await _log(db, user, "plant", p.id, "update", f"«{p.name}»: {_fields(changes)}")
+    await _log(db, user, "plant", p.id, "update", f"«{p.name}»: {_fields(changes)}", before)
     await db.commit()
     return p
 
@@ -147,8 +157,9 @@ async def update_disease(disease_id: uuid.UUID, body: DiseaseUpdate, user: User 
         raise _404("Kasallik")
     try:
         changes = body.model_dump(exclude_unset=True)
+        before = _snap(d, changes)
         await repo.update(d, changes)
-        await _log(db, user, "disease", d.id, "update", f"«{d.name}»: {_fields(changes)}")
+        await _log(db, user, "disease", d.id, "update", f"«{d.name}»: {_fields(changes)}", before)
         await db.commit()
     except IntegrityError:
         await db.rollback()
@@ -174,7 +185,8 @@ async def set_disease_medicines(disease_id: uuid.UUID, body: DiseaseMedicinesIn,
     d = await repo.get(disease_id)
     if d is None:
         raise _404("Kasallik")
-    await _log(db, user, "disease", d.id, "update", f"«{d.name}»: dorilar ({len(body.items)} ta)")
+    old_links = [{"medicine_id": str(m.id), "recommendation": r} for m, r in await repo.medicines_for(d.id)]
+    await _log(db, user, "disease", d.id, "update", f"«{d.name}»: dorilar ({len(body.items)} ta)", {"medicines": old_links})
     for item in body.items:
         if await db.get(Medicine, item.medicine_id) is None:
             raise _404(f"Dori {item.medicine_id}")
@@ -221,14 +233,15 @@ async def create_medicine(body: MedicineIn, user: User = Depends(require_expert)
 
 
 @router.put("/medicines/{medicine_id}", response_model=MedicineOut)
-async def update_medicine(medicine_id: uuid.UUID, body: MedicineIn, user: User = Depends(require_expert), db: AsyncSession = Depends(get_db)):
+async def update_medicine(medicine_id: uuid.UUID, body: MedicineUpdate, user: User = Depends(require_expert), db: AsyncSession = Depends(get_db)):
     repo = MedicineRepository(db)
     m = await repo.get(medicine_id)
     if m is None:
         raise _404("Dori")
     changes = body.model_dump(exclude_unset=True)
+    before = _snap(m, changes)
     await repo.update(m, changes)
-    await _log(db, user, "medicine", m.id, "update", f"«{m.name}»: {_fields(changes)}")
+    await _log(db, user, "medicine", m.id, "update", f"«{m.name}»: {_fields(changes)}", before)
     await db.commit()
     return m
 

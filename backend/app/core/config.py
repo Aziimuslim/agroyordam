@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     APP_NAME: str = "AgroYordam"
-    APP_VERSION: str = "0.3.0"
+    APP_VERSION: str = "0.4.0"
     ENVIRONMENT: str = "development"  # development | production | test
 
     # Dev'da Docker'siz ishga tushirish uchun SQLite; docker-compose PostgreSQL beradi
@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     # Storage: local | s3
     STORAGE_BACKEND: str = "local"
     MEDIA_ROOT: str = "./media"
+    BACKUP_DIR: str = "/backups"  # zaxira servisi papkasi (prod: faqat o'qish; so'rov uchun req/ yoziladi)
     MEDIA_URL: str = "/media"
     S3_ENDPOINT_URL: str | None = None
     S3_ACCESS_KEY: str | None = None

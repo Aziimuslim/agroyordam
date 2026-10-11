@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, SmallInteger, String, Text, Uuid
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, SmallInteger, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -68,4 +68,6 @@ class CatalogChange(Base):
     entity_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
     action: Mapped[str] = mapped_column(String(20), nullable=False)  # create|update|delete
     summary: Mapped[str] = mapped_column(String(255), nullable=False)
+    before: Mapped[dict | None] = mapped_column(JSON)  # o'zgarishdan oldingi qiymatlar — admin qaytara olishi uchun
+    reverted_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = created_at_col()

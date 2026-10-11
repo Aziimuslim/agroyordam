@@ -71,6 +71,16 @@ class MedicineIn(BaseModel):
     image_url: str | None = None
 
 
+class MedicineUpdate(BaseModel):
+    name: str | None = Field(default=None, max_length=150)
+    active_ingredient: str | None = None
+    description: str | None = None
+    usage: str | None = None
+    precautions: str | None = None
+    manufacturer: str | None = None
+    image_url: str | None = None
+
+
 class MedicineOut(ORMModel):
     id: uuid.UUID
     name: str

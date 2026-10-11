@@ -142,7 +142,14 @@ restore() {
 # --- Servis rejimi -------------------------------------------------------------------------------------------
 loop() {
   log "Zaxira servisi: har kuni ${HOUR}:00 UTC; tashqi xotira: $(offsite_enabled && echo "$REMOTE" || echo yo\'q)"
+  # Admin paneldagi "Hozir olish": backend $B/req/now faylini yaratadi
+  mkdir -p "$B/req" && chmod 1777 "$B/req"
   while true; do
+    if [ -f "$B/req/now" ]; then
+      rm -f "$B/req/now"
+      log "Admin paneldan so'raldi"
+      backup.sh now || true
+    fi
     now="$(now_s)"
     since_ok=$(( now - $(read_num "$B/.last_ok") ))
     since_try=$(( now - $(read_num "$B/.last_try") ))
@@ -151,7 +158,7 @@ loop() {
          { [ "$(date -u +%H)" -eq "$HOUR" ] && [ "$since_ok" -ge 72000 ]; }; }; then
       backup.sh now || true   # alohida jarayon: ichida set -e to'liq ishlaydi
     fi
-    sleep 300
+    sleep 30
   done
 }
 

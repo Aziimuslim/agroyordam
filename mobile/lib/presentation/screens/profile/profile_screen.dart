@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../application/app_mode.dart';
 import '../../../application/providers.dart';
@@ -98,7 +99,13 @@ class ProfileScreen extends ConsumerWidget {
         ),
         ListRow(icon: Icons.dns_outlined, label: 'Server manzili', onTap: () => showServerSettings(context, ref)),
         ListRow(icon: AppIcons.globe, label: 'Til', value: "O'zbekcha", onTap: () => showToast(context, "Hozircha faqat o'zbek tili")),
-        if (user.isAdmin) ListRow(icon: AppIcons.shield, label: 'Admin panel', onTap: () => context.push('/admin')),
+        if (user.isAdmin)
+          ListRow(
+            icon: AppIcons.shield,
+            label: 'Admin panel',
+            value: 'Kompyuterda',
+            onTap: () => launchUrl(Uri.parse('${AppConfig.apiUrl}/admin/'), mode: LaunchMode.externalApplication),
+          ),
         ListRow(
           icon: AppIcons.logout,
           label: 'Chiqish',

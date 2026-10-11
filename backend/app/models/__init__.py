@@ -1,3 +1,4 @@
+from app.models.admin import AppSetting, AuditLog
 from app.models.ai_chat_message import AIChatMessage
 from app.models.comment import Comment
 from app.models.conversation import Conversation, ConversationParticipant
@@ -22,6 +23,7 @@ from app.models.subscription import Subscription
 from app.models.user import User
 
 __all__ = [
+    "AppSetting", "AuditLog",
     "AIChatMessage", "CatalogChange", "Comment", "ExpertApplication", "Question", "QuestionMessage", "Conversation", "ConversationParticipant", "Crop", "CropLog",
     "Diagnosis", "Disease", "DiseaseMedicine", "Follower", "Like", "Medicine", "Message",
     "Notification", "PaymentTransaction", "Plant", "Post", "RefreshToken", "Reminder", "Report", "Subscription", "User",

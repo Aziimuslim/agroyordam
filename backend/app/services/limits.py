@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.security import utcnow
 from app.models import AIChatMessage, Crop, Diagnosis, User
+from app.services.app_settings import get_int
 
 
 def _today_start() -> datetime:
@@ -37,10 +38,11 @@ async def active_crops(db: AsyncSession, user: User) -> int:
 async def ensure_can_diagnose(db: AsyncSession, user: User) -> None:
     if user.is_premium:
         return
-    if await diagnoses_today(db, user) >= settings.FREE_AI_DAILY_LIMIT:
+    limit = await get_int(db, "free_ai_daily")
+    if await diagnoses_today(db, user) >= limit:
         raise HTTPException(
             status.HTTP_402_PAYMENT_REQUIRED,
-            f"Bepul rejada kuniga {settings.FREE_AI_DAILY_LIMIT} ta AI tashxis. Premium'ga o'ting.",
+            f"Bepul rejada kuniga {limit} ta AI tashxis. Premium'ga o'ting.",
         )
 
 

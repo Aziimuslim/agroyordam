@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/network/api_client.dart';
 import '../core/storage/token_storage.dart';
-import '../data/repositories/admin_repository.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/catalog_repository.dart';
 import '../data/repositories/community_repository.dart';
@@ -24,7 +23,6 @@ final catalogRepoProvider = Provider((ref) => CatalogRepository(ref.watch(apiCli
 final gardenRepoProvider = Provider((ref) => GardenRepository(ref.watch(apiClientProvider)));
 final communityRepoProvider = Provider((ref) => CommunityRepository(ref.watch(apiClientProvider)));
 final subscriptionRepoProvider = Provider((ref) => SubscriptionRepository(ref.watch(apiClientProvider)));
-final adminRepoProvider = Provider((ref) => AdminRepository(ref.watch(apiClientProvider)));
 final expertRepoProvider = Provider((ref) => ExpertRepository(ref.watch(apiClientProvider)));
 
 // ---------- Auth ----------

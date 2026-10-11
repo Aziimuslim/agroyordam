@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../application/app_mode.dart';
 import '../application/providers.dart';
-import 'screens/admin/admin_screen.dart';
 import 'screens/auth/forgot_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
@@ -67,7 +66,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (!loggedIn && !_publicRoutes.contains(loc)) return '/welcome';
       if (loggedIn && loc == '/splash') return (from != null && from.startsWith('/') && !from.startsWith('/splash')) ? from : '/home';
       if (loggedIn && _publicRoutes.contains(loc)) return '/home';
-      if (loc.startsWith('/admin') && !(ref.read(currentUserProvider)?.isAdmin ?? false)) return '/home';
       // Agronom rejimi: bosh sahifa o'rniga tekshirish navbati; oddiy foydalanuvchi bu bo'limga kira olmaydi
       if (loc.startsWith('/expert') && !(ref.read(currentUserProvider)?.canReview ?? false)) return '/home';
       if (loc == '/home' && ref.read(expertModeProvider)) return '/expert';
@@ -123,7 +121,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/premium', builder: (_, __) => const PremiumScreen(), routes: [
         GoRoute(path: 'payments', builder: (_, __) => const PaymentsScreen()),
       ]),
-      GoRoute(path: '/admin', builder: (_, __) => const AdminScreen()),
 
       // ---------- Agronom rejimi ----------
       GoRoute(path: '/expert', pageBuilder: (_, s) => _tab(const ExpertQueueScreen(), s)),

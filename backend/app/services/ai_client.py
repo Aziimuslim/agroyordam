@@ -41,6 +41,16 @@ class AIClient:
         )
 
 
+    async def health(self) -> dict | None:
+        """AI xizmati holati va qaysi model ishlayotgani (admin panel uchun)."""
+        try:
+            async with httpx.AsyncClient(base_url=settings.AI_SERVICE_URL, timeout=5) as client:
+                resp = await client.get("/health")
+            resp.raise_for_status()
+            return resp.json()
+        except (httpx.HTTPError, ValueError):
+            return None
+
     async def labels(self) -> list[str]:
         """Model biladigan sinflar ro'yxati (dataset belgilash uchun)."""
         try:

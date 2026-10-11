@@ -1,5 +1,7 @@
 """AgroYordam AI Service — ichki mikroservis (tashqariga yopiq)."""
 import io
+import os
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from PIL import Image, ImageOps, UnidentifiedImageError
@@ -17,7 +19,13 @@ classifier = load_classifier()
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "model": type(classifier).__name__}
+    info = {"status": "ok", "model": type(classifier).__name__}
+    path = os.getenv("MODEL_PATH")
+    if isinstance(classifier, OnnxClassifier) and path and os.path.exists(path):
+        st = os.stat(path)
+        info |= {"model_file": os.path.basename(path), "model_size_mb": round(st.st_size / 1e6, 1),
+                 "model_updated": datetime.fromtimestamp(st.st_mtime, timezone.utc).isoformat(), "classes": len(classifier.labels)}
+    return info
 
 
 @app.get("/labels")

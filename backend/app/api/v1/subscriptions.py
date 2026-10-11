@@ -14,6 +14,7 @@ from app.schemas.subscription import (
     CheckoutIn, CheckoutOut, MySubscription, PlanOut, SubscriptionOut, WebhookIn,
 )
 from app.services import limits
+from app.services.app_settings import get_int, plan_price
 from app.services.payment_service import (
     PLANS, apply_payment, create_checkout, new_sandbox_txn, payment_url, verify_signature,
 )
@@ -22,8 +23,9 @@ router = APIRouter(prefix="/subscriptions", tags=["Subscriptions"])
 
 
 @router.get("/plans", response_model=list[PlanOut])
-async def plans():
-    return [PlanOut(code=p.code, title=p.title, price=p.price, duration_days=p.duration_days, features=list(p.features))
+async def plans(db: AsyncSession = Depends(get_db)):
+    return [PlanOut(code=p.code, title=p.title, price=await plan_price(db, p.code, p.price), duration_days=p.duration_days,
+                    features=list(p.features))
             for p in PLANS.values()]
 
 
@@ -77,7 +79,7 @@ async def my_subscription(user: User = Depends(get_current_user), db: AsyncSessi
         is_premium=user.is_premium, premium_until=user.premium_until,
         active=SubscriptionOut.model_validate(active) if active else None,
         ai_used_today=await limits.diagnoses_today(db, user),
-        ai_daily_limit=None if user.is_premium else settings.FREE_AI_DAILY_LIMIT,
+        ai_daily_limit=None if user.is_premium else await get_int(db, "free_ai_daily"),
         crops_used=await limits.active_crops(db, user),
         crop_limit=None if user.is_premium else settings.FREE_CROP_LIMIT,
     )

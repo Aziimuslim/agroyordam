@@ -39,6 +39,9 @@ class FakeAI:
     async def labels(self):
         return ["Tomato_Late_blight", "Tomato_healthy"]
 
+    async def health(self):
+        return {"status": "ok", "model": "FakeAI"}
+
 
 @pytest.fixture
 def fake_ai(monkeypatch):

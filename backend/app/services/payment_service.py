@@ -22,6 +22,7 @@ from app.core.config import settings
 from app.core.security import utcnow
 from app.models import Subscription, User
 from app.services.notification_service import notify
+from app.services.app_settings import plan_price
 
 
 @dataclass(frozen=True)
@@ -86,7 +87,7 @@ def payment_url(provider: str, sub: Subscription) -> str:
 async def create_checkout(db: AsyncSession, user: User, plan_code: str, provider: str) -> Subscription:
     plan = PLANS[plan_code]
     sub = Subscription(
-        user_id=user.id, plan=plan.code, status="pending", price=plan.price, currency="UZS",
+        user_id=user.id, plan=plan.code, status="pending", price=await plan_price(db, plan.code, plan.price), currency="UZS",
         payment_provider=provider, auto_renew=plan.code != "lifetime",
     )
     db.add(sub)

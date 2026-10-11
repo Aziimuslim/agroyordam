@@ -12,12 +12,12 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import EXPERT_ROLES, get_current_user, require_expert
 from app.core.security import utcnow
 from app.models import Crop, Diagnosis, Disease, Medicine, Question, QuestionMessage, User
 from app.schemas.user import UserPublic
+from app.services.app_settings import get_int
 from app.services.notification_service import notify
 
 router = APIRouter(prefix="/questions", tags=["Savollar"])
@@ -95,7 +95,7 @@ async def _quota(db: AsyncSession, user: User) -> Quota:
         Question.user_id == user.id, Question.created_at >= _month_start())) or 0
     if user.is_premium:
         return Quota(used=used, limit=None, remaining=None)
-    lim = settings.FREE_QUESTIONS_PER_MONTH
+    lim = await get_int(db, "free_questions_month")
     return Quota(used=used, limit=lim, remaining=max(0, lim - used))
 
 

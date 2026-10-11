@@ -116,26 +116,3 @@ class CarePlan {
         tasks: [for (final t in (j['tasks'] as List? ?? [])) CarePlanTask.fromJson(t)],
       );
 }
-
-/// Dataset tekshiruvi uchun yuklangan tashxis rasmi (admin panel → Dataset).
-class DatasetItem {
-  DatasetItem({required this.id, required this.imageUrl, required this.reviewStatus, this.aiLabel, this.confidence, this.plantName, this.diseaseName, this.userFeedback, this.verifiedLabel, this.diagnosedAt});
-  final String id, imageUrl, reviewStatus;
-  final String? aiLabel, plantName, diseaseName, verifiedLabel;
-  final double? confidence;
-  final bool? userFeedback;
-  final DateTime? diagnosedAt;
-
-  factory DatasetItem.fromJson(Map<String, dynamic> j) => DatasetItem(
-        id: j['id'],
-        imageUrl: j['image_url'],
-        reviewStatus: j['review_status'],
-        aiLabel: j['ai_label'],
-        confidence: (j['confidence'] as num?)?.toDouble(),
-        plantName: j['plant_name'],
-        diseaseName: j['disease_name'],
-        userFeedback: j['user_feedback'],
-        verifiedLabel: j['verified_label'],
-        diagnosedAt: parseDate(j['diagnosed_at']),
-      );
-}
