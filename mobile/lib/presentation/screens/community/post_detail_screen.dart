@@ -27,6 +27,7 @@ class _PostDetailState extends ConsumerState<PostDetailScreen> {
       _ctrl.clear();
       ref.invalidate(commentsProvider(widget.id));
       ref.invalidate(postProvider(widget.id));
+      ref.invalidate(unansweredPostsProvider);
     } catch (e) {
       if (mounted) showError(context, e);
     }

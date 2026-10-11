@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
 import '../../../core/catalog_images.dart';
+import '../../../core/config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ds.dart';
@@ -196,31 +197,34 @@ class _Row extends StatelessWidget {
 }
 
 class PlantRow extends StatelessWidget {
-  const PlantRow(this.p, {super.key});
+  const PlantRow(this.p, {super.key, this.onTap});
   final Plant p;
+  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) => _Row(
         leading: CatalogImage(asset: CatalogImages.plant(p.name), url: p.imageUrl, width: 72, height: 72),
         title: p.name,
         sub: p.scientificName,
-        onTap: () => context.push('/catalog/plant/${p.id}'),
+        onTap: onTap ?? () => context.push('/catalog/plant/${p.id}'),
       );
 }
 
 class DiseaseRow extends StatelessWidget {
-  const DiseaseRow(this.d, {super.key, this.showPlant = true, this.sub});
+  const DiseaseRow(this.d, {super.key, this.showPlant = true, this.sub, this.onTap});
   final Disease d;
   final bool showPlant;
   final String? sub;
+  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
     final img = CatalogImages.disease(d.aiLabel);
+    final url = AppConfig.mediaUrl(d.imageUrl);
     return _Row(
-      leading: CatalogImage(asset: img, width: 72, height: 72),
+      leading: CatalogImage(asset: img, url: url, width: 72, height: 72),
       title: d.name,
       sub: sub ?? (showPlant ? d.plantName : null),
-      tags: [RiskTag(d.riskLevel), if (img == null) const StatusTag("Rasm yo'q", kind: StatusKind.neutral)],
-      onTap: () => context.push('/catalog/disease/${d.id}'),
+      tags: [RiskTag(d.riskLevel), if (img == null && url == null) const StatusTag("Rasm yo'q", kind: StatusKind.neutral)],
+      onTap: onTap ?? () => context.push('/catalog/disease/${d.id}'),
     );
   }
 }
@@ -235,9 +239,10 @@ class DiseaseRow extends StatelessWidget {
 }
 
 class MedicineRow extends StatelessWidget {
-  const MedicineRow(this.m, {super.key, this.sub});
+  const MedicineRow(this.m, {super.key, this.sub, this.onTap});
   final Medicine m;
   final String? sub;
+  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
     final (label, icon, bg, fg) = medicineType(context, m);
@@ -246,7 +251,7 @@ class MedicineRow extends StatelessWidget {
       title: m.name,
       sub: sub ?? m.activeIngredient,
       tags: [StatusTag(label, kind: label == 'Biologik' ? StatusKind.healthy : label == 'Insektitsid' ? StatusKind.risk : StatusKind.info, icon: icon)],
-      onTap: () => context.push('/catalog/medicine/${m.id}'),
+      onTap: onTap ?? () => context.push('/catalog/medicine/${m.id}'),
     );
   }
 }

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text, Uuid, func
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Numeric, String, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -28,6 +28,7 @@ class Diagnosis(Base):
 
     # AI modeli qaytargan sinf (masalan Tomato_Late_blight) — dataset va tahlil uchun
     ai_label: Mapped[str | None] = mapped_column(String(150))
+    ai_top: Mapped[list | None] = mapped_column(JSON)  # AI ning eng ehtimolli 3 sinfi [{"label", "confidence"}]
 
     # Dataset yig'ish: foydalanuvchi fikri va mutaxassis (admin/moderator) tekshiruvi
     user_feedback: Mapped[bool | None] = mapped_column(Boolean)  # True — AI to'g'ri topdi, False — xato

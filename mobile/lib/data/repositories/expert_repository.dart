@@ -34,4 +34,36 @@ class ExpertRepository extends BaseRepository {
       (await dio.post('/questions/$id/messages', data: {if (body != null) 'body': body, if (medicineId != null) 'medicine_id': medicineId})).data));
   Future<void> close(String id) => call(() => dio.post('/questions/$id/close'));
   Future<void> rate(String id, int rating) => call(() => dio.post('/questions/$id/rate', data: {'rating': rating}));
+
+  // ---------- Agronom rejimi ----------
+  Future<ExpertStats> stats() => call(() async => ExpertStats.fromJson((await dio.get('/experts/stats/me')).data));
+  Future<void> updateMe({bool? acceptingQuestions, String? workHours, String? specialization}) => call(() => dio.put('/experts/me', data: {
+        if (acceptingQuestions != null) 'accepting_questions': acceptingQuestions,
+        if (workHours != null) 'work_hours': workHours,
+        if (specialization != null) 'specialization': specialization,
+      }));
+
+  Future<List<QueueItem>> queue(String filter) =>
+      call(() async => list((await dio.get('/experts/queue', queryParameters: {'filter': filter})).data, QueueItem.fromJson));
+  Future<QueueItem> queueItem(String id) => call(() async => QueueItem.fromJson((await dio.get('/experts/queue/$id')).data));
+
+  /// status: confirmed | corrected | rejected. Javob — navbatdagi keyingi tashxis (bo'lmasa null).
+  Future<QueueItem?> review(String id, {required String status, String? label, String? comment}) => call(() async {
+        final d = (await dio.post('/experts/queue/$id', data: {
+          'status': status,
+          if (label != null) 'label': label,
+          if (comment != null && comment.trim().isNotEmpty) 'comment': comment.trim(),
+        }))
+            .data;
+        return d == null ? null : QueueItem.fromJson(Map<String, dynamic>.from(d));
+      });
+
+  /// status: new | mine | closed_mine
+  Future<List<Question>> inbox(String status) =>
+      call(() async => list((await dio.get('/questions', queryParameters: {'status': status})).data, Question.fromJson));
+
+  Future<List<CatalogChange>> changes({bool mine = false}) =>
+      call(() async => list((await dio.get('/experts/catalog-changes', queryParameters: {'mine': mine})).data, CatalogChange.fromJson));
+  Future<List<DatasetImage>> datasetImages(String label) =>
+      call(() async => list((await dio.get('/experts/dataset-images', queryParameters: {'label': label})).data, DatasetImage.fromJson));
 }

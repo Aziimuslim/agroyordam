@@ -61,9 +61,10 @@ class Disease {
     this.riskLevel,
     this.medicines = const [],
     this.recommendation,
+    this.imageUrl,
   });
   final String id, name;
-  final String? plantId, plantName, aiLabel, description, symptoms, causes, treatment, prevention, riskLevel;
+  final String? plantId, plantName, aiLabel, description, symptoms, causes, treatment, prevention, riskLevel, imageUrl;
 
   /// Dori sahifasida: shu kasallikka qarshi me'yor.
   final String? recommendation;
@@ -75,6 +76,7 @@ class Disease {
         plantId: j['plant_id'],
         plantName: j['plant_name'],
         aiLabel: j['ai_label'],
+        imageUrl: j['image_url'],
         description: j['description'],
         symptoms: j['symptoms'],
         causes: j['causes'],

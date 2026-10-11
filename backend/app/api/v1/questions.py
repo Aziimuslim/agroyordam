@@ -170,7 +170,7 @@ async def mine(user: User = Depends(get_current_user), db: AsyncSession = Depend
 
 @router.get("", response_model=list[QuestionOut])
 async def for_experts(
-    status_: str = Query(default="new", alias="status", pattern=r"^(new|answered|closed|mine)$"),
+    status_: str = Query(default="new", alias="status", pattern=r"^(new|answered|closed|mine|closed_mine)$"),
     limit: int = Query(default=30, le=100),
     offset: int = 0,
     user: User = Depends(require_expert),
@@ -180,6 +180,8 @@ async def for_experts(
     stmt = select(Question)
     if status_ == "mine":
         stmt = stmt.where(Question.expert_id == user.id, Question.status != "closed")
+    elif status_ == "closed_mine":
+        stmt = stmt.where(Question.expert_id == user.id, Question.status == "closed")
     else:
         stmt = stmt.where(Question.status == status_)
     order = Question.created_at.asc() if status_ == "new" else Question.updated_at.desc()

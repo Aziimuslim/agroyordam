@@ -17,6 +17,7 @@ class AppUser {
     this.createdAt,
     this.specialization,
     this.acceptingQuestions = true,
+    this.workHours,
   });
 
   final String id, fullName, username;
@@ -28,9 +29,13 @@ class AppUser {
   /// Agronom: mutaxassisligi va savol qabul qilyaptimi (onlayn/oflayn).
   final String? specialization;
   final bool acceptingQuestions;
+  final String? workHours;
 
   bool get isExpert => role == 'agronomist';
   bool get isAdmin => role == 'admin' || role == 'moderator';
+
+  /// Tashxislarni tekshira oladi va agronom rejimiga kira oladi.
+  bool get canReview => isExpert || isAdmin;
   String get initials => initialsOf(fullName);
 
   factory AppUser.fromJson(Map<String, dynamic> j) => AppUser(
@@ -49,6 +54,7 @@ class AppUser {
         createdAt: parseDate(j['created_at']),
         specialization: j['specialization'],
         acceptingQuestions: j['accepting_questions'] ?? true,
+        workHours: j['work_hours'],
       );
 }
 

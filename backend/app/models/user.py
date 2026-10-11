@@ -27,5 +27,6 @@ class User(Base):
     # Agronom (role="agronomist"): mutaxassisligi va savol qabul qilyaptimi (onlayn/oflayn)
     specialization: Mapped[str | None] = mapped_column(String(200))
     accepting_questions: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    work_hours: Mapped[str | None] = mapped_column(String(100))  # agronom: "Du–Ju, 9:00–18:00"
     created_at: Mapped[datetime] = created_at_col()
     updated_at: Mapped[datetime] = updated_at_col()

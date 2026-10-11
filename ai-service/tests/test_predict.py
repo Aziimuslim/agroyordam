@@ -119,3 +119,11 @@ def test_not_an_image():
 def test_plant_hint_is_respected():
     r = client.post("/predict", files={"image": ("x.png", leaf_image(True), "image/png")}, data={"plant_hint": "Pomidor"}).json()
     assert r["plant"] == "Pomidor" and r["ai_label"].startswith("Tomato_")
+
+
+def test_top_predictions():
+    r = client.post("/predict", files={"image": ("x.png", leaf_image(True), "image/png")}, data={"plant_hint": "Pomidor"}).json()
+    top = r["top"]
+    assert 2 <= len(top) <= 3 and top[0]["label"] == r["ai_label"] and top[0]["confidence"] == r["confidence"]
+    assert all(t["label"].startswith("Tomato_") for t in top)
+    assert len({t["label"] for t in top}) == len(top)

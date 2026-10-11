@@ -23,6 +23,7 @@ class UserMe(UserPublic):
     language: str = "uz"
     specialization: str | None = None
     accepting_questions: bool = True
+    work_hours: str | None = None
     premium_until: datetime | None = None
     is_active: bool = True
 

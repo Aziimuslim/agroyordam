@@ -72,6 +72,7 @@ async def run_diagnosis(db: AsyncSession, user: User, upload: UploadFile, crop_i
         disease_id=disease.id if disease else None,
         image_url=image_url,
         ai_label=pred.ai_label,
+        ai_top=pred.top or None,
         confidence=Decimal(str(round(pred.confidence, 2))),
         risk_level=disease.risk_level if disease else ("low" if healthy else None),
         symptoms=disease.symptoms if disease else None,

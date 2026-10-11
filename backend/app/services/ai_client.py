@@ -1,5 +1,5 @@
-"""AI Service bilan ichki API kontrakt: POST /predict → {plant, ai_label, confidence, is_valid_image}."""
-from dataclasses import dataclass
+"""AI Service bilan ichki API kontrakt: POST /predict → {plant, ai_label, confidence, is_valid_image, top}."""
+from dataclasses import dataclass, field
 
 import httpx
 
@@ -13,6 +13,7 @@ class Prediction:
     confidence: float
     is_valid_image: bool
     reason: str | None = None
+    top: list[dict] = field(default_factory=list)  # [{"label", "confidence"}] — agronom tekshiruvida muqobillar
 
 
 class AIServiceError(Exception):
@@ -36,6 +37,7 @@ class AIClient:
             confidence=float(data.get("confidence") or 0),
             is_valid_image=bool(data.get("is_valid_image")),
             reason=data.get("reason"),
+            top=[{"label": t["label"], "confidence": float(t["confidence"])} for t in data.get("top") or [] if t.get("label")],
         )
 
 

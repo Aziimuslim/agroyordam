@@ -182,7 +182,7 @@ async def test_catalog_edit_permissions_and_log(client, user_headers, admin_head
     assert (await client.delete(f"{API}/diseases/{did}", headers=expert)).status_code == 403  # o'chirish — faqat admin
 
     log = (await client.get(f"{API}/admin/catalog-changes", headers=admin_headers)).json()
-    assert log[0]["action"] == "update" and "treatment" in log[0]["summary"] and log[0]["user_role"] == "agronomist"
+    assert log[0]["action"] == "update" and "davolash" in log[0]["summary"] and log[0]["user_role"] == "agronomist"
     assert (await client.get(f"{API}/admin/catalog-changes", headers=expert)).status_code == 403
 
 
@@ -197,3 +197,49 @@ async def test_admin_role_management(client, user_headers, admin_headers):
     assert [u["id"] for u in users] == [uid]
     stats = (await client.get(f"{API}/admin/stats/experts", headers=admin_headers)).json()
     assert stats["agronomists"] == 1 and stats["applications_pending"] == 0
+
+
+async def test_expert_mode_tools(client, user_headers, admin_headers, fake_ai):
+    """Agronom rejimi: AI muqobillari, statistika, ish vaqti, o'zgarishlar tarixi, datasetdan rasm, yopilgan savollar."""
+    expert = await make_expert(client, admin_headers)
+    fake_ai.next = Prediction("Pomidor", "Tomato_Late_blight", 61.0, True,
+                              top=[{"label": "Tomato_Late_blight", "confidence": 61.0},
+                                   {"label": "Tomato_Early_blight", "confidence": 27.0},
+                                   {"label": "Tomato_healthy", "confidence": 8.0}])
+    r = await client.post(f"{API}/diagnoses", files={"image": ("leaf.png", image_bytes(), "image/png")}, headers=user_headers)
+    d = r.json()
+
+    item = (await client.get(f"{API}/experts/queue/{d['id']}", headers=expert)).json()
+    alts = item["alternatives"]
+    assert [a["label"] for a in alts] == ["Tomato_Late_blight", "Tomato_Early_blight", "Tomato_healthy"]
+    assert alts[0]["disease_name"] and alts[1]["disease_id"] and alts[2]["healthy"] and alts[2]["disease_name"] == "Sog'lom"
+    assert item["plant_id"] and item["plant_name"] == "Pomidor"
+    # Eski tashxislarda (ai_top yo'q) — bitta muqobil: AI javobi
+    old = await diagnose(client, user_headers, fake_ai, "Tomato_Leaf_Mold", 50.0)
+    assert [a["label"] for a in (await client.get(f"{API}/experts/queue/{old['id']}", headers=expert)).json()["alternatives"]] == ["Tomato_Leaf_Mold"]
+
+    # Tuzatish → rasm datasetga tushadi → rasmi yo'q kasallik uchun tanlash mumkin
+    await client.post(f"{API}/experts/queue/{d['id']}", json={"status": "corrected", "label": "Tomato_Early_blight"}, headers=expert)
+    imgs = (await client.get(f"{API}/experts/dataset-images?label=Tomato_Early_blight", headers=expert)).json()
+    assert [i["id"] for i in imgs] == [d["id"]]
+    assert (await client.get(f"{API}/experts/dataset-images?label=Tomato_Early_blight", headers=user_headers)).status_code == 403
+    dis = [x for x in (await client.get(f"{API}/diseases")).json() if x["ai_label"] == "Tomato_Early_blight"][0]
+    r = await client.put(f"{API}/diseases/{dis['id']}", json={"image_url": imgs[0]["image_url"], "treatment": "Yangi matn"}, headers=expert)
+    assert r.status_code == 200 and r.json()["image_url"] == imgs[0]["image_url"]
+
+    changes = (await client.get(f"{API}/experts/catalog-changes?mine=true", headers=expert)).json()
+    assert changes[0]["mine"] and "rasmi" in changes[0]["summary"] and "davolash" in changes[0]["summary"]
+
+    # Ish vaqti va onlayn holati
+    r = await client.put(f"{API}/experts/me", json={"work_hours": "Du–Ju, 9:00–18:00", "accepting_questions": False}, headers=expert)
+    assert r.json()["work_hours"] == "Du–Ju, 9:00–18:00" and not r.json()["accepting_questions"]
+    assert (await me(client, expert))["work_hours"] == "Du–Ju, 9:00–18:00"
+
+    # Savolga javob → o'rtacha javob vaqti; yopilgan savollar "closed_mine"da
+    q = (await client.post(f"{API}/questions", json={"title": "Pomidor sarg'aydi"}, headers=user_headers)).json()
+    await client.post(f"{API}/questions/{q['id']}/messages", json={"body": "Rasm yuboring"}, headers=expert)
+    await client.post(f"{API}/questions/{q['id']}/close", headers=expert)
+    assert [x["id"] for x in (await client.get(f"{API}/questions?status=closed_mine", headers=expert)).json()] == [q["id"]]
+    assert (await client.get(f"{API}/questions?status=mine", headers=expert)).json() == []
+    stats = (await client.get(f"{API}/experts/stats/me", headers=expert)).json()
+    assert stats["avg_answer_minutes"] == 0 and stats["reviewed_total"] == 1 and stats["ratings_count"] == 0

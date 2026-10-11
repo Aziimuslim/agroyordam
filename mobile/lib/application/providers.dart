@@ -145,3 +145,14 @@ final myQuestionsProvider = FutureProvider.autoDispose<List<Question>>((ref) => 
 final questionProvider = FutureProvider.autoDispose.family<Question, String>((ref, id) => ref.watch(expertRepoProvider).question(id));
 final questionQuotaProvider = FutureProvider.autoDispose<QuestionQuota>((ref) => ref.watch(expertRepoProvider).quota());
 final myApplicationProvider = FutureProvider.autoDispose<ExpertApplication?>((ref) => ref.watch(expertRepoProvider).myApplication());
+
+// ---------- Agronom rejimi ----------
+final expertStatsProvider = FutureProvider.autoDispose<ExpertStats>((ref) => ref.watch(expertRepoProvider).stats());
+final reviewQueueProvider = FutureProvider.autoDispose.family<List<QueueItem>, String>((ref, f) => ref.watch(expertRepoProvider).queue(f));
+final queueItemProvider = FutureProvider.autoDispose.family<QueueItem, String>((ref, id) => ref.watch(expertRepoProvider).queueItem(id));
+final inboxProvider = FutureProvider.autoDispose.family<List<Question>, String>((ref, s) => ref.watch(expertRepoProvider).inbox(s));
+final catalogChangesProvider = FutureProvider.autoDispose<List<CatalogChange>>((ref) => ref.watch(expertRepoProvider).changes());
+final datasetImagesProvider =
+    FutureProvider.autoDispose.family<List<DatasetImage>, String>((ref, label) => ref.watch(expertRepoProvider).datasetImages(label));
+final unansweredPostsProvider =
+    FutureProvider.autoDispose<List<Post>>((ref) => ref.watch(communityRepoProvider).posts(unanswered: true));

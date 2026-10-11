@@ -4,9 +4,9 @@ import 'user.dart';
 /// Dehqonlar ko'radigan agronom kartasi.
 class Expert {
   Expert({required this.id, required this.fullName, this.avatarUrl, this.region, this.specialization, this.acceptingQuestions = true,
-      this.answers = 0, this.rating});
+      this.answers = 0, this.rating, this.workHours});
   final String id, fullName;
-  final String? avatarUrl, region, specialization;
+  final String? avatarUrl, region, specialization, workHours;
   final bool acceptingQuestions;
   final int answers;
   final double? rating;
@@ -20,6 +20,7 @@ class Expert {
         acceptingQuestions: j['accepting_questions'] ?? true,
         answers: j['answers'] ?? 0,
         rating: (j['rating'] as num?)?.toDouble(),
+        workHours: j['work_hours'],
       );
 }
 
@@ -120,4 +121,114 @@ class QuestionQuota {
 
   factory QuestionQuota.fromJson(Map<String, dynamic> j) =>
       QuestionQuota(used: j['used'] ?? 0, limit: j['limit'], remaining: j['remaining']);
+}
+
+/// AI ning muqobil javobi (tekshirish navbatida agronom bitta bosish bilan tanlaydi).
+class Alternative {
+  Alternative({required this.label, this.confidence, this.diseaseId, this.diseaseName, this.healthy = false});
+  final String label;
+  final double? confidence;
+  final String? diseaseId, diseaseName;
+  final bool healthy;
+
+  factory Alternative.fromJson(Map<String, dynamic> j) => Alternative(
+        label: j['label'],
+        confidence: (j['confidence'] as num?)?.toDouble(),
+        diseaseId: j['disease_id'],
+        diseaseName: j['disease_name'],
+        healthy: j['healthy'] ?? false,
+      );
+}
+
+/// Tekshirish navbatidagi AI tashxisi.
+class QueueItem {
+  QueueItem({
+    required this.id,
+    required this.imageUrl,
+    required this.farmerName,
+    this.aiLabel,
+    this.diseaseName,
+    this.plantId,
+    this.plantName,
+    this.confidence,
+    this.alternatives = const [],
+    this.reviewRequested = false,
+    this.reviewNote,
+    this.farmerRegion,
+    this.diagnosedAt,
+  });
+  final String id, imageUrl, farmerName;
+  final String? aiLabel, diseaseName, plantId, plantName, reviewNote, farmerRegion;
+  final double? confidence;
+  final List<Alternative> alternatives;
+  final bool reviewRequested;
+  final DateTime? diagnosedAt;
+
+  bool get lowConfidence => (confidence ?? 0) < 70;
+  String get title => diseaseName ?? (aiLabel != null && aiLabel!.endsWith('healthy') ? "Sog'lom" : 'Aniqlanmagan');
+
+  factory QueueItem.fromJson(Map<String, dynamic> j) => QueueItem(
+        id: j['id'],
+        imageUrl: j['image_url'],
+        farmerName: j['farmer_name'] ?? 'Dehqon',
+        aiLabel: j['ai_label'],
+        diseaseName: j['disease_name'],
+        plantId: j['plant_id'],
+        plantName: j['plant_name'],
+        confidence: (j['confidence'] as num?)?.toDouble(),
+        alternatives: [for (final a in (j['alternatives'] as List? ?? [])) Alternative.fromJson(a)],
+        reviewRequested: j['review_requested'] ?? false,
+        reviewNote: j['review_note'],
+        farmerRegion: j['farmer_region'],
+        diagnosedAt: parseDate(j['diagnosed_at']),
+      );
+}
+
+/// Agronomning o'z ko'rsatkichlari (navbat sarlavhasi va profil).
+class ExpertStats {
+  ExpertStats({this.reviewedToday = 0, this.reviewedTotal = 0, this.aiAgreement, this.queuePending = 0, this.questionsNew = 0,
+      this.answers = 0, this.rating, this.ratingsCount = 0, this.avgAnswerMinutes});
+  final int reviewedToday, reviewedTotal, queuePending, questionsNew, answers, ratingsCount;
+  final int? aiAgreement, avgAnswerMinutes;
+  final double? rating;
+
+  factory ExpertStats.fromJson(Map<String, dynamic> j) => ExpertStats(
+        reviewedToday: j['reviewed_today'] ?? 0,
+        reviewedTotal: j['reviewed_total'] ?? 0,
+        aiAgreement: j['ai_agreement'],
+        queuePending: j['queue_pending'] ?? 0,
+        questionsNew: j['questions_new'] ?? 0,
+        answers: j['answers'] ?? 0,
+        rating: (j['rating'] as num?)?.toDouble(),
+        ratingsCount: j['ratings_count'] ?? 0,
+        avgAnswerMinutes: j['avg_answer_minutes'],
+      );
+}
+
+/// Bilimlar bazasidagi o'zgarish (tarix).
+class CatalogChange {
+  CatalogChange({required this.id, required this.entity, required this.action, required this.summary, this.userName, this.mine = false,
+      this.entityId, this.createdAt});
+  final String id, entity, action, summary;
+  final String? userName, entityId;
+  final bool mine;
+  final DateTime? createdAt;
+
+  factory CatalogChange.fromJson(Map<String, dynamic> j) => CatalogChange(
+        id: j['id'],
+        entity: j['entity'],
+        action: j['action'],
+        summary: j['summary'] ?? '',
+        userName: j['user_name'],
+        mine: j['mine'] ?? false,
+        entityId: j['entity_id'],
+        createdAt: parseDate(j['created_at']),
+      );
+}
+
+/// Agronom tasdiqlagan dala rasmi (ma'lumotnoma rasmini tanlash uchun).
+class DatasetImage {
+  DatasetImage({required this.id, required this.imageUrl});
+  final String id, imageUrl;
+  factory DatasetImage.fromJson(Map<String, dynamic> j) => DatasetImage(id: j['id'], imageUrl: j['image_url']);
 }

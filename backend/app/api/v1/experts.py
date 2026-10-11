@@ -11,9 +11,10 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import EXPERT_ROLES, get_current_user, require_expert
 from app.core.security import utcnow
-from app.models import Diagnosis, Disease, ExpertApplication, Plant, Question, User
+from app.models import CatalogChange, Diagnosis, Disease, ExpertApplication, Plant, Question, QuestionMessage, User
 from app.schemas.common import ORMModel
-from app.services.review_service import apply_review
+from app.services.diagnosis_service import is_healthy_label
+from app.services.review_service import USABLE, apply_review
 
 router = APIRouter(prefix="/experts", tags=["Agronomlar"])
 
@@ -48,11 +49,22 @@ class ExpertOut(BaseModel):
     accepting_questions: bool = True
     answers: int = 0
     rating: float | None = None
+    work_hours: str | None = None
 
 
 class ExpertSettingsIn(BaseModel):
     specialization: str | None = Field(default=None, min_length=3, max_length=200)
     accepting_questions: bool | None = None
+    work_hours: str | None = Field(default=None, max_length=100)
+
+
+class Alternative(BaseModel):
+    """AI ning muqobil javobi: agronom bitta bosish bilan tanlaydi."""
+    label: str
+    confidence: float | None = None
+    disease_id: uuid.UUID | None = None
+    disease_name: str | None = None
+    healthy: bool = False
 
 
 class QueueItem(BaseModel):
@@ -60,8 +72,10 @@ class QueueItem(BaseModel):
     image_url: str
     ai_label: str | None = None
     disease_name: str | None = None
+    plant_id: uuid.UUID | None = None
     plant_name: str | None = None
     confidence: float | None = None
+    alternatives: list[Alternative] = []
     review_requested: bool = False
     review_note: str | None = None
     farmer_name: str
@@ -102,7 +116,7 @@ async def _expert_out(db: AsyncSession, u: User) -> ExpertOut:
     answers = await db.scalar(select(func.count()).select_from(Question).where(Question.expert_id == u.id)) or 0
     rating = await db.scalar(select(func.avg(Question.rating)).where(Question.expert_id == u.id, Question.rating.is_not(None)))
     return ExpertOut(id=u.id, full_name=u.full_name, avatar_url=u.avatar_url, region=u.region, specialization=u.specialization,
-                     accepting_questions=u.accepting_questions, answers=answers,
+                     accepting_questions=u.accepting_questions, answers=answers, work_hours=u.work_hours,
                      rating=round(float(rating), 1) if rating is not None else None)
 
 
@@ -139,19 +153,36 @@ async def queue(
     stmt = stmt.order_by(case((Diagnosis.review_requested.is_(True), 0), else_=1), Diagnosis.confidence.asc(),
                          Diagnosis.diagnosed_at.desc())
     rows = (await db.scalars(stmt.limit(limit).offset(offset))).all()
-    out = []
-    for d in rows:
-        farmer = await db.get(User, d.user_id)
-        disease = await db.get(Disease, d.disease_id) if d.disease_id else None
-        plant = await db.get(Plant, d.plant_id) if d.plant_id else None
-        out.append(QueueItem(
-            id=d.id, image_url=d.image_url, ai_label=d.ai_label, disease_name=disease.name if disease else None,
-            plant_name=plant.name if plant else None, confidence=float(d.confidence) if d.confidence is not None else None,
-            review_requested=d.review_requested, review_note=d.review_note,
-            farmer_name=farmer.full_name.split(" ")[0] if farmer else "Dehqon", farmer_region=farmer.region if farmer else None,
-            diagnosed_at=d.diagnosed_at,
-        ))
-    return out
+    return [await _queue_item(db, d) for d in rows]
+
+
+async def _queue_item(db: AsyncSession, d: Diagnosis) -> QueueItem:
+    farmer = await db.get(User, d.user_id)
+    disease = await db.get(Disease, d.disease_id) if d.disease_id else None
+    plant = await db.get(Plant, d.plant_id) if d.plant_id else None
+    conf = float(d.confidence) if d.confidence is not None else None
+    top = d.ai_top or ([{"label": d.ai_label, "confidence": conf}] if d.ai_label else [])
+    alts = []
+    for t in top:
+        dis = None if is_healthy_label(t["label"]) else await db.scalar(select(Disease).where(Disease.ai_label == t["label"]))
+        alts.append(Alternative(label=t["label"], confidence=t.get("confidence"), disease_id=dis.id if dis else None,
+                                disease_name=dis.name if dis else ("Sog'lom" if is_healthy_label(t["label"]) else None),
+                                healthy=is_healthy_label(t["label"])))
+    return QueueItem(
+        id=d.id, image_url=d.image_url, ai_label=d.ai_label, disease_name=disease.name if disease else None,
+        plant_id=d.plant_id, plant_name=plant.name if plant else None, confidence=conf, alternatives=alts,
+        review_requested=d.review_requested, review_note=d.review_note,
+        farmer_name=farmer.full_name.split(" ")[0] if farmer else "Dehqon", farmer_region=farmer.region if farmer else None,
+        diagnosed_at=d.diagnosed_at,
+    )
+
+
+@router.get("/queue/{diag_id}", response_model=QueueItem)
+async def queue_item(diag_id: uuid.UUID, _: User = Depends(require_expert), db: AsyncSession = Depends(get_db)):
+    d = await db.get(Diagnosis, diag_id)
+    if d is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Tashxis topilmadi")
+    return await _queue_item(db, d)
 
 
 @router.post("/queue/{diag_id}", response_model=QueueItem | None)
@@ -177,6 +208,13 @@ async def my_stats(user: User = Depends(require_expert), db: AsyncSession = Depe
     confirmed = await db.scalar(reviewed.where(Diagnosis.review_status == "confirmed")) or 0
     corrected = await db.scalar(reviewed.where(Diagnosis.review_status == "corrected")) or 0
     me = await _expert_out(db, user)
+    # O'rtacha javob vaqti: savol berilgandan agronomning birinchi xabarigacha
+    first = (await db.execute(
+        select(Question.created_at, func.min(QuestionMessage.created_at))
+        .join(QuestionMessage, QuestionMessage.question_id == Question.id)
+        .where(Question.expert_id == user.id, QuestionMessage.sender_id == user.id)
+        .group_by(Question.id, Question.created_at))).all()
+    waits = [(b - a).total_seconds() / 60 for a, b in first if a and b]
     return {
         "reviewed_today": await db.scalar(reviewed.where(Diagnosis.reviewed_at >= today)) or 0,
         "reviewed_total": total,
@@ -185,4 +223,49 @@ async def my_stats(user: User = Depends(require_expert), db: AsyncSession = Depe
         "questions_new": await db.scalar(select(func.count()).select_from(Question).where(Question.status == "new")) or 0,
         "answers": me.answers,
         "rating": me.rating,
+        "ratings_count": await db.scalar(select(func.count()).select_from(Question).where(
+            Question.expert_id == user.id, Question.rating.is_not(None))) or 0,
+        "avg_answer_minutes": round(sum(waits) / len(waits)) if waits else None,
     }
+
+
+# ---------- Bilimlar bazasi: o'zgarishlar tarixi va datasetdan rasm ----------
+class ChangeOut(BaseModel):
+    id: uuid.UUID
+    user_name: str | None = None
+    mine: bool = False
+    entity: str
+    entity_id: uuid.UUID | None = None
+    action: str
+    summary: str
+    created_at: datetime | None = None
+
+
+@router.get("/catalog-changes", response_model=list[ChangeOut])
+async def catalog_changes(mine: bool = False, limit: int = Query(default=50, le=200),
+                          user: User = Depends(require_expert), db: AsyncSession = Depends(get_db)):
+    """Agronomlar bilimlar bazasiga kiritgan o'zgarishlar (admin panelda qaytarish mumkin)."""
+    stmt = select(CatalogChange).order_by(CatalogChange.created_at.desc()).limit(limit)
+    if mine:
+        stmt = stmt.where(CatalogChange.user_id == user.id)
+    out = []
+    for c in (await db.scalars(stmt)).all():
+        u = await db.get(User, c.user_id) if c.user_id else None
+        out.append(ChangeOut(id=c.id, user_name=u.full_name if u else None, mine=c.user_id == user.id, entity=c.entity,
+                             entity_id=c.entity_id, action=c.action, summary=c.summary, created_at=c.created_at))
+    return out
+
+
+class DatasetImage(BaseModel):
+    id: uuid.UUID
+    image_url: str
+    review_status: str
+
+
+@router.get("/dataset-images", response_model=list[DatasetImage])
+async def dataset_images(label: str = Query(min_length=3, max_length=150), limit: int = Query(default=24, le=60),
+                         _: User = Depends(require_expert), db: AsyncSession = Depends(get_db)):
+    """Agronom tasdiqlagan dala rasmlari — rasmi yo'q kasallik uchun ma'lumotnoma rasmini tanlashda."""
+    rows = (await db.scalars(select(Diagnosis).where(Diagnosis.verified_label == label, Diagnosis.review_status.in_(USABLE))
+                             .order_by(Diagnosis.reviewed_at.desc()).limit(limit))).all()
+    return [DatasetImage(id=d.id, image_url=d.image_url, review_status=d.review_status) for d in rows]

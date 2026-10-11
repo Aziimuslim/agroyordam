@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
 import '../../../core/catalog_images.dart';
+import '../../../core/config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ds.dart';
@@ -105,7 +106,8 @@ class DiseaseScreen extends ConsumerWidget {
           final healthy = CatalogImages.plant(d.plantName);
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             TopBar(title: d.plantName ?? 'Kasallik'),
-            _hero(context, asset: img, caption: 'PlantVillage', placeholder: "Bu kasallik rasmi hali datasetda yo'q"),
+            _hero(context, asset: img, url: AppConfig.mediaUrl(d.imageUrl), caption: img != null ? 'PlantVillage' : 'Dala rasmi',
+                placeholder: "Bu kasallik rasmi hali datasetda yo'q"),
             const SizedBox(height: 14),
             Wrap(spacing: 8, runSpacing: 8, children: [
               RiskTag(d.riskLevel),

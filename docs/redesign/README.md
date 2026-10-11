@@ -8,8 +8,8 @@ Bosqichma-bosqich: har bir bosqich prototipda ko'rib chiqiladi va tasdiqlanganda
 | 2 | Dizayn tizimi "Yashil dala 2.0" | ✅ tasdiqlandi (keyin to'ldirib boriladi) | https://claude.ai/artifact/YDVzxLYy3nk3wcimFtsohM |
 | 3 | Dehqon ekranlari | ✅ tasdiqlandi | https://claude.ai/artifact/Eem1jBJwa5EAb5S8cjPrjj |
 | 4 | Agronom ekranlari | ✅ tasdiqlandi | https://claude.ai/artifact/Px2tiYxY4rb6E2AXVX3aVP |
-| 5 | Admin web panel | ko'rib chiqilmoqda | https://claude.ai/artifact/8CVbovqt2vT7EDjSBQauZz |
-| 6 | Kod: rollar, ekranlar, admin panel; so'ng AI va dataset | — | |
+| 5 | Admin web panel | ✅ tasdiqlandi | https://claude.ai/artifact/8CVbovqt2vT7EDjSBQauZz |
+| 6 | Kod: rollar, ekranlar, admin panel; so'ng AI va dataset | jarayonda (1–3-qism tayyor) | |
 
 ## 1-bosqichda tasdiqlangan qarorlar
 
@@ -61,3 +61,17 @@ To'liq qoidalar va komponentlar — yuqoridagi 2-bosqich havolasida.
 
 Asosiy yangi ko'rsatkich: **dala rasmlari testi** — agronom tasdiqlagan, o'qitishda ishlatilmagan telefon rasmlaridagi aniqlik.
 Yangi model faqat shu raqam yaxshilansa ishga tushiriladi.
+
+## 6-bosqich: kod
+
+| Qism | Nima | Versiya |
+|---|---|---|
+| 1 | Backend: agronom roli, arizalar, tekshirish navbati, savollar, bilimlar bazasi jurnali | 0.1.x |
+| 2 | Mobil: "Yashil dala 2.0", rasmli ma'lumotnoma, "Maslahat" (agronomga savol) | 0.2.0 |
+| 3 | Mobil: agronom rejimi — navbat (AI ning 3 ta muqobili), savollar, jamoat, bilimlar bazasi, profil | 0.3.0 |
+| 4 | Alohida admin web panel (`/admin`) | — |
+| 5 | Dala dataseti va qayta o'qitish ("dala rasmlari testi") | — |
+
+Agronom rejimi: agronom (yoki admin) kirganda ilova navbatdan ochiladi; Profil → "Dehqon rejimiga o'tish" bilan
+dehqon menyusiga qaytadi (tanlov qurilmada saqlanadi). AI har tashxisda eng ehtimolli 3 sinfni qaytaradi (`diagnoses.ai_top`),
+agronom ulardan birini bitta bosish bilan tanlaydi.

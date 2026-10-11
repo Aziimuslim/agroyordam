@@ -21,6 +21,17 @@ async def _log(db: AsyncSession, user: User, entity: str, entity_id, action: str
     db.add(CatalogChange(user_id=user.id, entity=entity, entity_id=entity_id, action=action, summary=summary[:255]))
 
 
+_FIELDS = {"name": "nomi", "scientific_name": "ilmiy nomi", "description": "tavsifi", "care_info": "parvarishi",
+           "image_url": "rasmi", "symptoms": "belgilari", "causes": "sababi", "treatment": "davolash",
+           "prevention": "oldini olish", "risk_level": "xavf darajasi", "plant_id": "o'simligi", "ai_label": "AI sinfi",
+           "active_ingredient": "ta'sir moddasi", "usage": "me'yori", "precautions": "ehtiyot choralari",
+           "manufacturer": "ishlab chiqaruvchi"}
+
+
+def _fields(changes: dict) -> str:
+    return ", ".join(_FIELDS.get(k, k) for k in changes) or "—"
+
+
 def _404(what: str):
     return HTTPException(status.HTTP_404_NOT_FOUND, f"{what} topilmadi")
 
@@ -76,7 +87,7 @@ async def update_plant(plant_id: uuid.UUID, body: PlantUpdate, user: User = Depe
         raise _404("O'simlik")
     changes = body.model_dump(exclude_unset=True)
     await repo.update(p, changes)
-    await _log(db, user, "plant", p.id, "update", f"«{p.name}»: {', '.join(changes) or '—'}")
+    await _log(db, user, "plant", p.id, "update", f"«{p.name}»: {_fields(changes)}")
     await db.commit()
     return p
 
@@ -137,7 +148,7 @@ async def update_disease(disease_id: uuid.UUID, body: DiseaseUpdate, user: User 
     try:
         changes = body.model_dump(exclude_unset=True)
         await repo.update(d, changes)
-        await _log(db, user, "disease", d.id, "update", f"«{d.name}»: {', '.join(changes) or '—'}")
+        await _log(db, user, "disease", d.id, "update", f"«{d.name}»: {_fields(changes)}")
         await db.commit()
     except IntegrityError:
         await db.rollback()
@@ -217,7 +228,7 @@ async def update_medicine(medicine_id: uuid.UUID, body: MedicineIn, user: User =
         raise _404("Dori")
     changes = body.model_dump(exclude_unset=True)
     await repo.update(m, changes)
-    await _log(db, user, "medicine", m.id, "update", f"«{m.name}»: {', '.join(changes) or '—'}")
+    await _log(db, user, "medicine", m.id, "update", f"«{m.name}»: {_fields(changes)}")
     await db.commit()
     return m
 

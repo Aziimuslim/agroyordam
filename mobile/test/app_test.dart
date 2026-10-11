@@ -5,6 +5,7 @@ import 'package:agroyordam/core/storage/token_storage.dart';
 import 'package:agroyordam/core/theme/app_colors.dart';
 import 'package:agroyordam/core/utils/format.dart';
 import 'package:agroyordam/domain/entities/entities.dart';
+import 'package:agroyordam/presentation/screens/expert/expert_shell.dart';
 import 'package:agroyordam/presentation/screens/reminders/today_tasks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -192,5 +193,34 @@ void main() {
     expect(d.canAskExpert, isFalse);
     expect(d.diseaseLabel, 'Tomato_Early_blight');
     expect(Diagnosis.fromJson({'id': 'd2', 'image_url': '/m.jpg'}).canAskExpert, isTrue);
+  });
+
+  test('Agronom rejimi: navbat, statistika, rol', () {
+    final i = QueueItem.fromJson({
+      'id': 'q1', 'image_url': '/m.jpg', 'farmer_name': 'Jasur', 'ai_label': 'Grape_healthy', 'confidence': 61.5,
+      'review_requested': true,
+      'alternatives': [
+        {'label': 'Grape_healthy', 'confidence': 61.5, 'disease_name': "Sog'lom", 'healthy': true},
+        {'label': 'Grape_Black_rot', 'confidence': 30, 'disease_id': 'x', 'disease_name': 'Uzum qora chirishi'},
+      ],
+    });
+    expect(i.title, "Sog'lom");
+    expect(i.lowConfidence, isTrue);
+    expect(i.alternatives.length, 2);
+    expect(i.alternatives.first.healthy, isTrue);
+    expect(i.alternatives.last.confidence, 30.0);
+
+    final s = ExpertStats.fromJson({'reviewed_today': 3, 'ai_agreement': 87, 'avg_answer_minutes': 125, 'rating': 4.8, 'ratings_count': 12});
+    expect(s.reviewedToday, 3);
+    expect(s.rating, 4.8);
+    expect(formatWait(s.avgAnswerMinutes), '2 soat');
+    expect(formatWait(35), '35 daq');
+    expect(formatWait(null), '—');
+
+    AppUser u(String role) => AppUser.fromJson({'id': 'u', 'full_name': 'A', 'username': 'a', 'role': role, 'work_hours': '9–18'});
+    expect(u('agronomist').canReview, isTrue);
+    expect(u('admin').canReview, isTrue);
+    expect(u('user').canReview, isFalse);
+    expect(u('user').workHours, '9–18');
   });
 }

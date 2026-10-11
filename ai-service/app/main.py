@@ -7,7 +7,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from app.inference.classifier import OnnxClassifier, load_classifier
 from app.inference.validation import validate
 from app.models.labels import ALL_LABELS
-from app.schemas import PredictResponse
+from app.schemas import PredictResponse, TopPrediction
 
 MAX_BYTES = 10 * 1024 * 1024
 
@@ -43,5 +43,6 @@ async def predict(image: UploadFile = File(...), plant_hint: str | None = Form(d
     if not check.ok:
         return PredictResponse(plant=None, ai_label=None, confidence=0, is_valid_image=False, reason=check.reason)
 
-    plant, label, conf = classifier.predict(img, raw, plant_hint)
-    return PredictResponse(plant=plant, ai_label=label, confidence=conf, is_valid_image=True)
+    plant, label, conf, top = classifier.predict_top(img, raw, plant_hint)
+    return PredictResponse(plant=plant, ai_label=label, confidence=conf, is_valid_image=True,
+                           top=[TopPrediction(label=lbl, confidence=c) for lbl, c in top])

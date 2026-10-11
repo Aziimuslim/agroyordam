@@ -21,15 +21,24 @@ from app.models.labels import MODEL_LABELS, PLANT_LABELS, PLANT_PREFIX, plant_of
 log = logging.getLogger(__name__)
 
 
+Top = list[tuple[str, float]]
+
+
 class Classifier(Protocol):
     def predict(self, img: Image.Image, raw: bytes, plant_hint: str | None = None) -> tuple[str | None, str, float]:
         """→ (plant, ai_label, confidence 0..100)"""
+
+    def predict_top(self, img: Image.Image, raw: bytes, plant_hint: str | None = None, k: int = 3) -> tuple[str | None, str, float, Top]:
+        """→ (plant, ai_label, confidence, eng ehtimolli k ta sinf) — agronom tekshiruvida muqobillar sifatida ko'rsatiladi."""
 
 
 class StubClassifier:
     LESION_THRESHOLD = 0.08
 
     def predict(self, img: Image.Image, raw: bytes, plant_hint: str | None = None) -> tuple[str | None, str, float]:
+        return self.predict_top(img, raw, plant_hint)[:3]
+
+    def predict_top(self, img: Image.Image, raw: bytes, plant_hint: str | None = None, k: int = 3) -> tuple[str | None, str, float, Top]:
         digest = hashlib.sha256(raw).digest()
         plants = list(PLANT_LABELS)
         plant = plant_hint if plant_hint in PLANT_LABELS else plants[digest[0] % len(plants)]
@@ -43,11 +52,14 @@ class StubClassifier:
         lesion_ratio = float(lesion.sum()) / max(1.0, float(leaf.sum()))
 
         if lesion_ratio < self.LESION_THRESHOLD and healthy:
-            conf = 80 + digest[2] % 18
-            return plant, healthy, float(conf)
-        label = diseases[digest[1] % len(diseases)]
-        conf = min(97.0, 62 + lesion_ratio * 120 + digest[3] % 10)
-        return plant, label, round(conf, 2)
+            label, conf = healthy, float(80 + digest[2] % 18)
+        else:
+            label = diseases[digest[1] % len(diseases)]
+            conf = round(min(97.0, 62 + lesion_ratio * 120 + digest[3] % 10), 2)
+        rest = [lbl for lbl in labels if lbl != label][: k - 1]
+        left = 100 - conf
+        top = [(label, conf)] + [(lbl, round(left * w, 2)) for lbl, w in zip(rest, (0.6, 0.3, 0.1))]
+        return plant, label, conf, top
 
 
 class OnnxClassifier:
@@ -75,15 +87,19 @@ class OnnxClassifier:
         return np.mean([self.probabilities(v) for v in (img, ImageOps.mirror(img), zoom)], axis=0)
 
     def predict(self, img: Image.Image, raw: bytes, plant_hint: str | None = None) -> tuple[str | None, str, float]:
+        return self.predict_top(img, raw, plant_hint)[:3]
+
+    def predict_top(self, img: Image.Image, raw: bytes, plant_hint: str | None = None, k: int = 3) -> tuple[str | None, str, float, Top]:
         probs = self.probabilities_tta(img)
         prefix = PLANT_PREFIX.get(plant_hint or "")
         mask = np.array([lbl.startswith(prefix + "_") for lbl in self.labels]) if prefix else None
         if mask is not None and mask.any():
             probs = np.where(mask, probs, 0)
             probs = probs / probs.sum()
-        idx = int(probs.argmax())
-        label = self.labels[idx]
-        return plant_of(label), label, round(float(probs[idx]) * 100, 2)
+        order = np.argsort(probs)[::-1][:k]
+        top = [(self.labels[int(i)], round(float(probs[int(i)]) * 100, 2)) for i in order]
+        label, conf = top[0]
+        return plant_of(label), label, conf, top
 
 
 def load_classifier() -> Classifier:

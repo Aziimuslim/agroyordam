@@ -4,9 +4,10 @@ import 'base.dart';
 class CommunityRepository extends BaseRepository {
   CommunityRepository(super.api);
 
-  Future<List<Post>> posts({String? category, String? userId, String feed = 'all'}) => call(() async => list(
+  Future<List<Post>> posts({String? category, String? userId, String feed = 'all', bool unanswered = false}) => call(() async => list(
       (await dio.get('/posts', queryParameters: {
         'feed': feed,
+        if (unanswered) 'unanswered': true,
         if (category != null) 'category': category,
         if (userId != null) 'user_id': userId,
       }))

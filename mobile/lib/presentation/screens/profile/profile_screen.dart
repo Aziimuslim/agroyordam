@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../application/app_mode.dart';
 import '../../../application/providers.dart';
 import '../../../application/theme_mode.dart';
 import '../../../core/config.dart';
@@ -117,39 +118,53 @@ class ProfileScreen extends ConsumerWidget {
 }
 
 void _themeSheet(BuildContext context, WidgetRef ref) {
-  showSheet(context, title: 'Mavzu', builder: (ctx) => Consumer(builder: (ctx, ref, _) {
-        final mode = ref.watch(themeModeProvider);
-        final c = ctx.c;
-        return Row(children: [
-          for (final (m, icon, label) in [
-            (ThemeMode.light, Icons.light_mode_outlined, "Yorug'"),
-            (ThemeMode.dark, Icons.dark_mode_outlined, "Qorong'i"),
-            (ThemeMode.system, Icons.brightness_auto_outlined, 'Tizimga qarab'),
-          ]) ...[
-            if (m != ThemeMode.light) const SizedBox(width: 8),
-            Expanded(
-              child: Material(
-                color: mode == m ? c.primaryLight : c.card,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14), side: BorderSide(color: mode == m ? c.primary : c.lineStrong, width: 1.5)),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(14),
-                  onTap: () => ref.read(themeModeProvider.notifier).set(m),
-                  child: SizedBox(
-                    height: 76,
-                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Icon(icon, color: mode == m ? c.primary : c.text),
-                      const SizedBox(height: 4),
-                      Text(label, textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: mode == m ? c.primary : c.text)),
-                    ]),
-                  ),
+  showSheet(context, title: 'Mavzu', builder: (ctx) => const ThemePicker());
+}
+
+/// Mavzu tanlash: yorug' / qorong'i / tizimga qarab. Agronom rejimida faol rang — tuproq.
+class ThemePicker extends ConsumerWidget {
+  const ThemePicker({super.key, this.expert = false});
+  final bool expert;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mode = ref.watch(themeModeProvider);
+    final c = context.c;
+    final (accent, accentBg) = expert ? (c.expert, c.expertBg) : (c.primary, c.primaryLight);
+    return Row(children: [
+      for (final (m, icon, label) in [
+        (ThemeMode.light, Icons.light_mode_outlined, "Yorug'"),
+        (ThemeMode.dark, Icons.dark_mode_outlined, "Qorong'i"),
+        (ThemeMode.system, Icons.brightness_auto_outlined, 'Tizimga qarab'),
+      ]) ...[
+        if (m != ThemeMode.light) const SizedBox(width: 8),
+        Expanded(
+          child: Semantics(
+            selected: mode == m,
+            button: true,
+            child: Material(
+              color: mode == m ? accentBg : c.card,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14), side: BorderSide(color: mode == m ? accent : c.lineStrong, width: 1.5)),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () => ref.read(themeModeProvider.notifier).set(m),
+                child: SizedBox(
+                  height: 76,
+                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(icon, color: mode == m ? accent : c.text),
+                    const SizedBox(height: 4),
+                    Text(label,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: mode == m ? accent : c.text)),
+                  ]),
                 ),
               ),
             ),
-          ],
-        ]);
-      }));
+          ),
+        ),
+      ],
+    ]);
+  }
 }
 
 /// "Men agronomman": ariza yuborish yoki holatini ko'rish. Agronom bo'lsa — agronom rejimi haqida.
@@ -158,11 +173,27 @@ class _ExpertEntry extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
-    if (user == null || user.isAdmin) return const SizedBox.shrink();
-    if (user.isExpert) {
-      return const Padding(
-        padding: EdgeInsets.only(bottom: 14),
-        child: NoteBox(kind: NoteKind.expert, title: 'Siz agronomsiz', text: "Agronom rejimi keyingi yangilanishda shu ilovada ochiladi."),
+    if (user == null) return const SizedBox.shrink();
+    if (user.canReview) {
+      final c = context.c;
+      return AppCard(
+        color: c.expertBg,
+        shadow: false,
+        onTap: () async {
+          await ref.read(expertModePrefProvider.notifier).set(true);
+          if (context.mounted) context.go('/expert');
+        },
+        child: Row(children: [
+          Icon(Icons.verified_user_outlined, color: c.expert),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text("Agronom rejimiga o'tish", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: c.expert)),
+              Text('Navbat, savollar va bilimlar bazasi', style: TextStyle(fontSize: 13, color: c.text)),
+            ]),
+          ),
+          Icon(AppIcons.chevron, color: c.expert),
+        ]),
       );
     }
     final app = ref.watch(myApplicationProvider).value;
