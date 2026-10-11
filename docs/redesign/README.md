@@ -5,8 +5,8 @@ Bosqichma-bosqich: har bir bosqich prototipda ko'rib chiqiladi va tasdiqlanganda
 | # | Bosqich | Holat | Prototip |
 |---|---|---|---|
 | 1 | Tuzilma: rollar, ekranlar, yo'llar | ✅ tasdiqlandi | https://claude.ai/artifact/31r6AYudsnhp5mjyRw34F9 |
-| 2 | Dizayn tizimi "Yashil dala 2.0" | ko'rib chiqilmoqda | https://claude.ai/artifact/YDVzxLYy3nk3wcimFtsohM |
-| 3 | Dehqon ekranlari | — | |
+| 2 | Dizayn tizimi "Yashil dala 2.0" | ✅ tasdiqlandi (keyin to'ldirib boriladi) | https://claude.ai/artifact/YDVzxLYy3nk3wcimFtsohM |
+| 3 | Dehqon ekranlari | ko'rib chiqilmoqda | https://claude.ai/artifact/Eem1jBJwa5EAb5S8cjPrjj |
 | 4 | Agronom ekranlari | — | |
 | 5 | Admin web panel | — | |
 | 6 | Kod: rollar, ekranlar, admin panel; so'ng AI va dataset | — | |
@@ -26,3 +26,10 @@ Bosqichma-bosqich: har bir bosqich prototipda ko'rib chiqiladi va tasdiqlanganda
 
 `tokens.json` — "Yashil dala 2.0" tokenlari (ranglar ikki mavzuda, tipografiya, bo'shliq, radius, soya, o'lcham, harakat).
 To'liq qoidalar va komponentlar — yuqoridagi 2-bosqich havolasida.
+
+## 3-bosqich: qo'shimcha talab
+
+- **Ma'lumotnoma (ensiklopediya)** rasmli bo'ladi: har bir ekinning sog'lom barg rasmi va har bir kasallikning belgilari ko'rinadigan rasmi.
+  Manba — PlantVillage dataseti (AI modeli shu rasmlarda o'qitilgan). Hozir 28 kasallikdan 25 tasining rasmi bor;
+  bodring un shudringi, uzum oidiumi va bodring ildiz chirishi uchun rasm dala datasetidan to'ldiriladi.
+- Kasallik sahifasida sog'lom va kasal bargni yonma-yon solishtirish.
