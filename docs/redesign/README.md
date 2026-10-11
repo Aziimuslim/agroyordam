@@ -6,8 +6,8 @@ Bosqichma-bosqich: har bir bosqich prototipda ko'rib chiqiladi va tasdiqlanganda
 |---|---|---|---|
 | 1 | Tuzilma: rollar, ekranlar, yo'llar | ✅ tasdiqlandi | https://claude.ai/artifact/31r6AYudsnhp5mjyRw34F9 |
 | 2 | Dizayn tizimi "Yashil dala 2.0" | ✅ tasdiqlandi (keyin to'ldirib boriladi) | https://claude.ai/artifact/YDVzxLYy3nk3wcimFtsohM |
-| 3 | Dehqon ekranlari | ko'rib chiqilmoqda | https://claude.ai/artifact/Eem1jBJwa5EAb5S8cjPrjj |
-| 4 | Agronom ekranlari | — | |
+| 3 | Dehqon ekranlari | ✅ tasdiqlandi | https://claude.ai/artifact/Eem1jBJwa5EAb5S8cjPrjj |
+| 4 | Agronom ekranlari | ko'rib chiqilmoqda | https://claude.ai/artifact/Px2tiYxY4rb6E2AXVX3aVP |
 | 5 | Admin web panel | — | |
 | 6 | Kod: rollar, ekranlar, admin panel; so'ng AI va dataset | — | |
 
@@ -34,3 +34,14 @@ To'liq qoidalar va komponentlar — yuqoridagi 2-bosqich havolasida.
   Manba — PlantVillage dataseti (AI modeli shu rasmlarda o'qitilgan). Hozir 28 kasallikdan 25 tasining rasmi bor;
   bodring un shudringi, uzum oidiumi va bodring ildiz chirishi uchun rasm dala datasetidan to'ldiriladi.
 - Kasallik sahifasida sog'lom va kasal bargni yonma-yon solishtirish.
+
+## 4-bosqich: agronom rejimi
+
+- Menyu: Savollar · Jamoat · [Navbat] · Bilimlar · Profil; faol rang `expert`, tepada "Agronom rejimi" yorlig'i, onlayn/oflayn tugmasi.
+- **Navbat:** AI tashxislari; dehqon so'raganlari va ishonchi pastlari birinchi. Tekshirish: AI ehtimollaridan tanlash yoki
+  "Boshqa kasallik" (ma'lumotnoma rasmlari bilan), "Rasm yaroqsiz", dehqonga izoh (shablonlar). Yuborilgach keyingisi o'zi ochiladi;
+  natija dehqonga bildirishnoma bo'ladi va rasm datasetga `verified` bo'lib tushadi (tasdiqlangan yoki tuzatilgan yorliq bilan).
+- **Savollar:** Yangi / Jarayonda / Yopilgan; chatda tez javob shablonlari, dori kartasini yuborish, "Hal bo'ldi".
+- **Jamoat:** "Javobsiz" filtri, javob "Agronom javobi" belgisi bilan.
+- **Bilimlar:** kasallik / dori / o'simlik tahrirlash, rasmi yo'q kasalliklar uchun datasetdan rasm tanlash, o'zgarishlar tarixi (admin ko'radi).
+- **Profil:** reyting, javoblar soni, o'rtacha javob vaqti, ish vaqti, mavzu.
