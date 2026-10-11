@@ -1,6 +1,8 @@
-"""Admin hisobini yaratish yoki mavjud foydalanuvchini admin qilish.
+"""Admin yoki agronom hisobini yaratish, mavjud foydalanuvchiga rol berish.
 
     docker compose exec backend python -m app.create_admin --username admin --email admin@domen.uz
+    docker compose exec backend python -m app.create_admin --username agronom1 --full-name "Dilnoza Karimova" \
+        --role agronomist --specialization "Mevali daraxtlar"
 (parol so'raladi; yoki --password bilan beriladi)
 """
 import argparse
@@ -20,7 +22,8 @@ async def main() -> None:
     ap.add_argument("--email")
     ap.add_argument("--full-name", default="Administrator")
     ap.add_argument("--password")
-    ap.add_argument("--role", default="admin", choices=["admin", "moderator"])
+    ap.add_argument("--role", default="admin", choices=["admin", "moderator", "agronomist"])
+    ap.add_argument("--specialization", help="agronom uchun: mutaxassisligi")
     a = ap.parse_args()
     password = a.password or getpass.getpass("Parol (kamida 10 belgi): ")
     if len(password) < 10:
@@ -33,6 +36,10 @@ async def main() -> None:
         else:
             user.password_hash = hash_password(password)
         user.role, user.is_active = a.role, True
+        if a.full_name != "Administrator":
+            user.full_name = a.full_name
+        if a.specialization:
+            user.specialization = a.specialization
         await db.commit()
     print(f"OK: {a.username} ({a.role})")
 
