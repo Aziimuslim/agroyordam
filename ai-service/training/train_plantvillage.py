@@ -23,7 +23,6 @@ import sys
 import time
 from pathlib import Path
 
-import numpy as np
 import torch
 from PIL import Image
 from torch import nn
@@ -124,10 +123,12 @@ def main():
     t0 = time.time()
     xs, ys = [], []
     x, y = extract(backbone, train, VAL_TF, args.batch, args.workers)
-    xs.append(x); ys.append(y)
+    xs.append(x)
+    ys.append(y)
     for v in range(args.aug_views):
         x, y = extract(backbone, train, AUG_TF, args.batch, args.workers)
-        xs.append(x); ys.append(y)
+        xs.append(x)
+        ys.append(y)
         print(f"augmentatsiya ko'rinishi {v + 1}/{args.aug_views} tayyor ({time.time() - t0:.0f}s)", flush=True)
     xtr, ytr = torch.cat(xs), torch.cat(ys)
     xva, yva = extract(backbone, val, VAL_TF, args.batch, args.workers)

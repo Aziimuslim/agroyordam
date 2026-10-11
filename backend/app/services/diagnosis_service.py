@@ -53,7 +53,7 @@ async def run_diagnosis(db: AsyncSession, user: User, upload: UploadFile, crop_i
 
     if not pred.is_valid_image:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            422,  # Unprocessable Content
             pred.reason or "Rasm sifati past. Yorug' joyda, bargga yaqinroq qilib qayta suratga oling.",
         )
 

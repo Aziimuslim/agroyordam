@@ -3,7 +3,7 @@ import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from jose import JWTError, jwt
+import jwt
 from passlib.context import CryptContext
 
 from app.core.config import settings
@@ -35,7 +35,7 @@ def create_access_token(user_id: uuid.UUID, role: str) -> str:
 def decode_access_token(token: str) -> dict | None:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-    except JWTError:
+    except jwt.PyJWTError:
         return None
     if payload.get("type") != "access":
         return None
@@ -51,7 +51,7 @@ def create_scoped_token(subject: str, scope: str, minutes: int = 10) -> str:
 def decode_scoped_token(token: str, scope: str) -> str | None:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-    except JWTError:
+    except jwt.PyJWTError:
         return None
     return payload.get("sub") if payload.get("type") == scope else None
 

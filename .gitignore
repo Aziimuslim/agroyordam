@@ -27,3 +27,6 @@ mobile/ios/Pods/
 ai-service/models/*.onnx
 ai-service/data/
 best.pt
+
+# Loglar
+*.log

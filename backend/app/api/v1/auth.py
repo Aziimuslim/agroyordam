@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from jose import JWTError, jwt
+import jwt
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -104,7 +104,7 @@ async def forgot_password(body: ForgotPasswordIn, request: Request, db: AsyncSes
 async def reset_password(body: ResetPasswordIn, db: AsyncSession = Depends(get_db)):
     try:
         payload = jwt.decode(body.token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-    except JWTError:
+    except jwt.PyJWTError:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Token yaroqsiz yoki muddati o'tgan")
     import uuid
 
