@@ -54,6 +54,9 @@
     send: '<path d="M4 12l16-8-6 16-3-7z"/>', download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
     table: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 4v16"/>', chart: '<path d="M4 20V4M4 20h16M8 16l4-5 3 3 5-6"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
+    auto: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor"/>',
     image: '<rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M20 16l-5-5-8 8"/>',
   };
   const I = (n, c = 'ico') => `<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
@@ -62,6 +65,22 @@
     : `<span class="thumb ph" title="Rasm yo'q">${I('image', 'ico s')}</span>`);
   const RISK = { high: ['t-bad', 'x', 'Yuqori'], medium: ['t-risk', 'alert', "O'rta"], low: ['t-info', 'info', 'Past'] };
   const ROLES = { user: ['t-brand', 'Dehqon'], agronomist: ['t-exp', 'Agronom'], moderator: ['t-info', 'Moderator'], admin: ['t-neu', 'Admin'] };
+
+  // ---------- Mavzu: yorug' / qorong'i / tizimga qarab (brauzerda eslab qolinadi) ----------
+  const THEME_KEY = 'agro_admin_theme';
+  const getTheme = () => { try { return localStorage.getItem(THEME_KEY) || 'system'; } catch { return 'system'; } };
+  function applyTheme(t) {
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  }
+  function setTheme(t) {
+    try { localStorage.setItem(THEME_KEY, t); } catch { /* maxfiy rejim — faqat shu sessiya */ }
+    applyTheme(t);
+    document.querySelectorAll('.themes button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === t)));
+    hideTip(); if (S.me) paint(); // grafiklar yangi ranglar bilan
+  }
+  applyTheme(getTheme());
+  const themeSwitch = () => `<div class="themes" role="group" aria-label="Mavzu">${[['light', 'sun', "Yorug'"], ['dark', 'moon', "Qorong'i"], ['system', 'auto', 'Tizimga qarab']]
+    .map(([v, ic, t]) => `<button type="button" data-act="theme" data-v="${v}" aria-pressed="${getTheme() === v}" title="${t}" aria-label="${t}">${I(ic, 'ico s')}</button>`).join('')}</div>`;
 
   // ---------- API ----------
   const store = {
@@ -472,6 +491,7 @@
   }
   function shell() {
     root.innerHTML = `<div class="app"><nav class="side" aria-label="Admin menyusi"><div class="logo"><i>${I('leaf')}</i><span>AgroYordam</span></div><div id="navs"></div>
+      ${themeSwitch()}
       <div class="me"><div class="av">${initials(S.me.full_name)}</div><div><b style="font-size:13.5px">${esc(S.me.full_name)}</b><div style="font-size:12px;color:var(--on-deep-muted)">${esc((ROLES[S.me.role] || [, S.me.role])[1])} · <button data-act="logout">Chiqish</button></div></div></div></nav>
       <main class="main" id="main" aria-live="polite"></main></div>`;
   }
@@ -514,6 +534,7 @@
       case 'reload': load(); break;
       case 'close': closeDrawer(); break;
       case 'logout': logout(); break;
+      case 'theme': setTheme(v); break;
       case 'user': userDrawer(d.list[+v]); break;
       case 'saverole': act(() => api(`/admin/users/${v}/role`, { method: 'PUT', body: { role: document.getElementById('role-s').value } }), 'Rol saqlandi'); break;
       case 'block': {
@@ -575,7 +596,7 @@
 
   // ---------- Kirish ----------
   function showLogin(msg = '') {
-    root.innerHTML = `<div class="login"><form data-form="login" autocomplete="on"><div class="logo"><i>${I('leaf')}</i><span>AgroYordam</span></div>
+    root.innerHTML = `<div class="login"><form data-form="login" autocomplete="on"><div class="row" style="justify-content:space-between"><div class="logo"><i>${I('leaf')}</i><span>AgroYordam</span></div>${themeSwitch()}</div>
       <div><h1>Admin paneli</h1><p class="muted" style="margin:4px 0 0">Admin yoki moderator hisobi bilan kiring.</p></div>
       <div class="fld"><label for="lg-u">Login yoki email</label><input id="lg-u" name="login" autocomplete="username" required></div>
       <div class="fld"><label for="lg-p">Parol</label><input id="lg-p" name="password" type="password" autocomplete="current-password" required></div>

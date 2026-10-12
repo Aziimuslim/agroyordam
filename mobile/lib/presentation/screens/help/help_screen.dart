@@ -205,7 +205,7 @@ class ExpertAvatar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: c.expert, width: 2)),
-      child: Avatar(name: name, url: url, size: size - 4, color: c.expert),
+      child: Avatar(name: name, url: url, size: size - 4, color: c.expertBg, textColor: c.expert),
     );
   }
 }

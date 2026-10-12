@@ -44,7 +44,7 @@ class _QueueState extends ConsumerState<ExpertQueueScreen> {
                     shape: BoxShape.circle,
                     border: Border.all(color: c.expert, width: 2),
                   ),
-                  child: Avatar(name: me.fullName, url: me.avatarUrl, size: 40, color: c.expert),
+                  child: Avatar(name: me.fullName, url: me.avatarUrl, size: 40, color: c.expertBg, textColor: c.expert),
                 ),
           trailing: const OnlineToggle(),
         ),
@@ -97,8 +97,8 @@ class ExpertChips extends StatelessWidget {
                   selected: selected == id,
                   button: true,
                   child: Material(
-                    color: selected == id ? c.expert : c.card,
-                    shape: StadiumBorder(side: selected == id ? BorderSide.none : BorderSide(color: c.border)),
+                    color: selected == id ? c.expertBg : c.card,
+                    shape: StadiumBorder(side: BorderSide(color: selected == id ? c.expert : c.border, width: selected == id ? 1.5 : 1)),
                     child: InkWell(
                       customBorder: const StadiumBorder(),
                       onTap: () => onSelect(id),
@@ -106,7 +106,7 @@ class ExpertChips extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                         child: Text(
                           label,
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: selected == id ? c.onExpert : c.text),
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: selected == id ? c.expert : c.text),
                         ),
                       ),
                     ),

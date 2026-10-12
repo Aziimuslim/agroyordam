@@ -142,7 +142,7 @@ class _ChangeRow extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: ch.mine ? c.expert : c.border, width: 1.5),
             ),
-            child: Avatar(name: ch.userName ?? '?', size: 36, color: ch.mine ? c.expert : null),
+            child: Avatar(name: ch.userName ?? '?', size: 36, color: ch.mine ? c.expertBg : null, textColor: ch.mine ? c.expert : null),
           ),
           const SizedBox(width: 12),
           Expanded(

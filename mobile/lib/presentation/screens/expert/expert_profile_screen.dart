@@ -77,7 +77,7 @@ class ExpertProfileScreen extends ConsumerWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: c.expert, width: 2.5),
               ),
-              child: Avatar(name: user.fullName, url: user.avatarUrl, size: 68, color: c.expert),
+              child: Avatar(name: user.fullName, url: user.avatarUrl, size: 68, color: c.expertBg, textColor: c.expert),
             ),
             const SizedBox(width: 14),
             Expanded(

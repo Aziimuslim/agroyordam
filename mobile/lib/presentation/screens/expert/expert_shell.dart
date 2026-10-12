@@ -27,7 +27,9 @@ class ExpertBottomNav extends ConsumerWidget {
         child: Semantics(
           button: true,
           selected: active,
-          label: label,
+          label: count > 0 ? '$label, $count ta yangi' : label,
+          excludeSemantics: true,
+          onTap: () => context.go(route),
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () => context.go(route),
@@ -86,7 +88,9 @@ class ExpertBottomNav extends ConsumerWidget {
                       child: Semantics(
                         button: true,
                         selected: queueActive,
-                        label: 'Navbat',
+                        label: (stats?.queuePending ?? 0) > 0 ? 'Navbat, ${stats!.queuePending} ta kutmoqda' : 'Navbat',
+                        excludeSemantics: true,
+                        onTap: () => context.go('/expert'),
                         child: Transform.translate(
                           offset: const Offset(0, -14),
                           child: Column(

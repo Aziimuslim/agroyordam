@@ -323,11 +323,11 @@ class Tag extends StatelessWidget {
 }
 
 class Avatar extends StatelessWidget {
-  const Avatar({super.key, required this.name, this.url, this.size = 44, this.color});
+  const Avatar({super.key, required this.name, this.url, this.size = 44, this.color, this.textColor});
   final String name;
   final String? url;
   final double size;
-  final Color? color;
+  final Color? color, textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -347,7 +347,7 @@ class Avatar extends StatelessWidget {
   }
 
   Widget _ini(BuildContext context, String ini) =>
-      Text(ini, style: TextStyle(color: context.c.card, fontWeight: FontWeight.w800, fontSize: size * 0.34));
+      Text(ini, style: TextStyle(color: textColor ?? context.c.card, fontWeight: FontWeight.w800, fontSize: size * 0.34));
 }
 
 class SectionTitle extends StatelessWidget {
