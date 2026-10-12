@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models import Follower, Post, User
-from app.schemas.user import UserMe, UserProfile, UserPublic, UserUpdate
+from app.schemas.user import EXPERT_FIELDS, UserMe, UserProfile, UserPublic, UserUpdate
 from app.services.notification_service import notify
 from app.services.storage import get_storage, read_image
 
@@ -23,9 +23,20 @@ async def me(user: User = Depends(get_current_user)):
 @router.put("/me", response_model=UserMe)
 async def update_me(body: UserUpdate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     data = body.model_dump(exclude_unset=True)
+    if data.get("full_name") is None:
+        data.pop("full_name", None)  # ismni o'chirib bo'lmaydi
     if "email" in data and data["email"]:
         data["email"] = data["email"].lower()
+    if user.role != "agronomist":
+        for k in EXPERT_FIELDS:
+            data.pop(k, None)
     for k, v in data.items():
+        if isinstance(v, str):
+            v = v.strip() or None  # bo'sh matn = ko'rsatilmagan
+        if isinstance(v, list):
+            v = list(dict.fromkeys(v)) or None  # takrorlarsiz
+        if k == "full_name" and not v:
+            continue
         setattr(user, k, v)
     try:
         await db.commit()

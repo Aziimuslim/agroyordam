@@ -76,6 +76,10 @@ class AuthController extends Notifier<AuthState> {
     state = AuthState(AuthStatus.authenticated, await _repo.updateMe(data));
   }
 
+  Future<void> uploadAvatar(List<int> bytes, String filename) async {
+    state = AuthState(AuthStatus.authenticated, await _repo.uploadAvatar(bytes, filename));
+  }
+
   Future<void> logout() async {
     await _repo.logout();
     state = const AuthState(AuthStatus.unauthenticated);
@@ -139,6 +143,7 @@ final paymentsProvider = FutureProvider.autoDispose<List<Subscription>>((ref) =>
 
 // ---------- Agronomlar va savollar ----------
 final expertsProvider = FutureProvider.autoDispose<List<Expert>>((ref) => ref.watch(expertRepoProvider).experts());
+final expertProvider = FutureProvider.autoDispose.family<Expert, String>((ref, id) => ref.watch(expertRepoProvider).expert(id));
 final myQuestionsProvider = FutureProvider.autoDispose<List<Question>>((ref) => ref.watch(expertRepoProvider).mine());
 final questionProvider = FutureProvider.autoDispose.family<Question, String>((ref, id) => ref.watch(expertRepoProvider).question(id));
 final questionQuotaProvider = FutureProvider.autoDispose<QuestionQuota>((ref) => ref.watch(expertRepoProvider).quota());

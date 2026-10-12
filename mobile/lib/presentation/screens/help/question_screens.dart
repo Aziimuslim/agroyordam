@@ -10,6 +10,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/widgets/ds.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
+import 'farm_brief_card.dart';
 
 /// Savol berish: ekin tanlanadi, oxirgi tashxis (agar berilgan bo'lsa) o'zi biriktiriladi.
 class AskQuestionScreen extends ConsumerStatefulWidget {
@@ -334,6 +335,7 @@ class _ThreadState extends ConsumerState<QuestionThreadScreen> {
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(q.body!, style: Theme.of(context).textTheme.bodyLarge),
                 ),
+              if (asExpert && q.authorFarm != null) FarmBriefCard(q.authorFarm!),
               if (q.diagnosisId != null) ...[
                 const SizedBox(height: 12),
                 AppCard(

@@ -16,7 +16,7 @@ from app.core.database import get_db
 from app.core.deps import EXPERT_ROLES, get_current_user, require_expert
 from app.core.security import utcnow
 from app.models import Crop, Diagnosis, Disease, Medicine, Question, QuestionMessage, User
-from app.schemas.user import UserPublic
+from app.schemas.user import FarmBrief, UserPublic
 from app.services.app_settings import get_int
 from app.services.notification_service import notify
 
@@ -59,6 +59,7 @@ class MessageOut(BaseModel):
 class QuestionOut(BaseModel):
     id: uuid.UUID
     author: UserPublic
+    author_farm: FarmBrief | None = None  # faqat agronom ko'radi
     expert: UserPublic | None = None
     title: str
     body: str | None = None
@@ -99,7 +100,7 @@ async def _quota(db: AsyncSession, user: User) -> Quota:
     return Quota(used=used, limit=lim, remaining=max(0, lim - used))
 
 
-async def _out(db: AsyncSession, q: Question, detail: bool = False) -> QuestionOut | QuestionDetail:
+async def _out(db: AsyncSession, q: Question, detail: bool = False, viewer: User | None = None) -> QuestionOut | QuestionDetail:
     author = await db.get(User, q.user_id)
     expert = await db.get(User, q.expert_id) if q.expert_id else None
     crop = await db.get(Crop, q.crop_id) if q.crop_id else None
@@ -107,7 +108,10 @@ async def _out(db: AsyncSession, q: Question, detail: bool = False) -> QuestionO
     disease = await db.get(Disease, diag.disease_id) if diag and diag.disease_id else None
     count = await db.scalar(select(func.count()).select_from(QuestionMessage).where(QuestionMessage.question_id == q.id)) or 0
     data = dict(
-        id=q.id, author=UserPublic.model_validate(author), expert=UserPublic.model_validate(expert) if expert else None,
+        id=q.id, author=UserPublic.model_validate(author),
+        author_farm=FarmBrief.model_validate(author, from_attributes=True)
+        if detail and viewer is not None and viewer.id != author.id and viewer.role in EXPERT_ROLES else None,
+        expert=UserPublic.model_validate(expert) if expert else None,
         title=q.title, body=q.body, image_url=q.image_url or (diag.image_url if diag else None),
         crop_id=q.crop_id, crop_name=crop.name if crop else None, diagnosis_id=q.diagnosis_id,
         diagnosis_name=disease.name if disease else (("Sog'lom" if diag.risk_level == "low" else None) if diag else None),
@@ -191,7 +195,7 @@ async def for_experts(
 
 @router.get("/{qid}", response_model=QuestionDetail)
 async def read(qid: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    return await _out(db, await _get(db, qid, user), detail=True)
+    return await _out(db, await _get(db, qid, user), detail=True, viewer=user)
 
 
 @router.post("/{qid}/messages", response_model=QuestionDetail, status_code=201)
@@ -218,7 +222,7 @@ async def send(qid: uuid.UUID, body: MessageIn, user: User = Depends(get_current
         await notify(db, target, "question_message", "Agronom javob berdi" if not is_owner else "Dehqon yozdi",
                      (body.body or "Dori tavsiyasi")[:140], q.id)
     await db.commit()
-    return await _out(db, q, detail=True)
+    return await _out(db, q, detail=True, viewer=user)
 
 
 @router.post("/{qid}/close", response_model=QuestionOut)

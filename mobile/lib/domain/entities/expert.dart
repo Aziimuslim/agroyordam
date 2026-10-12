@@ -4,12 +4,15 @@ import 'user.dart';
 /// Dehqonlar ko'radigan agronom kartasi.
 class Expert {
   Expert({required this.id, required this.fullName, this.avatarUrl, this.region, this.specialization, this.acceptingQuestions = true,
-      this.answers = 0, this.rating, this.workHours});
+      this.answers = 0, this.rating, this.workHours, this.district, this.about, this.experienceYears, this.education,
+      this.skills = const [], this.ratingsCount = 0});
   final String id, fullName;
-  final String? avatarUrl, region, specialization, workHours;
+  final String? avatarUrl, region, specialization, workHours, district, about, education;
   final bool acceptingQuestions;
-  final int answers;
+  final int answers, ratingsCount;
+  final int? experienceYears;
   final double? rating;
+  final List<String> skills;
 
   factory Expert.fromJson(Map<String, dynamic> j) => Expert(
         id: j['id'],
@@ -21,6 +24,12 @@ class Expert {
         answers: j['answers'] ?? 0,
         rating: (j['rating'] as num?)?.toDouble(),
         workHours: j['work_hours'],
+        district: j['district'],
+        about: j['about'],
+        experienceYears: j['experience_years'],
+        education: j['education'],
+        skills: strList(j['skills']),
+        ratingsCount: j['ratings_count'] ?? 0,
       );
 }
 
@@ -67,6 +76,7 @@ class Question {
   Question({
     required this.id,
     required this.author,
+    this.authorFarm,
     required this.title,
     required this.status,
     this.expert,
@@ -84,6 +94,7 @@ class Question {
   });
   final String id, title, status;
   final AppUser author;
+  final FarmBrief? authorFarm;
   final AppUser? expert;
   final String? body, imageUrl, cropName, diagnosisId, diagnosisName;
   final double? diagnosisConfidence;
@@ -95,6 +106,7 @@ class Question {
   factory Question.fromJson(Map<String, dynamic> j) => Question(
         id: j['id'],
         author: AppUser.fromJson(j['author']),
+        authorFarm: j['author_farm'] == null ? null : FarmBrief.fromJson(j['author_farm']),
         expert: j['expert'] == null ? null : AppUser.fromJson(j['expert']),
         title: j['title'] ?? '',
         status: j['status'] ?? 'new',

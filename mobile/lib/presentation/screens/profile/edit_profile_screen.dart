@@ -1,34 +1,102 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/data/farm_options.dart';
+import '../../../core/data/uz_regions.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/widgets.dart';
-import '../auth/register_screen.dart' show regions;
 
+/// "Ma'lumotlarim": umumiy qism + dehqon uchun xo'jalik, agronom uchun mutaxassis ma'lumotlari.
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
   @override
   ConsumerState<EditProfileScreen> createState() => _EditProfileState();
 }
 
+/// Agronom yo'nalishlari uchun ekinlardan tashqari mavzular.
+const _expertTopics = ['Zararkunandalar', "O'g'itlash", "Sug'orish", 'Issiqxona', 'Tuproq', "Urug'chilik", 'Organik dehqonchilik'];
+
 class _EditProfileState extends ConsumerState<EditProfileScreen> {
   late final user = ref.read(currentUserProvider)!;
   late final _name = TextEditingController(text: user.fullName);
-  late final _email = TextEditingController(text: user.email);
   late final _phone = TextEditingController(text: user.phone);
-  late String? _region = regions.contains(user.region) ? user.region : null;
-  bool _loading = false;
+  late final _email = TextEditingController(text: user.email);
+  late final _address = TextEditingController(text: user.address);
+  late final _about = TextEditingController(text: user.about);
+  late final _experience = TextEditingController(text: user.experienceYears?.toString());
+  // Agronom
+  late final _specialization = TextEditingController(text: user.specialization);
+  late final _education = TextEditingController(text: user.education);
+  late final _workHours = TextEditingController(text: user.workHours);
+  late List<String> _skills = [...user.skills];
+  // Dehqon xo'jaligi
+  late String? _farmType = user.farmType;
+  late String? _irrigation = user.irrigation;
+  late List<String> _crops = [...user.mainCrops];
+  late bool _sotix = user.farmArea == null || user.farmArea! < 1;
+  late final _area = TextEditingController(text: _areaText(user.farmArea));
+
+  late String? _region = uzRegions.containsKey(user.region) ? user.region : null;
+  late String? _district = user.district;
+  bool _loading = false, _uploading = false;
+
+  bool get _expert => user.isExpert;
+
+  String _areaText(double? ha) {
+    if (ha == null) return '';
+    final v = _sotix ? ha * 100 : ha;
+    return v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '');
+  }
+
+  double? get _areaHa {
+    final v = double.tryParse(_area.text.trim().replaceAll(',', '.'));
+    if (v == null) return null;
+    return _sotix ? v / 100 : v;
+  }
+
+  @override
+  void dispose() {
+    for (final c in [_name, _phone, _email, _address, _about, _experience, _specialization, _education, _workHours, _area]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  String? _clean(TextEditingController c) => c.text.trim().isEmpty ? null : c.text.trim();
 
   Future<void> _save() async {
+    if (_name.text.trim().length < 2) return showToast(context, "F.I.O ni to'liq kiriting");
+    final phone = _phone.text.replaceAll(RegExp(r'[\s\-()]'), '');
+    if (phone.isNotEmpty && !RegExp(r'^\+?[0-9]{9,15}$').hasMatch(phone)) return showToast(context, "Telefon raqam noto'g'ri");
+    if (_area.text.trim().isNotEmpty && _areaHa == null) return showToast(context, "Yer maydonini raqamda yozing");
     setState(() => _loading = true);
     try {
       await ref.read(authProvider.notifier).updateProfile({
         'full_name': _name.text.trim(),
-        'email': _email.text.trim().isEmpty ? null : _email.text.trim(),
-        'phone': _phone.text.trim().isEmpty ? null : _phone.text.trim(),
+        'phone': phone.isEmpty ? null : phone,
+        'email': _clean(_email),
         'region': _region,
+        'district': _district,
+        'address': _clean(_address),
+        'experience_years': int.tryParse(_experience.text.trim()),
+        if (_expert) ...{
+          'about': _clean(_about),
+          'specialization': _clean(_specialization),
+          'education': _clean(_education),
+          'work_hours': _clean(_workHours),
+          'skills': _skills,
+        } else ...{
+          'farm_type': _farmType,
+          'farm_area': _areaHa,
+          'main_crops': _crops,
+          'irrigation': _irrigation,
+        },
       });
       if (mounted) {
         showToast(context, 'Saqlandi');
@@ -41,29 +109,500 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
     }
   }
 
+  Future<void> _pickAvatar() async {
+    ImageSource? source = ImageSource.gallery;
+    if (!kIsWeb) {
+      source = await showSheet<ImageSource>(
+        context,
+        title: 'Profil rasmi',
+        builder: (ctx) => Column(children: [
+          ListRow(icon: Icons.photo_camera_outlined, label: 'Kamera', onTap: () => Navigator.pop(ctx, ImageSource.camera)),
+          ListRow(icon: Icons.photo_library_outlined, label: 'Galereya', onTap: () => Navigator.pop(ctx, ImageSource.gallery)),
+        ]),
+      );
+    }
+    if (source == null) return;
+    final f = await ImagePicker().pickImage(source: source, maxWidth: 800, imageQuality: 85);
+    if (f == null) return;
+    setState(() => _uploading = true);
+    try {
+      await ref.read(authProvider.notifier).uploadAvatar(await f.readAsBytes(), f.name.contains('.') ? f.name : '${f.name}.jpg');
+      if (mounted) showToast(context, 'Rasm yangilandi');
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  Future<void> _pickPlace() async {
+    final r = await showModalBottomSheet<(String, String?)>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      constraints: const BoxConstraints(maxWidth: 480),
+      builder: (_) => _PlacePicker(region: _region),
+    );
+    if (r == null) return;
+    setState(() {
+      _region = r.$1;
+      _district = r.$2;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+    final me = ref.watch(currentUserProvider) ?? user;
+    final accent = _expert ? c.expert : c.primary;
+    final plants = ref.watch(plantsProvider).value?.map((p) => p.name).toList() ?? const <String>[];
+    final place = placeText(_region, _district);
     return PageShell(
       padBottom: false,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const TopBar(title: 'Profilni tahrirlash'),
-        const FieldLabel("To'liq ism"),
-        TextField(controller: _name),
-        const FieldLabel('Email'),
-        TextField(controller: _email, keyboardType: TextInputType.emailAddress),
-        const FieldLabel('Telefon'),
-        TextField(controller: _phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(hintText: '+998901234567')),
-        const FieldLabel('Viloyat'),
-        DropdownButtonFormField<String>(
-          initialValue: _region,
-          isExpanded: true,
-          dropdownColor: context.c.card,
-          items: [for (final r in regions) DropdownMenuItem(value: r, child: Text(r))],
-          onChanged: (v) => setState(() => _region = v),
+      bottom: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
+          decoration: BoxDecoration(color: c.cream, border: Border(top: BorderSide(color: c.border))),
+          child: Center(
+            heightFactor: 1,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: _expert
+                  // Agronom rejimi aksenti (ikkala mavzuda ham kontrastli)
+                  ? FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: c.expert,
+                        foregroundColor: c.onExpert,
+                        minimumSize: const Size.fromHeight(52),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                      ),
+                      onPressed: _loading ? null : _save,
+                      child: _loading
+                          ? SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: c.onExpert))
+                          : const Text('Saqlash', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                    )
+                  : PillButton(label: 'Saqlash', style: PillStyle.primary, block: true, loading: _loading, onPressed: _save),
+            ),
+          ),
         ),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const TopBar(title: "Ma'lumotlarim"),
+        Center(
+          child: Semantics(
+            button: true,
+            label: "Profil rasmini o'zgartirish",
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: _uploading ? null : _pickAvatar,
+              child: Stack(clipBehavior: Clip.none, children: [
+                Avatar(
+                  name: me.fullName,
+                  url: me.avatarUrl,
+                  size: 96,
+                  color: _expert ? c.expertBg : c.primaryLight,
+                  textColor: accent,
+                ),
+                if (_uploading)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.black.withValues(alpha: 0.35)),
+                      alignment: Alignment.center,
+                      child: const SizedBox(width: 26, height: 26, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white)),
+                    ),
+                  ),
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(color: accent, shape: BoxShape.circle, border: Border.all(color: c.cream, width: 3)),
+                    child: Icon(Icons.photo_camera_rounded, size: 16, color: c.card),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        ),
+        const _Section("Shaxsiy ma'lumotlar"),
+        const FieldLabel('F.I.O'),
+        TextField(controller: _name, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(hintText: 'Familiya Ism Otasining ismi')),
+        const FieldLabel('Telefon raqam'),
+        TextField(controller: _phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(hintText: '+998 90 123 45 67')),
+        const FieldLabel('Email (ixtiyoriy)'),
+        TextField(controller: _email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(hintText: 'pochta@misol.uz')),
+        const FieldLabel('Hudud'),
+        _PlaceField(text: place, accent: accent, onTap: _pickPlace),
+        const FieldLabel("Qo'shimcha manzil"),
+        TextField(controller: _address, decoration: const InputDecoration(hintText: "Mahalla, qishloq, ko'cha (ixtiyoriy)")),
+        if (_expert) ...[
+          const _Section("Mutaxassis ma'lumotlari", hint: "Dehqonlar profilingizda ko'radi va shunga qarab sizga savol beradi"),
+          const FieldLabel('Mutaxassislik'),
+          TextField(controller: _specialization, decoration: const InputDecoration(hintText: 'Masalan: mevali bog\'lar, sabzavotlar')),
+          const FieldLabel('Men haqimda'),
+          TextField(
+            controller: _about,
+            minLines: 3,
+            maxLines: 6,
+            maxLength: 2000,
+            decoration: const InputDecoration(hintText: 'Qisqacha o\'zingiz va qanday yordam bera olishingiz haqida...', counterText: ''),
+          ),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(
+              flex: 2,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const FieldLabel('Tajriba (yil)'),
+                _NumberField(controller: _experience, hint: '5'),
+              ]),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 5,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const FieldLabel('Ish vaqti'),
+                TextField(controller: _workHours, decoration: const InputDecoration(hintText: 'Du–Ju, 9:00–18:00')),
+              ]),
+            ),
+          ]),
+          const FieldLabel("Ta'lim"),
+          TextField(controller: _education, decoration: const InputDecoration(hintText: "Masalan: TDAU, agronomiya (2015)")),
+          const FieldLabel("Yo'nalishlar"),
+          _TagsEditor(
+            values: _skills,
+            suggestions: [...plants, ..._expertTopics],
+            accent: accent,
+            hint: "Ekin yoki mavzu qo'shing",
+            onChanged: (v) => setState(() => _skills = v),
+          ),
+        ] else ...[
+          const _Section("Xo'jaligim", hint: "Agronom savolingizga javob berishda shu ma'lumotlarni ko'radi — maslahat aniqroq bo'ladi"),
+          const FieldLabel("Xo'jalik turi"),
+          _Choices(
+            options: farmTypes,
+            value: _farmType,
+            accent: accent,
+            onChanged: (v) => setState(() => _farmType = v),
+          ),
+          const FieldLabel('Yer maydoni'),
+          Row(children: [
+            Expanded(
+              child: TextField(
+                controller: _area,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
+                decoration: InputDecoration(hintText: _sotix ? '12' : '2.5'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            SegmentedButton<bool>(
+              showSelectedIcon: false,
+              style: SegmentedButton.styleFrom(
+                selectedBackgroundColor: accent,
+                selectedForegroundColor: c.card,
+                side: BorderSide(color: c.lineStrong, width: 1.5),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              ),
+              segments: const [
+                ButtonSegment(value: true, label: Text('sotix')),
+                ButtonSegment(value: false, label: Text('gektar')),
+              ],
+              selected: {_sotix},
+              onSelectionChanged: (s) {
+                final ha = _areaHa;
+                setState(() {
+                  _sotix = s.first;
+                  if (ha != null) _area.text = _areaText(ha);
+                });
+              },
+            ),
+          ]),
+          const FieldLabel('Asosiy ekinlar'),
+          _TagsEditor(
+            values: _crops,
+            suggestions: plants,
+            accent: accent,
+            hint: "Ekin nomini yozing",
+            onChanged: (v) => setState(() => _crops = v),
+          ),
+          const FieldLabel("Sug'orish usuli"),
+          _Choices(
+            options: irrigationTypes,
+            value: _irrigation,
+            accent: accent,
+            onChanged: (v) => setState(() => _irrigation = v),
+          ),
+          const FieldLabel('Dehqonchilik tajribasi (yil)'),
+          SizedBox(width: 140, child: _NumberField(controller: _experience, hint: '10')),
+        ],
         const SizedBox(height: 24),
-        PillButton(label: 'Saqlash', block: true, loading: _loading, onPressed: _save),
       ]),
     );
+  }
+}
+
+class _Section extends StatelessWidget {
+  const _Section(this.title, {this.hint});
+  final String title;
+  final String? hint;
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 26, bottom: 2),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title.toUpperCase(), style: Theme.of(context).textTheme.labelSmall),
+          if (hint != null) ...[
+            const SizedBox(height: 4),
+            Text(hint!, style: TextStyle(color: context.c.muted, fontSize: 13, height: 1.35)),
+          ],
+        ]),
+      );
+}
+
+class _NumberField extends StatelessWidget {
+  const _NumberField({required this.controller, required this.hint});
+  final TextEditingController controller;
+  final String hint;
+  @override
+  Widget build(BuildContext context) => TextField(
+        controller: controller,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(2)],
+        decoration: InputDecoration(hintText: hint),
+      );
+}
+
+/// Hudud: viloyat + tuman (rasmdagidek yashil chegarali qator).
+class _PlaceField extends StatelessWidget {
+  const _PlaceField({required this.text, required this.accent, required this.onTap});
+  final String text;
+  final Color accent;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final empty = text.isEmpty;
+    return Material(
+      color: c.card,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        side: BorderSide(color: empty ? c.lineStrong : accent.withValues(alpha: 0.55), width: 1.5),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          child: Row(children: [
+            Icon(Icons.location_on_outlined, color: accent),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                empty ? 'Viloyat va tumanni tanlang' : text,
+                style: TextStyle(fontSize: 15.5, fontWeight: empty ? FontWeight.w400 : FontWeight.w700, color: empty ? c.subtle : c.text),
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: c.muted),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+/// Ikki bosqichli tanlash: viloyat → tuman/shahar.
+class _PlacePicker extends StatefulWidget {
+  const _PlacePicker({this.region});
+  final String? region;
+  @override
+  State<_PlacePicker> createState() => _PlacePickerState();
+}
+
+class _PlacePickerState extends State<_PlacePicker> {
+  late String? _region = widget.region;
+  final _q = TextEditingController();
+
+  @override
+  void dispose() {
+    _q.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final q = _q.text.trim().toLowerCase();
+    final items = (_region == null ? uzRegions.keys.toList() : uzRegions[_region]!).where((s) => s.toLowerCase().contains(q)).toList();
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.78,
+      child: Column(children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 14, 16, 6),
+          child: Row(children: [
+            if (_region != null)
+              IconButton(
+                tooltip: 'Viloyatlar',
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () => setState(() {
+                  _region = null;
+                  _q.clear();
+                }),
+              )
+            else
+              const SizedBox(width: 12),
+            Expanded(
+              child: Text(_region ?? 'Viloyatni tanlang', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            ),
+            if (_region != null)
+              TextButton(
+                onPressed: () => Navigator.pop(context, (_region!, null)),
+                child: Text('Faqat viloyat', style: TextStyle(color: c.muted, fontWeight: FontWeight.w700)),
+              ),
+          ]),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: TextField(
+            controller: _q,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              hintText: _region == null ? 'Viloyat qidirish' : 'Tuman yoki shahar qidirish',
+              prefixIcon: const Icon(Icons.search_rounded),
+              isDense: true,
+            ),
+          ),
+        ),
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => Divider(height: 1, indent: 16, endIndent: 16, color: c.border),
+            itemBuilder: (_, i) => ListTile(
+              title: Text(items[i], style: const TextStyle(fontWeight: FontWeight.w600)),
+              trailing: _region == null ? Icon(Icons.chevron_right_rounded, color: c.muted) : null,
+              onTap: () {
+                if (_region == null) {
+                  setState(() {
+                    _region = items[i];
+                    _q.clear();
+                  });
+                } else {
+                  Navigator.pop(context, (_region!, items[i]));
+                }
+              },
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+/// Bitta tanlov (qayta bosilsa bekor bo'ladi).
+class _Choices extends StatelessWidget {
+  const _Choices({required this.options, required this.value, required this.accent, required this.onChanged});
+  final Map<String, String> options;
+  final String? value;
+  final Color accent;
+  final ValueChanged<String?> onChanged;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Wrap(spacing: 8, runSpacing: 8, children: [
+      for (final e in options.entries)
+        ChoiceChip(
+          label: Text(e.value),
+          selected: value == e.key,
+          showCheckmark: false,
+          selectedColor: accent,
+          backgroundColor: c.card,
+          side: BorderSide(color: value == e.key ? accent : c.lineStrong),
+          shape: const StadiumBorder(),
+          labelStyle: TextStyle(color: value == e.key ? c.card : c.text, fontWeight: FontWeight.w600),
+          onSelected: (_) => onChanged(value == e.key ? null : e.key),
+        ),
+    ]);
+  }
+}
+
+/// Teglar: tanlanganlar (o'chirsa bo'ladi) + yozib qo'shish + takliflar.
+class _TagsEditor extends StatefulWidget {
+  const _TagsEditor({required this.values, required this.suggestions, required this.accent, required this.hint, required this.onChanged});
+  final List<String> values, suggestions;
+  final Color accent;
+  final String hint;
+  final ValueChanged<List<String>> onChanged;
+  @override
+  State<_TagsEditor> createState() => _TagsEditorState();
+}
+
+class _TagsEditorState extends State<_TagsEditor> {
+  final _ctl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctl.dispose();
+    super.dispose();
+  }
+
+  void _add(String raw) {
+    final t = raw.trim();
+    _ctl.clear();
+    setState(() {});
+    if (t.isEmpty || t.length > 40 || widget.values.length >= 20) return;
+    if (widget.values.any((v) => v.toLowerCase() == t.toLowerCase())) return;
+    widget.onChanged([...widget.values, t]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final q = _ctl.text.trim().toLowerCase();
+    final taken = widget.values.map((v) => v.toLowerCase()).toSet();
+    final sugg = widget.suggestions.where((s) => !taken.contains(s.toLowerCase()) && s.toLowerCase().contains(q)).toSet().take(10).toList();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (widget.values.isNotEmpty) ...[
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final v in widget.values)
+            InputChip(
+              label: Text(v),
+              color: WidgetStatePropertyAll(widget.accent.withValues(alpha: 0.12)),
+              side: BorderSide.none,
+              shape: const StadiumBorder(),
+              labelStyle: TextStyle(color: widget.accent, fontWeight: FontWeight.w700),
+              deleteIconColor: widget.accent,
+              deleteButtonTooltipMessage: "Olib tashlash",
+              onDeleted: () => widget.onChanged([...widget.values]..remove(v)),
+            ),
+        ]),
+        const SizedBox(height: 10),
+      ],
+      TextField(
+        controller: _ctl,
+        textCapitalization: TextCapitalization.sentences,
+        onChanged: (_) => setState(() {}),
+        onSubmitted: _add,
+        decoration: InputDecoration(
+          hintText: widget.hint,
+          suffixIcon: q.isEmpty
+              ? null
+              : IconButton(tooltip: "Qo'shish", icon: Icon(Icons.add_circle_rounded, color: widget.accent), onPressed: () => _add(_ctl.text)),
+        ),
+      ),
+      if (sugg.isNotEmpty) ...[
+        const SizedBox(height: 10),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final s in sugg)
+            ActionChip(
+              avatar: Icon(Icons.add_rounded, size: 16, color: c.muted),
+              label: Text(s),
+              backgroundColor: c.card,
+              side: BorderSide(color: c.border),
+              shape: const StadiumBorder(),
+              onPressed: () => _add(s),
+            ),
+        ]),
+      ],
+    ]);
   }
 }

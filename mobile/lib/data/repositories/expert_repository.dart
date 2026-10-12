@@ -6,6 +6,7 @@ class ExpertRepository extends BaseRepository {
   ExpertRepository(super.api);
 
   Future<List<Expert>> experts() => call(() async => list((await dio.get('/experts')).data, Expert.fromJson));
+  Future<Expert> expert(String id) => call(() async => Expert.fromJson((await dio.get('/experts/$id')).data));
 
   Future<ExpertApplication> apply({required String specialization, required int experienceYears, String? about}) => call(() async =>
       ExpertApplication.fromJson((await dio.post('/experts/applications',

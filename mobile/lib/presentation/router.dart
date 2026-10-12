@@ -28,6 +28,7 @@ import 'screens/expert/review_screen.dart';
 import 'screens/garden/add_crop_screen.dart';
 import 'screens/garden/crop_detail_screen.dart';
 import 'screens/garden/garden_screen.dart';
+import 'screens/help/expert_public_screen.dart';
 import 'screens/help/help_screen.dart';
 import 'screens/help/question_screens.dart';
 import 'screens/home/home_screen.dart';
@@ -87,6 +88,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/help', pageBuilder: (_, s) => _tab(HelpScreen(tab: s.uri.queryParameters['tab'] ?? 'agro'), s), routes: [
         GoRoute(path: 'ask', builder: (_, s) => AskQuestionScreen(diagnosisId: s.uri.queryParameters['diagnosis'], cropId: s.uri.queryParameters['crop'])),
         GoRoute(path: 'q/:id', builder: (_, s) => QuestionThreadScreen(id: s.pathParameters['id']!)),
+        GoRoute(path: 'agronom/:id', builder: (_, s) => ExpertPublicScreen(id: s.pathParameters['id']!)),
       ]),
       // Jamoat endi "Maslahat" ichida; eski havolalar (post sahifalari) shu yerda qoladi
       GoRoute(path: '/community', pageBuilder: (_, s) => _tab(const HelpScreen(tab: 'comm'), s), routes: [

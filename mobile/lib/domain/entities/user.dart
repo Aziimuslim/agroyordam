@@ -18,6 +18,16 @@ class AppUser {
     this.specialization,
     this.acceptingQuestions = true,
     this.workHours,
+    this.education,
+    this.skills = const [],
+    this.district,
+    this.address,
+    this.about,
+    this.experienceYears,
+    this.farmType,
+    this.farmArea,
+    this.mainCrops = const [],
+    this.irrigation,
   });
 
   final String id, fullName, username;
@@ -30,6 +40,19 @@ class AppUser {
   final String? specialization;
   final bool acceptingQuestions;
   final String? workHours;
+  final String? education;
+  final List<String> skills;
+
+  /// Hudud tafsiloti va o'zi haqida (dehqon ham, agronom ham).
+  final String? district, address, about;
+  final int? experienceYears;
+
+  /// Dehqon xo'jaligi: tomorqa|dehqon|fermer|issiqxona, maydon (gektar), asosiy ekinlar, sug'orish.
+  final String? farmType, irrigation;
+  final double? farmArea;
+  final List<String> mainCrops;
+
+  bool get hasFarmInfo => farmType != null || farmArea != null || mainCrops.isNotEmpty || irrigation != null;
 
   bool get isExpert => role == 'agronomist';
   bool get isAdmin => role == 'admin' || role == 'moderator';
@@ -55,6 +78,40 @@ class AppUser {
         specialization: j['specialization'],
         acceptingQuestions: j['accepting_questions'] ?? true,
         workHours: j['work_hours'],
+        education: j['education'],
+        skills: strList(j['skills']),
+        district: j['district'],
+        address: j['address'],
+        about: j['about'],
+        experienceYears: j['experience_years'],
+        farmType: j['farm_type'],
+        farmArea: (j['farm_area'] as num?)?.toDouble(),
+        mainCrops: strList(j['main_crops']),
+        irrigation: j['irrigation'],
+      );
+}
+
+List<String> strList(dynamic v) => [for (final x in (v as List? ?? const [])) x.toString()];
+
+/// Savol bergan dehqon xo'jaligi — faqat agronom ko'radi.
+class FarmBrief {
+  FarmBrief({this.region, this.district, this.farmType, this.farmArea, this.mainCrops = const [], this.irrigation, this.experienceYears});
+  final String? region, district, farmType, irrigation;
+  final double? farmArea;
+  final List<String> mainCrops;
+  final int? experienceYears;
+
+  bool get isEmpty =>
+      region == null && district == null && farmType == null && farmArea == null && mainCrops.isEmpty && irrigation == null && experienceYears == null;
+
+  factory FarmBrief.fromJson(Map<String, dynamic> j) => FarmBrief(
+        region: j['region'],
+        district: j['district'],
+        farmType: j['farm_type'],
+        farmArea: (j['farm_area'] as num?)?.toDouble(),
+        mainCrops: strList(j['main_crops']),
+        irrigation: j['irrigation'],
+        experienceYears: j['experience_years'],
       );
 }
 

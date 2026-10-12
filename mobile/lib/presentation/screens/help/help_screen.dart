@@ -140,13 +140,15 @@ class _ExpertsTab extends ConsumerWidget {
             shadow: false,
             padding: const EdgeInsets.all(12),
             margin: const EdgeInsets.only(bottom: 10),
+            onTap: () => context.push('/help/agronom/${e.id}'),
             child: Row(children: [
               ExpertAvatar(name: e.fullName, url: e.avatarUrl),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(e.fullName, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700)),
-                  Text([e.specialization, e.region].whereType<String>().join(' · '), style: Theme.of(context).textTheme.bodySmall),
+                  Text([e.specialization, e.district ?? e.region, if (e.experienceYears != null) '${e.experienceYears} yil tajriba'].whereType<String>().join(' · '),
+                      style: Theme.of(context).textTheme.bodySmall),
                   const SizedBox(height: 4),
                   Row(children: [
                     if (e.rating != null) ...[Icon(Icons.star_rounded, size: 16, color: c.gold), Text(' ${e.rating!.toStringAsFixed(1)} · ', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700))],

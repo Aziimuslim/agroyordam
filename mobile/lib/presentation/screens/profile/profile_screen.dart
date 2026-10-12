@@ -7,6 +7,7 @@ import '../../../application/app_mode.dart';
 import '../../../application/providers.dart';
 import '../../../application/theme_mode.dart';
 import '../../../core/config.dart';
+import '../../../core/data/uz_regions.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/utils/format.dart';
@@ -43,14 +44,25 @@ class ProfileScreen extends ConsumerWidget {
             Avatar(name: user.fullName, url: user.avatarUrl, size: 84, color: c.primary),
             const SizedBox(height: 12),
             Text(user.fullName, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
-            Text('@${user.username}', style: TextStyle(color: c.muted)),
+            Text(['@${user.username}', placeText(user.region, user.district)].where((s) => s.isNotEmpty).join(' · '),
+                textAlign: TextAlign.center, style: TextStyle(color: c.muted)),
             const SizedBox(height: 4),
             InkWell(
               onTap: () => context.push('/profile/edit'),
-              child: Text('Profilni tahrirlash', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13)),
+              child: Text("Ma'lumotlarim", style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13)),
             ),
           ]),
         ),
+        if (!user.isExpert && !user.hasFarmInfo) ...[
+          const SizedBox(height: 16),
+          RowCard(
+            leading: ThumbIcon(icon: Icons.agriculture_outlined, bg: c.primaryLight, fg: c.primary),
+            title: "Xo'jaligingiz haqida yozing",
+            subtitle: "Maydon, ekinlar, sug'orish — agronom aniqroq maslahat beradi",
+            trailing: Icon(AppIcons.chevron, color: c.muted),
+            onTap: () => context.push('/profile/edit'),
+          ),
+        ],
         const SizedBox(height: 18),
         Row(children: [
           _Stat('$crops', 'Ekin'),

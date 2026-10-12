@@ -50,6 +50,12 @@ class ExpertOut(BaseModel):
     answers: int = 0
     rating: float | None = None
     work_hours: str | None = None
+    district: str | None = None
+    about: str | None = None
+    experience_years: int | None = None
+    education: str | None = None
+    skills: list[str] | None = None
+    ratings_count: int = 0
 
 
 class ExpertSettingsIn(BaseModel):
@@ -114,10 +120,14 @@ async def my_application(user: User = Depends(get_current_user), db: AsyncSessio
 # ---------- Agronomlar ro'yxati (dehqon uchun) ----------
 async def _expert_out(db: AsyncSession, u: User) -> ExpertOut:
     answers = await db.scalar(select(func.count()).select_from(Question).where(Question.expert_id == u.id)) or 0
-    rating = await db.scalar(select(func.avg(Question.rating)).where(Question.expert_id == u.id, Question.rating.is_not(None)))
+    rated = Question.expert_id == u.id, Question.rating.is_not(None)
+    rating = await db.scalar(select(func.avg(Question.rating)).where(*rated))
+    ratings_count = await db.scalar(select(func.count()).select_from(Question).where(*rated)) or 0
     return ExpertOut(id=u.id, full_name=u.full_name, avatar_url=u.avatar_url, region=u.region, specialization=u.specialization,
                      accepting_questions=u.accepting_questions, answers=answers, work_hours=u.work_hours,
-                     rating=round(float(rating), 1) if rating is not None else None)
+                     rating=round(float(rating), 1) if rating is not None else None, ratings_count=ratings_count,
+                     district=u.district, about=u.about, experience_years=u.experience_years, education=u.education,
+                     skills=u.skills)
 
 
 @router.get("", response_model=list[ExpertOut])
@@ -172,7 +182,7 @@ async def _queue_item(db: AsyncSession, d: Diagnosis) -> QueueItem:
         id=d.id, image_url=d.image_url, ai_label=d.ai_label, disease_name=disease.name if disease else None,
         plant_id=d.plant_id, plant_name=plant.name if plant else None, confidence=conf, alternatives=alts,
         review_requested=d.review_requested, review_note=d.review_note,
-        farmer_name=farmer.full_name.split(" ")[0] if farmer else "Dehqon", farmer_region=farmer.region if farmer else None,
+        farmer_name=farmer.full_name.split(" ")[0] if farmer else "Dehqon", farmer_region=", ".join(x for x in (farmer.region, farmer.district) if x) or None if farmer else None,
         diagnosed_at=d.diagnosed_at,
     )
 
@@ -269,3 +279,12 @@ async def dataset_images(label: str = Query(min_length=3, max_length=150), limit
     rows = (await db.scalars(select(Diagnosis).where(Diagnosis.verified_label == label, Diagnosis.review_status.in_(USABLE))
                              .order_by(Diagnosis.reviewed_at.desc()).limit(limit))).all()
     return [DatasetImage(id=d.id, image_url=d.image_url, review_status=d.review_status) for d in rows]
+
+
+# Oxirida turadi: "/queue" kabi yo'llarni {expert_id} yutib yubormasligi uchun
+@router.get("/{expert_id}", response_model=ExpertOut)
+async def get_expert(expert_id: uuid.UUID, _: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    u = await db.get(User, expert_id)
+    if u is None or u.role != "agronomist" or not u.is_active:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Agronom topilmadi")
+    return await _expert_out(db, u)

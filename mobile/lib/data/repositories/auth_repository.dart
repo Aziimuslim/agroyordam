@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../../domain/entities/entities.dart';
 import 'base.dart';
 
@@ -41,6 +43,14 @@ class AuthRepository extends BaseRepository {
 
   Future<AppUser> updateMe(Map<String, dynamic> data) =>
       call(() async => AppUser.fromJson((await dio.put('/users/me', data: data)).data));
+
+  Future<AppUser> uploadAvatar(List<int> bytes, String filename) => call(() async {
+        final png = filename.toLowerCase().endsWith('.png');
+        final form = FormData.fromMap({
+          'file': MultipartFile.fromBytes(bytes, filename: filename, contentType: DioMediaType('image', png ? 'png' : 'jpeg')),
+        });
+        return AppUser.fromJson((await dio.post('/users/me/avatar', data: form)).data);
+      });
 
   Future<String?> forgotPassword(String login) => call(() async {
         final r = await dio.post('/auth/forgot-password', data: {'login': login});

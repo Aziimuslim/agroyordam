@@ -189,7 +189,8 @@ class ExpertProfileScreen extends ConsumerWidget {
             if (context.mounted) context.go('/home');
           },
         ),
-        ListRow(icon: AppIcons.edit, label: 'Profilni tahrirlash', onTap: () => context.push('/profile/edit')),
+        ListRow(icon: AppIcons.edit, label: "Ma'lumotlarim", value: "Tajriba, ta'lim, yo'nalish", onTap: () => context.push('/profile/edit')),
+        ListRow(icon: Icons.visibility_outlined, label: "Dehqonlar ko'radigan profil", onTap: () => context.push('/help/agronom/${user.id}')),
         ListRow(icon: Icons.notifications_none_rounded, label: 'Bildirishnomalar', onTap: () => context.push('/notifications')),
         ListRow(icon: AppIcons.chat, label: 'Xabarlar', onTap: () => context.push('/messages')),
         ListRow(

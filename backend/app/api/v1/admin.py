@@ -177,6 +177,10 @@ async def approve_application(app_id: uuid.UUID, admin: User = Depends(require_a
     if u.role == "user":
         u.role = "agronomist"
     u.specialization = a.specialization
+    # Arizadagi ma'lumotlar agronom profiliga o'tadi (agar u o'zi to'ldirmagan bo'lsa)
+    u.about = u.about or a.about
+    if u.experience_years is None:
+        u.experience_years = a.experience_years
     await notify(db, u.id, "expert_approved", "Siz endi agronomsiz",
                  "Ilovani qayta oching — agronom rejimi yoqildi.", a.id)
     await audit(db, admin, "expert_approve", f"«{u.full_name}» agronom bo'ldi ({a.specialization})", u.id)

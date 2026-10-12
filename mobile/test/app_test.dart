@@ -1,6 +1,8 @@
 import 'package:agroyordam/app.dart';
 import 'package:agroyordam/application/providers.dart';
 import 'package:agroyordam/core/catalog_images.dart';
+import 'package:agroyordam/core/data/farm_options.dart';
+import 'package:agroyordam/core/data/uz_regions.dart';
 import 'package:agroyordam/core/storage/token_storage.dart';
 import 'package:agroyordam/core/theme/app_colors.dart';
 import 'package:agroyordam/core/utils/format.dart';
@@ -207,5 +209,35 @@ void main() {
     expect(u('admin').canReview, isTrue);
     expect(u('user').canReview, isFalse);
     expect(u('user').workHours, '9–18');
+  });
+
+  test("Profil: xo'jalik, agronom ma'lumotlari, hududlar", () {
+    final u = AppUser.fromJson({
+      'id': '1', 'full_name': 'Ali', 'username': 'ali', 'region': "Qoraqalpog'iston", 'district': 'Amudaryo tumani',
+      'farm_type': 'fermer', 'farm_area': 3, 'main_crops': ['Paxta', "Bug'doy"], 'irrigation': 'tomchi', 'experience_years': 12,
+    });
+    expect(u.hasFarmInfo, isTrue);
+    expect(u.mainCrops, ['Paxta', "Bug'doy"]);
+    expect(u.farmArea, 3.0);
+    expect(AppUser.fromJson({'id': '2', 'full_name': 'B', 'username': 'b'}).hasFarmInfo, isFalse);
+    expect(placeText(u.region, u.district), "Qoraqalpog'iston, Amudaryo tumani");
+    expect(placeText(null, null), '');
+    expect(formatArea(0.12), '12 sotix');
+    expect(formatArea(2.5), '2.5 gektar');
+    expect(formatArea(3), '3 gektar');
+    // Ro'yxatdagi barcha viloyatlarda tumanlar bor, takrorlanmaydi
+    for (final e in uzRegions.entries) {
+      expect(e.value, isNotEmpty, reason: e.key);
+      expect(e.value.toSet().length, e.value.length, reason: e.key);
+    }
+    final q = Question.fromJson({
+      'id': 'q', 'title': 'T', 'status': 'new', 'author': {'id': '1', 'full_name': 'Ali', 'username': 'ali'},
+      'author_farm': {'farm_type': 'tomorqa', 'farm_area': 0.08, 'main_crops': ['Pomidor']},
+    });
+    expect(q.authorFarm!.isEmpty, isFalse);
+    expect(farmTypes[q.authorFarm!.farmType], 'Tomorqa');
+    final e = Expert.fromJson({'id': 'e', 'full_name': 'Agro', 'skills': ['Uzum'], 'experience_years': 15, 'ratings_count': 4});
+    expect(e.skills, ['Uzum']);
+    expect(e.ratingsCount, 4);
   });
 }
