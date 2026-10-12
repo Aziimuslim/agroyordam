@@ -176,3 +176,12 @@ img.thumb{object-fit:cover}
 .login .themes button{color:var(--ink-muted)}.login .themes button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(15,36,25,.12)}
 @media (max-width:900px){.side .themes{display:none}}
 .side .themes{margin-top:auto}.side .themes + .me{margin-top:8px}
+
+/* Foydalanuvchi va chiqish tugmasi (yon menyu pastida) */
+.me-name{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.me-role{font-size:12px;color:var(--on-deep-muted)}
+.side .logout{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 10px 0;height:36px;border-radius:10px;
+  border:1px solid rgba(255,255,255,.16);color:var(--on-deep-muted);font-weight:600;font-size:13px;transition:background-color var(--dur-fast),color var(--dur-fast),border-color var(--dur-fast)}
+.side .logout:hover{background:rgba(255,120,110,.14);border-color:rgba(255,140,130,.45);color:#ffd9d5}
+.side .logout:focus-visible{outline:2px solid var(--on-deep);outline-offset:2px}
+@media (max-width:900px){.side .logout{margin:0 4px;padding:0 10px;height:34px;flex:none}.side .logout span{display:none}}
