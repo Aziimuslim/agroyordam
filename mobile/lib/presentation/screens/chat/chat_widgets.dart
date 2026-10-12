@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/utils/format.dart';
@@ -53,10 +54,10 @@ class MessageBubble extends StatelessWidget {
 }
 
 class ChatInputBar extends StatelessWidget {
-  const ChatInputBar({super.key, required this.controller, required this.onSend, this.hint = 'Xabar yozing...', this.icon = AppIcons.send, this.onChanged});
+  const ChatInputBar({super.key, required this.controller, required this.onSend, this.hint, this.icon = AppIcons.send, this.onChanged});
   final TextEditingController controller;
   final VoidCallback onSend;
-  final String hint;
+  final String? hint;
   final IconData icon;
   final ValueChanged<String>? onChanged;
 
@@ -76,7 +77,7 @@ class ChatInputBar extends StatelessWidget {
             minLines: 1,
             maxLines: 4,
             decoration: InputDecoration(
-              hintText: hint,
+              hintText: hint ?? tr('Xabar yozing...'),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(999), borderSide: BorderSide(color: c.border)),
               enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(999), borderSide: BorderSide(color: c.border)),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/data/farm_options.dart';
 import '../../../core/data/uz_regions.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/ds.dart';
 import '../../../core/widgets/widgets.dart';
@@ -24,7 +25,7 @@ class FarmBriefCard extends StatelessWidget {
       if (place.isNotEmpty) (Icons.location_on_outlined, place),
       if (farmLine.isNotEmpty) (Icons.agriculture_outlined, farmLine),
       if (farm.irrigation != null) (Icons.water_drop_outlined, irrigationTypes[farm.irrigation] ?? farm.irrigation!),
-      if (farm.experienceYears != null) (Icons.workspace_premium_outlined, '${farm.experienceYears} yillik tajriba'),
+      if (farm.experienceYears != null) (Icons.workspace_premium_outlined, trf('{0} yillik tajriba', [farm.experienceYears])),
     ];
     return AppCard(
       shadow: false,
@@ -32,10 +33,10 @@ class FarmBriefCard extends StatelessWidget {
       margin: const EdgeInsets.only(top: 12),
       color: c.expertBg,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text("DEHQON XO'JALIGI", style: Theme.of(context).textTheme.labelSmall?.copyWith(color: c.expert)),
+        Text(tr("DEHQON XO'JALIGI"), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: c.expert)),
         const SizedBox(height: 6),
         if (farm.isEmpty)
-          Text("Dehqon xo'jalik ma'lumotlarini hali to'ldirmagan", style: TextStyle(color: c.muted, fontSize: 13.5)),
+          Text(tr("Dehqon xo'jalik ma'lumotlarini hali to'ldirmagan"), style: TextStyle(color: c.muted, fontSize: 13.5)),
         for (final (icon, text) in rows)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 3),

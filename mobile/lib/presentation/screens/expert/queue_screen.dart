@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
 import '../../../core/config.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/ds.dart';
@@ -35,7 +36,7 @@ class _QueueState extends ConsumerState<ExpertQueueScreen> {
       },
       children: [
         ExpertHeader(
-          title: stats == null ? 'Navbat' : (stats.queuePending == 0 ? "Navbat bo'sh" : '${stats.queuePending} ta kutmoqda'),
+          title: stats == null ? tr('Navbat') : (stats.queuePending == 0 ? tr("Navbat bo'sh") : trf('{0} ta kutmoqda', [stats.queuePending])),
           leading: me == null
               ? null
               : Container(
@@ -50,16 +51,16 @@ class _QueueState extends ConsumerState<ExpertQueueScreen> {
         ),
         Row(
           children: [
-            StatTile('${stats?.reviewedToday ?? '—'}', 'bugun\ntekshirildi'),
+            StatTile('${stats?.reviewedToday ?? '—'}', tr('bugun\ntekshirildi')),
             const SizedBox(width: 8),
-            StatTile(stats?.aiAgreement == null ? '—' : '${stats!.aiAgreement}%', 'AI bilan mos'),
+            StatTile(stats?.aiAgreement == null ? '—' : '${stats!.aiAgreement}%', tr('AI bilan mos')),
             const SizedBox(width: 8),
-            StatTile(formatWait(stats?.avgAnswerMinutes), "o'rtacha\njavob"),
+            StatTile(formatWait(stats?.avgAnswerMinutes), tr("o'rtacha\njavob")),
           ],
         ),
         const SizedBox(height: 16),
         ExpertChips(
-          tabs: const [('all', 'Hammasi'), ('requested', "Dehqon so'ragan"), ('low', 'Ishonchi past')],
+          tabs: [('all', tr('Hammasi')), ('requested', tr("Dehqon so'ragan")), ('low', tr('Ishonchi past'))],
           selected: _filter,
           onSelect: (v) => setState(() => _filter = v),
         ),
@@ -67,7 +68,7 @@ class _QueueState extends ConsumerState<ExpertQueueScreen> {
           value: queue,
           onRetry: () => ref.invalidate(reviewQueueProvider(_filter)),
           data: (items) => items.isEmpty
-              ? const EmptyNote("Hammasi tekshirilgan. Yangi tashxislar shu yerda paydo bo'ladi.", icon: Icons.task_alt_rounded)
+              ? EmptyNote(tr("Hammasi tekshirilgan. Yangi tashxislar shu yerda paydo bo'ladi."), icon: Icons.task_alt_rounded)
               : Column(children: [for (final i in items) QueueCard(i)]),
         ),
       ],
@@ -164,8 +165,8 @@ class QueueCard extends StatelessWidget {
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    if (i.reviewRequested) const StatusTag("Dehqon so'radi", kind: StatusKind.expert, icon: Icons.send_outlined),
-                    if (i.lowConfidence) const StatusTag('Taxminiy', kind: StatusKind.risk, icon: Icons.info_outline_rounded),
+                    if (i.reviewRequested) StatusTag(tr("Dehqon so'radi"), kind: StatusKind.expert, icon: Icons.send_outlined),
+                    if (i.lowConfidence) StatusTag(tr('Taxminiy'), kind: StatusKind.risk, icon: Icons.info_outline_rounded),
                   ],
                 ),
               ],

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
@@ -30,7 +31,7 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
       onRefresh: () async => ref.invalidate(cropsProvider),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const Expanded(child: Text("Mening bog'im", style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800))),
+          Expanded(child: Text(tr("Mening bog'im"), style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800))),
           _PlusButton(onTap: () => context.push('/garden/add')),
         ]),
         const SizedBox(height: 18),
@@ -50,13 +51,13 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text("Umumiy sog'liq holati", style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                      Text(tr("Umumiy sog'liq holati"), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
                       const SizedBox(height: 4),
                       Row(children: [
                         Icon(sick ? Icons.warning_amber_rounded : AppIcons.check, size: 16, color: sick ? c.gold : c.success),
                         const SizedBox(width: 6),
                         Flexible(
-                          child: Text(sick ? "Ba'zi ekinlarga e'tibor kerak" : "Barcha ekinlar sog'lom",
+                          child: Text(sick ? tr("Ba'zi ekinlarga e'tibor kerak") : tr("Barcha ekinlar sog'lom"),
                               style: TextStyle(color: sick ? c.primaryDark : c.success, fontWeight: FontWeight.w700, fontSize: 13)),
                         ),
                       ]),
@@ -65,7 +66,7 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
                 ]),
               ),
               ChipTabs(
-                tabs: const [('all', 'Barchasi'), ('az', 'A-Z'), ('health', "E'tibor kerak")],
+                tabs: [('all', tr('Barchasi')), ('az', 'A-Z'), ('health', tr("E'tibor kerak"))],
                 selected: sort,
                 onSelect: (v) => setState(() => sort = v),
               ),
@@ -122,7 +123,7 @@ class _CropTile extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(crop.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text(crop.plantName ?? "Tur ko'rsatilmagan", style: TextStyle(fontSize: 12, color: c.muted), maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(crop.plantName ?? tr("Tur ko'rsatilmagan"), style: TextStyle(fontSize: 12, color: c.muted), maxLines: 1, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 8),
             PctBadge(crop.healthScore),
           ]),
@@ -148,7 +149,7 @@ class _AddTile extends StatelessWidget {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             _PlusButton(onTap: onTap),
             const SizedBox(height: 8),
-            Text("Ekin qo'shish", style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13)),
+            Text(tr("Ekin qo'shish"), style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13)),
           ]),
         ),
       ),

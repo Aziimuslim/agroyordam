@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../i18n/i18n.dart';
 
 class ApiException implements Exception {
   ApiException(this.message, {this.statusCode});
@@ -16,7 +17,7 @@ class ApiException implements Exception {
       if (data is Map && data['detail'] != null) {
         final d = data['detail'];
         if (d is String) {
-          msg = d;
+          msg = tr(d); // server xabarlari ham lug'atda bo'lsa tarjima qilinadi
         } else if (d is List && d.isNotEmpty && d.first is Map) {
           msg = (d.first as Map)['msg']?.toString().replaceFirst('Value error, ', '');
         }
@@ -25,11 +26,11 @@ class ApiException implements Exception {
         switch (e.type) {
           case DioExceptionType.connectionError:
           case DioExceptionType.connectionTimeout:
-            msg = "Server bilan aloqa yo'q. Internetni tekshiring.";
+            msg = tr("Server bilan aloqa yo'q. Internetni tekshiring.");
           case DioExceptionType.receiveTimeout:
-            msg = 'Server javob bermadi. Qayta urinib ko\'ring.';
+            msg = tr("Server javob bermadi. Qayta urinib ko'ring.");
           default:
-            msg = 'Xatolik yuz berdi (${e.response?.statusCode ?? '-'})';
+            msg = trf('Xatolik yuz berdi ({0})', [e.response?.statusCode ?? '-']);
         }
       }
       return ApiException(msg, statusCode: e.response?.statusCode);

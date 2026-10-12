@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
@@ -42,12 +43,12 @@ class _Body extends ConsumerWidget {
   final Crop crop;
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
-    if (!await confirm(context, "Ekinni o'chirish", "${crop.name} va uning tarixi o'chiriladi.", ok: "O'chirish", danger: true)) return;
+    if (!await confirm(context, tr("Ekinni o'chirish"), trf("{0} va uning tarixi o'chiriladi.", [crop.name]), ok: tr("O'chirish"), danger: true)) return;
     try {
       await ref.read(gardenRepoProvider).deleteCrop(crop.id);
       ref.invalidate(cropsProvider);
       if (context.mounted) {
-        showToast(context, "Ekin o'chirildi");
+        showToast(context, tr("Ekin o'chirildi"));
         context.go('/garden');
       }
     } catch (e) {
@@ -57,10 +58,10 @@ class _Body extends ConsumerWidget {
 
   Future<void> _addLog(BuildContext context, WidgetRef ref) async {
     final ctrl = TextEditingController();
-    final text = await showSheet<String>(context, title: 'Kundalikka yozuv', builder: (ctx) => Column(children: [
-          TextField(controller: ctrl, maxLines: 4, autofocus: true, decoration: const InputDecoration(hintText: "Bugun nima qildingiz? (sug'orish, o'g'itlash...)")),
+    final text = await showSheet<String>(context, title: tr('Kundalikka yozuv'), builder: (ctx) => Column(children: [
+          TextField(controller: ctrl, maxLines: 4, autofocus: true, decoration: InputDecoration(hintText: tr("Bugun nima qildingiz? (sug'orish, o'g'itlash...)"))),
           const SizedBox(height: 14),
-          PillButton(label: 'Saqlash', block: true, onPressed: () => Navigator.pop(ctx, ctrl.text.trim())),
+          PillButton(label: tr('Saqlash'), block: true, onPressed: () => Navigator.pop(ctx, ctrl.text.trim())),
         ]));
     if (text == null || text.isEmpty) return;
     try {
@@ -82,7 +83,7 @@ class _Body extends ConsumerWidget {
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       TopBar(title: crop.name, actions: [
-        CircleIconButton(icon: AppIcons.edit, tooltip: 'Tahrirlash', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AddCropScreen(crop: crop)))),
+        CircleIconButton(icon: AppIcons.edit, tooltip: tr('Tahrirlash'), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AddCropScreen(crop: crop)))),
       ]),
       // Figma "Yashil dala": surat-banner, ustida nom va sog'liq; pastida ma'lumot chiplari
       ClipRRect(
@@ -96,7 +97,7 @@ class _Body extends ConsumerWidget {
                 gradient: LinearGradient(begin: Alignment.center, end: Alignment.bottomCenter, colors: [Color(0x00000000), Color(0xB3000000)]),
               ),
             ),
-            Positioned(top: 12, right: 12, child: PctBadge(crop.healthScore, suffix: " sog'lom", fontSize: 13)),
+            Positioned(top: 12, right: 12, child: PctBadge(crop.healthScore, suffix: tr(" sog'lom"), fontSize: 13)),
             Positioned(
               left: 16,
               right: 16,
@@ -114,8 +115,8 @@ class _Body extends ConsumerWidget {
       const SizedBox(height: 12),
       if (crop.area != null || crop.plantingDate != null || crop.location != null)
         Wrap(spacing: 8, runSpacing: 8, children: [
-          if (crop.area != null) Tag('${crop.area} sotix', bg: c.cream2, fg: c.text),
-          if (crop.plantingDate != null) Tag('Ekilgan: ${formatDate(crop.plantingDate)}', bg: c.cream2, fg: c.text),
+          if (crop.area != null) Tag(trf('{0} sotix', [crop.area]), bg: c.cream2, fg: c.text),
+          if (crop.plantingDate != null) Tag(trf('Ekilgan: {0}', [formatDate(crop.plantingDate)]), bg: c.cream2, fg: c.text),
           if (crop.location != null) Tag(crop.location!, bg: c.cream2, fg: c.text),
         ]),
       const SizedBox(height: 14),
@@ -124,7 +125,7 @@ class _Body extends ConsumerWidget {
             ? const SizedBox.shrink()
             : AppCard(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text("Sog'liq tarixi", style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
+                  Text(tr("Sog'liq tarixi"), style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 12),
                   SizedBox(height: 90, child: _Sparkline(points: points)),
                 ]),
@@ -135,14 +136,14 @@ class _Body extends ConsumerWidget {
         AppCard(
           onTap: () => context.push('/diagnosis/${last.id}'),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Oxirgi aniqlangan kasallik', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
+            Text(tr('Oxirgi aniqlangan kasallik'), style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
             const SizedBox(height: 6),
             Text('${last.diseaseName} · ${last.confidence.toStringAsFixed(0)}% · ${timeAgo(last.diagnosedAt)}', style: TextStyle(color: c.muted)),
             if (last.medicines.isNotEmpty)
-              InfoBox(label: 'Tavsiya etilgan dori', value: '${last.medicines.first.name}${last.medicines.first.recommendation != null ? ', ${last.medicines.first.recommendation}' : ''}'),
+              InfoBox(label: tr('Tavsiya etilgan dori'), value: '${last.medicines.first.name}${last.medicines.first.recommendation != null ? ', ${last.medicines.first.recommendation}' : ''}'),
             Align(
               alignment: Alignment.centerLeft,
-              child: MiniButton(label: 'Parvarish rejasi', icon: AppIcons.bell, filled: true, onTap: () => context.push('/diagnosis/${last.id}/plan')),
+              child: MiniButton(label: tr('Parvarish rejasi'), icon: AppIcons.bell, filled: true, onTap: () => context.push('/diagnosis/${last.id}/plan')),
             ),
           ]),
         ),
@@ -155,17 +156,17 @@ class _Body extends ConsumerWidget {
           final upcoming = mine.where((r) => !r.isCompleted && r.date.isAfter(today)).toList()..sort((a, b) => a.date.compareTo(b.date));
           final planDays = mine.isEmpty ? 0 : mine.map((r) => r.date).reduce((a, b) => a.isAfter(b) ? a : b).difference(today).inDays;
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            SectionTitle('Vazifalar', action: "+ Qo'shish", onAction: () => context.push('/reminders/add?crop=${crop.id}')),
+            SectionTitle(tr('Vazifalar'), action: tr("+ Qo'shish"), onAction: () => context.push('/reminders/add?crop=${crop.id}')),
             if (mine.isEmpty)
-              const EmptyNote("Bu ekin uchun vazifa yo'q. Tashxisdan keyin \"Parvarish rejasi\"ni boshlang.")
+              EmptyNote(tr("Bu ekin uchun vazifa yo'q. Tashxisdan keyin \"Parvarish rejasi\"ni boshlang."))
             else ...[
               AppCard(
                 color: c.cream2,
                 shadow: false,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
-                    Expanded(child: Text('Bajarildi: $done / ${mine.length}', style: const TextStyle(fontWeight: FontWeight.w800))),
-                    if (planDays > 0) Text('yana $planDays kun', style: TextStyle(color: c.muted, fontSize: 12.5)),
+                    Expanded(child: Text(trf('Bajarildi: {0} / {1}', [done, mine.length]), style: const TextStyle(fontWeight: FontWeight.w800))),
+                    if (planDays > 0) Text(trf('yana {0} kun', [planDays]), style: TextStyle(color: c.muted, fontSize: 12.5)),
                   ]),
                   const SizedBox(height: 10),
                   ClipRRect(
@@ -174,11 +175,11 @@ class _Body extends ConsumerWidget {
                   ),
                 ]),
               ),
-              Text('Bugun', style: TextStyle(fontWeight: FontWeight.w800, color: c.primaryDark)),
+              Text(tr('Bugun'), style: TextStyle(fontWeight: FontWeight.w800, color: c.primaryDark)),
               const SizedBox(height: 8),
               TodayTasks(cropId: crop.id, limit: 6),
               if (upcoming.isNotEmpty) ...[
-                Text('Keyingi vazifalar', style: TextStyle(fontWeight: FontWeight.w800, color: c.primaryDark)),
+                Text(tr('Keyingi vazifalar'), style: TextStyle(fontWeight: FontWeight.w800, color: c.primaryDark)),
                 const SizedBox(height: 8),
                 for (final r in upcoming.take(3))
                   ListRow(icon: AppIcons.forReminder(r.type), label: r.title, chevron: false, value: formatDate(r.date)),
@@ -186,7 +187,7 @@ class _Body extends ConsumerWidget {
               Center(
                 child: TextButton(
                   onPressed: () => context.push('/reminders?crop=${crop.id}'),
-                  child: Text('Barcha vazifalar (${mine.length})', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800)),
+                  child: Text(trf('Barcha vazifalar ({0})', [mine.length]), style: TextStyle(color: c.primary, fontWeight: FontWeight.w800)),
                 ),
               ),
             ],
@@ -194,10 +195,10 @@ class _Body extends ConsumerWidget {
         },
         orElse: () => const SizedBox.shrink(),
       ),
-      SectionTitle('Ekin kundaligi', action: "+ Yozuv", onAction: () => _addLog(context, ref)),
+      SectionTitle(tr('Ekin kundaligi'), action: tr("+ Yozuv"), onAction: () => _addLog(context, ref)),
       logs.maybeWhen(
         data: (list) => list.isEmpty
-            ? const EmptyNote("Hali yozuv yo'q")
+            ? EmptyNote(tr("Hali yozuv yo'q"))
             : Column(children: [
                 for (final l in list.take(10))
                   AppCard(
@@ -213,7 +214,7 @@ class _Body extends ConsumerWidget {
         orElse: () => const SizedBox.shrink(),
       ),
       if ((diags.value?.length ?? 0) > 1) ...[
-        const SectionTitle('Tashxislar tarixi'),
+        SectionTitle(tr('Tashxislar tarixi')),
         for (final d in diags.value!)
           RowCard(
             leading: ThumbIcon(icon: AppIcons.image, imageUrl: d.imageUrl, size: 46),
@@ -224,9 +225,9 @@ class _Body extends ConsumerWidget {
           ),
       ],
       const SizedBox(height: 10),
-      PillButton(label: 'Qayta tashxis qilish', icon: AppIcons.camera, block: true, onPressed: () => context.push('/diagnose?crop=${crop.id}')),
+      PillButton(label: tr('Qayta tashxis qilish'), icon: AppIcons.camera, block: true, onPressed: () => context.push('/diagnose?crop=${crop.id}')),
       const SizedBox(height: 10),
-      PillButton(label: "Ekinni o'chirish", icon: AppIcons.trash, style: PillStyle.outline, fg: c.danger, block: true, onPressed: () => _delete(context, ref)),
+      PillButton(label: tr("Ekinni o'chirish"), icon: AppIcons.trash, style: PillStyle.outline, fg: c.danger, block: true, onPressed: () => _delete(context, ref)),
     ]);
   }
 }

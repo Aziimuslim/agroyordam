@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../application/providers.dart';
 import '../../../core/data/farm_options.dart';
 import '../../../core/data/uz_regions.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/widgets.dart';
@@ -20,7 +21,7 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 }
 
 /// Agronom yo'nalishlari uchun ekinlardan tashqari mavzular.
-const _expertTopics = ['Zararkunandalar', "O'g'itlash", "Sug'orish", 'Issiqxona', 'Tuproq', "Urug'chilik", 'Organik dehqonchilik'];
+List<String> get _expertTopics => [tr('Zararkunandalar'), tr("O'g'itlash"), tr("Sug'orish"), tr('Issiqxona'), tr('Tuproq'), tr("Urug'chilik"), tr('Organik dehqonchilik')];
 
 class _EditProfileState extends ConsumerState<EditProfileScreen> {
   late final user = ref.read(currentUserProvider)!;
@@ -71,10 +72,10 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
   String? _clean(TextEditingController c) => c.text.trim().isEmpty ? null : c.text.trim();
 
   Future<void> _save() async {
-    if (_name.text.trim().length < 2) return showToast(context, "F.I.O ni to'liq kiriting");
+    if (_name.text.trim().length < 2) return showToast(context, tr("F.I.O ni to'liq kiriting"));
     final phone = _phone.text.replaceAll(RegExp(r'[\s\-()]'), '');
-    if (phone.isNotEmpty && !RegExp(r'^\+?[0-9]{9,15}$').hasMatch(phone)) return showToast(context, "Telefon raqam noto'g'ri");
-    if (_area.text.trim().isNotEmpty && _areaHa == null) return showToast(context, "Yer maydonini raqamda yozing");
+    if (phone.isNotEmpty && !RegExp(r'^\+?[0-9]{9,15}$').hasMatch(phone)) return showToast(context, tr("Telefon raqam noto'g'ri"));
+    if (_area.text.trim().isNotEmpty && _areaHa == null) return showToast(context, tr("Yer maydonini raqamda yozing"));
     setState(() => _loading = true);
     try {
       await ref.read(authProvider.notifier).updateProfile({
@@ -99,7 +100,7 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
         },
       });
       if (mounted) {
-        showToast(context, 'Saqlandi');
+        showToast(context, tr('Saqlandi'));
         context.pop();
       }
     } catch (e) {
@@ -114,10 +115,10 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
     if (!kIsWeb) {
       source = await showSheet<ImageSource>(
         context,
-        title: 'Profil rasmi',
+        title: tr('Profil rasmi'),
         builder: (ctx) => Column(children: [
-          ListRow(icon: Icons.photo_camera_outlined, label: 'Kamera', onTap: () => Navigator.pop(ctx, ImageSource.camera)),
-          ListRow(icon: Icons.photo_library_outlined, label: 'Galereya', onTap: () => Navigator.pop(ctx, ImageSource.gallery)),
+          ListRow(icon: Icons.photo_camera_outlined, label: tr('Kamera'), onTap: () => Navigator.pop(ctx, ImageSource.camera)),
+          ListRow(icon: Icons.photo_library_outlined, label: tr('Galereya'), onTap: () => Navigator.pop(ctx, ImageSource.gallery)),
         ]),
       );
     }
@@ -127,7 +128,7 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
     setState(() => _uploading = true);
     try {
       await ref.read(authProvider.notifier).uploadAvatar(await f.readAsBytes(), f.name.contains('.') ? f.name : '${f.name}.jpg');
-      if (mounted) showToast(context, 'Rasm yangilandi');
+      if (mounted) showToast(context, tr('Rasm yangilandi'));
     } catch (e) {
       if (mounted) showError(context, e);
     } finally {
@@ -180,19 +181,19 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
                       onPressed: _loading ? null : _save,
                       child: _loading
                           ? SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: c.onExpert))
-                          : const Text('Saqlash', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                          : Text(tr('Saqlash'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                     )
-                  : PillButton(label: 'Saqlash', style: PillStyle.primary, block: true, loading: _loading, onPressed: _save),
+                  : PillButton(label: tr('Saqlash'), style: PillStyle.primary, block: true, loading: _loading, onPressed: _save),
             ),
           ),
         ),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const TopBar(title: "Ma'lumotlarim"),
+        TopBar(title: tr("Ma'lumotlarim")),
         Center(
           child: Semantics(
             button: true,
-            label: "Profil rasmini o'zgartirish",
+            label: tr("Profil rasmini o'zgartirish"),
             child: InkWell(
               customBorder: const CircleBorder(),
               onTap: _uploading ? null : _pickAvatar,
@@ -226,34 +227,34 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
             ),
           ),
         ),
-        const _Section("Shaxsiy ma'lumotlar"),
-        const FieldLabel('F.I.O'),
-        TextField(controller: _name, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(hintText: 'Familiya Ism Otasining ismi')),
-        const FieldLabel('Telefon raqam'),
+        _Section(tr("Shaxsiy ma'lumotlar")),
+        FieldLabel(tr('F.I.O')),
+        TextField(controller: _name, textCapitalization: TextCapitalization.words, decoration: InputDecoration(hintText: tr('Familiya Ism Otasining ismi'))),
+        FieldLabel(tr('Telefon raqam')),
         TextField(controller: _phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(hintText: '+998 90 123 45 67')),
-        const FieldLabel('Email (ixtiyoriy)'),
+        FieldLabel(tr('Email (ixtiyoriy)')),
         TextField(controller: _email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(hintText: 'pochta@misol.uz')),
-        const FieldLabel('Hudud'),
+        FieldLabel(tr('Hudud')),
         _PlaceField(text: place, accent: accent, onTap: _pickPlace),
-        const FieldLabel("Qo'shimcha manzil"),
-        TextField(controller: _address, decoration: const InputDecoration(hintText: "Mahalla, qishloq, ko'cha (ixtiyoriy)")),
+        FieldLabel(tr("Qo'shimcha manzil")),
+        TextField(controller: _address, decoration: InputDecoration(hintText: tr("Mahalla, qishloq, ko'cha (ixtiyoriy)"))),
         if (_expert) ...[
-          const _Section("Mutaxassis ma'lumotlari", hint: "Dehqonlar profilingizda ko'radi va shunga qarab sizga savol beradi"),
-          const FieldLabel('Mutaxassislik'),
-          TextField(controller: _specialization, decoration: const InputDecoration(hintText: 'Masalan: mevali bog\'lar, sabzavotlar')),
-          const FieldLabel('Men haqimda'),
+          _Section(tr("Mutaxassis ma'lumotlari"), hint: tr("Dehqonlar profilingizda ko'radi va shunga qarab sizga savol beradi")),
+          FieldLabel(tr('Mutaxassislik')),
+          TextField(controller: _specialization, decoration: InputDecoration(hintText: tr('Masalan: mevali bog\'lar, sabzavotlar'))),
+          FieldLabel(tr('Men haqimda')),
           TextField(
             controller: _about,
             minLines: 3,
             maxLines: 6,
             maxLength: 2000,
-            decoration: const InputDecoration(hintText: 'Qisqacha o\'zingiz va qanday yordam bera olishingiz haqida...', counterText: ''),
+            decoration: InputDecoration(hintText: tr('Qisqacha o\'zingiz va qanday yordam bera olishingiz haqida...'), counterText: ''),
           ),
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Expanded(
               flex: 2,
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const FieldLabel('Tajriba (yil)'),
+                FieldLabel(tr('Tajriba (yil)')),
                 _NumberField(controller: _experience, hint: '5'),
               ]),
             ),
@@ -261,31 +262,31 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
             Expanded(
               flex: 5,
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const FieldLabel('Ish vaqti'),
-                TextField(controller: _workHours, decoration: const InputDecoration(hintText: 'Du–Ju, 9:00–18:00')),
+                FieldLabel(tr('Ish vaqti')),
+                TextField(controller: _workHours, decoration: InputDecoration(hintText: tr('Du–Ju, 9:00–18:00'))),
               ]),
             ),
           ]),
-          const FieldLabel("Ta'lim"),
-          TextField(controller: _education, decoration: const InputDecoration(hintText: "Masalan: TDAU, agronomiya (2015)")),
-          const FieldLabel("Yo'nalishlar"),
+          FieldLabel(tr("Ta'lim")),
+          TextField(controller: _education, decoration: InputDecoration(hintText: tr("Masalan: TDAU, agronomiya (2015)"))),
+          FieldLabel(tr("Yo'nalishlar")),
           _TagsEditor(
             values: _skills,
             suggestions: [...plants, ..._expertTopics],
             accent: accent,
-            hint: "Ekin yoki mavzu qo'shing",
+            hint: tr("Ekin yoki mavzu qo'shing"),
             onChanged: (v) => setState(() => _skills = v),
           ),
         ] else ...[
-          const _Section("Xo'jaligim", hint: "Agronom savolingizga javob berishda shu ma'lumotlarni ko'radi — maslahat aniqroq bo'ladi"),
-          const FieldLabel("Xo'jalik turi"),
+          _Section(tr("Xo'jaligim"), hint: tr("Agronom savolingizga javob berishda shu ma'lumotlarni ko'radi — maslahat aniqroq bo'ladi")),
+          FieldLabel(tr("Xo'jalik turi")),
           _Choices(
             options: farmTypes,
             value: _farmType,
             accent: accent,
             onChanged: (v) => setState(() => _farmType = v),
           ),
-          const FieldLabel('Yer maydoni'),
+          FieldLabel(tr('Yer maydoni')),
           Row(children: [
             Expanded(
               child: TextField(
@@ -304,9 +305,9 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
                 side: BorderSide(color: c.lineStrong, width: 1.5),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               ),
-              segments: const [
-                ButtonSegment(value: true, label: Text('sotix')),
-                ButtonSegment(value: false, label: Text('gektar')),
+              segments: [
+                ButtonSegment(value: true, label: Text(tr('sotix'))),
+                ButtonSegment(value: false, label: Text(tr('gektar'))),
               ],
               selected: {_sotix},
               onSelectionChanged: (s) {
@@ -318,22 +319,22 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
               },
             ),
           ]),
-          const FieldLabel('Asosiy ekinlar'),
+          FieldLabel(tr('Asosiy ekinlar')),
           _TagsEditor(
             values: _crops,
             suggestions: plants,
             accent: accent,
-            hint: "Ekin nomini yozing",
+            hint: tr("Ekin nomini yozing"),
             onChanged: (v) => setState(() => _crops = v),
           ),
-          const FieldLabel("Sug'orish usuli"),
+          FieldLabel(tr("Sug'orish usuli")),
           _Choices(
             options: irrigationTypes,
             value: _irrigation,
             accent: accent,
             onChanged: (v) => setState(() => _irrigation = v),
           ),
-          const FieldLabel('Dehqonchilik tajribasi (yil)'),
+          FieldLabel(tr('Dehqonchilik tajribasi (yil)')),
           SizedBox(width: 140, child: _NumberField(controller: _experience, hint: '10')),
         ],
         const SizedBox(height: 24),
@@ -398,7 +399,7 @@ class _PlaceField extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                empty ? 'Viloyat va tumanni tanlang' : text,
+                empty ? tr('Viloyat va tumanni tanlang') : text,
                 style: TextStyle(fontSize: 15.5, fontWeight: empty ? FontWeight.w400 : FontWeight.w700, color: empty ? c.subtle : c.text),
               ),
             ),
@@ -441,7 +442,7 @@ class _PlacePickerState extends State<_PlacePicker> {
           child: Row(children: [
             if (_region != null)
               IconButton(
-                tooltip: 'Viloyatlar',
+                tooltip: tr('Viloyatlar'),
                 icon: const Icon(Icons.arrow_back_rounded),
                 onPressed: () => setState(() {
                   _region = null;
@@ -451,12 +452,12 @@ class _PlacePickerState extends State<_PlacePicker> {
             else
               const SizedBox(width: 12),
             Expanded(
-              child: Text(_region ?? 'Viloyatni tanlang', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              child: Text(_region ?? tr('Viloyatni tanlang'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             ),
             if (_region != null)
               TextButton(
                 onPressed: () => Navigator.pop(context, (_region!, null)),
-                child: Text('Faqat viloyat', style: TextStyle(color: c.muted, fontWeight: FontWeight.w700)),
+                child: Text(tr('Faqat viloyat'), style: TextStyle(color: c.muted, fontWeight: FontWeight.w700)),
               ),
           ]),
         ),
@@ -466,7 +467,7 @@ class _PlacePickerState extends State<_PlacePicker> {
             controller: _q,
             onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
-              hintText: _region == null ? 'Viloyat qidirish' : 'Tuman yoki shahar qidirish',
+              hintText: _region == null ? tr('Viloyat qidirish') : tr('Tuman yoki shahar qidirish'),
               prefixIcon: const Icon(Icons.search_rounded),
               isDense: true,
             ),
@@ -571,7 +572,7 @@ class _TagsEditorState extends State<_TagsEditor> {
               shape: const StadiumBorder(),
               labelStyle: TextStyle(color: widget.accent, fontWeight: FontWeight.w700),
               deleteIconColor: widget.accent,
-              deleteButtonTooltipMessage: "Olib tashlash",
+              deleteButtonTooltipMessage: tr("Olib tashlash"),
               onDeleted: () => widget.onChanged([...widget.values]..remove(v)),
             ),
         ]),
@@ -586,7 +587,7 @@ class _TagsEditorState extends State<_TagsEditor> {
           hintText: widget.hint,
           suffixIcon: q.isEmpty
               ? null
-              : IconButton(tooltip: "Qo'shish", icon: Icon(Icons.add_circle_rounded, color: widget.accent), onPressed: () => _add(_ctl.text)),
+              : IconButton(tooltip: tr("Qo'shish"), icon: Icon(Icons.add_circle_rounded, color: widget.accent), onPressed: () => _add(_ctl.text)),
         ),
       ),
       if (sugg.isNotEmpty) ...[

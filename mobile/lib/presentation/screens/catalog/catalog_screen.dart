@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../application/providers.dart';
 import '../../../core/catalog_images.dart';
 import '../../../core/config.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ds.dart';
@@ -42,20 +43,20 @@ class _CatalogState extends ConsumerState<CatalogScreen> {
       },
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         TopBar(
-          title: "Ma'lumotnoma",
-          subtitle: counts.contains(null) ? null : "${counts[0]} o'simlik · ${counts[1]} kasallik · ${counts[2]} dori",
+          title: tr("Ma'lumotnoma"),
+          subtitle: counts.contains(null) ? null : trf("{0} o'simlik · {1} kasallik · {2} dori", [counts[0], counts[1], counts[2]]),
         ),
         TextField(
           onChanged: (v) => setState(() => _q = v.trim()),
           textInputAction: TextInputAction.search,
-          decoration: InputDecoration(hintText: "O'simlik, kasallik yoki dori nomi", prefixIcon: Icon(Icons.search_rounded, color: c.muted)),
+          decoration: InputDecoration(hintText: tr("O'simlik, kasallik yoki dori nomi"), prefixIcon: Icon(Icons.search_rounded, color: c.muted)),
         ),
         const SizedBox(height: 12),
         if (_q.isNotEmpty)
           _SearchResults(q: _q.toLowerCase())
         else ...[
           SegmentTabs(
-            tabs: const [('plants', "O'simliklar"), ('diseases', 'Kasalliklar'), ('medicines', 'Dorilar')],
+            tabs: [('plants', tr("O'simliklar")), ('diseases', tr('Kasalliklar')), ('medicines', tr('Dorilar'))],
             selected: _tab,
             onSelect: (v) => setState(() => _tab = v),
           ),
@@ -75,8 +76,8 @@ class _CatalogState extends ConsumerState<CatalogScreen> {
                 final shown = list.where((d) => _plant == 'all' || d.plantName == _plant).toList()
                   ..sort((a, b) => (_riskOrder[a.riskLevel] ?? 1).compareTo(_riskOrder[b.riskLevel] ?? 1));
                 return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  ChipTabs(tabs: [('all', 'Barchasi'), for (final n in names) (n, n)], selected: _plant, onSelect: (v) => setState(() => _plant = v)),
-                  Text('${shown.length} ta kasallik · avval xavflilari', style: Theme.of(context).textTheme.bodySmall),
+                  ChipTabs(tabs: [('all', tr('Barchasi')), for (final n in names) (n, n)], selected: _plant, onSelect: (v) => setState(() => _plant = v)),
+                  Text(trf('{0} ta kasallik · avval xavflilari', [shown.length]), style: Theme.of(context).textTheme.bodySmall),
                   const SizedBox(height: 10),
                   for (final d in shown) DiseaseRow(d),
                 ]);
@@ -87,7 +88,7 @@ class _CatalogState extends ConsumerState<CatalogScreen> {
               value: medicines,
               onRetry: () => ref.invalidate(medicinesProvider),
               data: (list) => Column(children: [
-                const NoteBox(kind: NoteKind.risk, title: "Ehtiyot bo'ling", text: "Har doim yorliqdagi me'yorga amal qiling, qo'lqop va niqob taqing."),
+                NoteBox(kind: NoteKind.risk, title: tr("Ehtiyot bo'ling"), text: tr("Har doim yorliqdagi me'yorga amal qiling, qo'lqop va niqob taqing.")),
                 const SizedBox(height: 12),
                 for (final m in list) MedicineRow(m),
               ]),
@@ -108,13 +109,13 @@ class _SearchResults extends ConsumerWidget {
     final diseases = (ref.watch(diseasesProvider).value ?? []).where((d) => has(d.name) || has(d.symptoms)).toList();
     final meds = (ref.watch(medicinesProvider).value ?? []).where((m) => has(m.name) || has(m.activeIngredient) || has(m.description)).toList();
     if (plants.isEmpty && diseases.isEmpty && meds.isEmpty) {
-      return const EmptyNote("Hech narsa topilmadi. Boshqacha yozib ko'ring, masalan «zang» yoki «mis».", icon: Icons.search_off_rounded);
+      return EmptyNote(tr("Hech narsa topilmadi. Boshqacha yozib ko'ring, masalan «zang» yoki «mis»."), icon: Icons.search_off_rounded);
     }
     Widget head(String t) => Padding(padding: const EdgeInsets.only(top: 6, bottom: 8), child: Text(t.toUpperCase(), style: Theme.of(context).textTheme.labelSmall));
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      if (plants.isNotEmpty) ...[head("O'simliklar · ${plants.length}"), for (final p in plants) PlantRow(p)],
-      if (diseases.isNotEmpty) ...[head('Kasalliklar · ${diseases.length}'), for (final d in diseases) DiseaseRow(d)],
-      if (meds.isNotEmpty) ...[head('Dorilar · ${meds.length}'), for (final m in meds) MedicineRow(m)],
+      if (plants.isNotEmpty) ...[head(trf("O'simliklar · {0}", [plants.length])), for (final p in plants) PlantRow(p)],
+      if (diseases.isNotEmpty) ...[head(trf('Kasalliklar · {0}', [diseases.length])), for (final d in diseases) DiseaseRow(d)],
+      if (meds.isNotEmpty) ...[head(trf('Dorilar · {0}', [meds.length])), for (final m in meds) MedicineRow(m)],
     ]);
   }
 }
@@ -139,12 +140,12 @@ class _PlantGrid extends StatelessWidget {
               child: InkWell(
                 onTap: () => context.push('/catalog/plant/${p.id}'),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  CatalogImage(asset: CatalogImages.plant(p.name), url: p.imageUrl, width: w, height: w * 0.75, radius: 0, placeholderText: "Rasm hali yo'q"),
+                  CatalogImage(asset: CatalogImages.plant(p.name), url: p.imageUrl, width: w, height: w * 0.75, radius: 0, placeholderText: tr("Rasm hali yo'q")),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(p.name, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700)),
-                      Text('${diseases.where((d) => d.plantId == p.id).length} ta kasallik', style: Theme.of(context).textTheme.bodySmall),
+                      Text(trf('{0} ta kasallik', [diseases.where((d) => d.plantId == p.id).length]), style: Theme.of(context).textTheme.bodySmall),
                     ]),
                   ),
                 ]),
@@ -223,7 +224,7 @@ class DiseaseRow extends StatelessWidget {
       leading: CatalogImage(asset: img, url: url, width: 72, height: 72),
       title: d.name,
       sub: sub ?? (showPlant ? d.plantName : null),
-      tags: [RiskTag(d.riskLevel), if (img == null && url == null) const StatusTag("Rasm yo'q", kind: StatusKind.neutral)],
+      tags: [RiskTag(d.riskLevel), if (img == null && url == null) StatusTag(tr("Rasm yo'q"), kind: StatusKind.neutral)],
       onTap: onTap ?? () => context.push('/catalog/disease/${d.id}'),
     );
   }
@@ -233,9 +234,9 @@ class DiseaseRow extends StatelessWidget {
 (String, IconData, Color, Color) medicineType(BuildContext context, Medicine m) {
   final c = context.c;
   final t = '${m.name} ${m.description ?? ''}'.toLowerCase();
-  if (t.contains('bio')) return ('Biologik', Icons.spa_outlined, c.successBg, c.success);
-  if (t.contains('insektitsid') || t.contains('kana') || t.contains('qurt')) return ('Insektitsid', Icons.pest_control_outlined, c.warningBg, c.warning);
-  return ('Fungitsid', Icons.science_outlined, c.infoBg, c.info);
+  if (t.contains('bio')) return (tr('Biologik'), Icons.spa_outlined, c.successBg, c.success);
+  if (t.contains('insektitsid') || t.contains('kana') || t.contains('qurt')) return (tr('Insektitsid'), Icons.pest_control_outlined, c.warningBg, c.warning);
+  return (tr('Fungitsid'), Icons.science_outlined, c.infoBg, c.info);
 }
 
 class MedicineRow extends StatelessWidget {
@@ -250,7 +251,7 @@ class MedicineRow extends StatelessWidget {
       leading: Container(width: 56, height: 56, decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(AppRadius.md)), child: Icon(icon, color: fg)),
       title: m.name,
       sub: sub ?? m.activeIngredient,
-      tags: [StatusTag(label, kind: label == 'Biologik' ? StatusKind.healthy : label == 'Insektitsid' ? StatusKind.risk : StatusKind.info, icon: icon)],
+      tags: [StatusTag(label, kind: label == tr('Biologik') ? StatusKind.healthy : label == tr('Insektitsid') ? StatusKind.risk : StatusKind.info, icon: icon)],
       onTap: onTap ?? () => context.push('/catalog/medicine/${m.id}'),
     );
   }

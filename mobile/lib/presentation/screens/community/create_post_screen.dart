@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/utils/format.dart';
@@ -36,7 +37,7 @@ class _CreatePostState extends ConsumerState<CreatePostScreen> {
 
   Future<void> _publish() async {
     if (_title.text.trim().isEmpty) {
-      showToast(context, 'Sarlavhani kiriting');
+      showToast(context, tr('Sarlavhani kiriting'));
       return;
     }
     setState(() => _loading = true);
@@ -51,7 +52,7 @@ class _CreatePostState extends ConsumerState<CreatePostScreen> {
       });
       ref.invalidate(feedProvider('all'));
       if (mounted) {
-        showToast(context, 'Post joylandi');
+        showToast(context, tr('Post joylandi'));
         context.pop();
       }
     } catch (e) {
@@ -67,13 +68,13 @@ class _CreatePostState extends ConsumerState<CreatePostScreen> {
     return PageShell(
       padBottom: false,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const TopBar(title: 'Yangi post'),
-        const FieldLabel('Turkum'),
+        TopBar(title: tr('Yangi post')),
+        FieldLabel(tr('Turkum')),
         ChipTabs(tabs: [for (final e in postCategoryLabels.entries) (e.key, e.value)], selected: _category, onSelect: (v) => setState(() => _category = v)),
-        const FieldLabel('Sarlavha'),
-        TextField(controller: _title, maxLength: 200, decoration: const InputDecoration(hintText: 'Masalan: Fitoftorozni qanday yengdim')),
-        const FieldLabel('Matn'),
-        TextField(controller: _content, maxLines: 6, decoration: const InputDecoration(hintText: 'Tajribangiz, savolingiz yoki maslahatingiz...')),
+        FieldLabel(tr('Sarlavha')),
+        TextField(controller: _title, maxLength: 200, decoration: InputDecoration(hintText: tr('Masalan: Fitoftorozni qanday yengdim'))),
+        FieldLabel(tr('Matn')),
+        TextField(controller: _content, maxLines: 6, decoration: InputDecoration(hintText: tr('Tajribangiz, savolingiz yoki maslahatingiz...'))),
         const SizedBox(height: 14),
         if (_image != null)
           Stack(children: [
@@ -81,11 +82,11 @@ class _CreatePostState extends ConsumerState<CreatePostScreen> {
             Positioned(top: 8, right: 8, child: CircleIconButton(icon: Icons.close_rounded, onTap: () => setState(() => _image = null))),
           ])
         else
-          PillButton(label: "Rasm qo'shish", icon: AppIcons.image, style: PillStyle.outline, block: true, onPressed: _pick),
+          PillButton(label: tr("Rasm qo'shish"), icon: AppIcons.image, style: PillStyle.outline, block: true, onPressed: _pick),
         const SizedBox(height: 24),
-        PillButton(label: 'Joylash', block: true, loading: _loading, onPressed: _publish, icon: AppIcons.send),
+        PillButton(label: tr('Joylash'), block: true, loading: _loading, onPressed: _publish, icon: AppIcons.send),
         const SizedBox(height: 8),
-        Text("Jamoat qoidalari: hurmat, foydali ma'lumot, reklama va spam taqiqlangan.", style: TextStyle(color: c.muted, fontSize: 12)),
+        Text(tr("Jamoat qoidalari: hurmat, foydali ma'lumot, reklama va spam taqiqlangan."), style: TextStyle(color: c.muted, fontSize: 12)),
       ]),
     );
   }

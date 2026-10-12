@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/widgets/widgets.dart';
@@ -23,11 +24,11 @@ class _AssistantState extends ConsumerState<AssistantScreen> {
   final List<AIMessage> _local = [];
   bool _sending = false;
 
-  static const _suggestions = [
-    "Pomidor bargida qo'ng'ir dog'lar paydo bo'ldi",
-    "Bodring bargida oq g'ubor bor",
-    "Qachon sug'orish kerak?",
-    'Bordo suyuqligini qanday ishlatish kerak?',
+  static List<String> get _suggestions => [
+    tr("Pomidor bargida qo'ng'ir dog'lar paydo bo'ldi"),
+    tr("Bodring bargida oq g'ubor bor"),
+    tr("Qachon sug'orish kerak?"),
+    tr('Bordo suyuqligini qanday ishlatish kerak?'),
   ];
 
   Future<void> _send([String? preset]) async {
@@ -66,9 +67,9 @@ class _AssistantState extends ConsumerState<AssistantScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: Column(children: [
-              const Padding(
+              Padding(
                 padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: TopBar(title: 'AI yordamchi', subtitle: 'Onlayn — darhol javob beradi'),
+                child: TopBar(title: tr('AI yordamchi'), subtitle: tr('Onlayn — darhol javob beradi')),
               ),
               Expanded(
                 child: history.when(
@@ -77,16 +78,16 @@ class _AssistantState extends ConsumerState<AssistantScreen> {
                   data: (old) {
                     final all = [...old, ..._local];
                     return ListView(controller: _scroll, padding: const EdgeInsets.fromLTRB(20, 0, 20, 16), children: [
-                      const MessageBubble(text: "Salom! Men AgroYordam AI yordamchisiman. Ekin kasalliklari, dorilar va parvarish haqida so'rang."),
+                      MessageBubble(text: tr("Salom! Men AgroYordam AI yordamchisiman. Ekin kasalliklari, dorilar va parvarish haqida so'rang.")),
                       if (all.isEmpty)
                         Wrap(spacing: 8, runSpacing: 8, children: [for (final s in _suggestions) MiniButton(label: s, onTap: () => _send(s))]),
                       for (final m in all) MessageBubble(text: m.content, me: m.isUser, time: m.createdAt),
-                      if (_sending) MessageBubble(text: 'Yozmoqda...', muted: true),
+                      if (_sending) MessageBubble(text: tr('Yozmoqda...'), muted: true),
                     ]);
                   },
                 ),
               ),
-              ChatInputBar(controller: _ctrl, onSend: () => _send(), hint: 'Savolingizni yozing...', icon: AppIcons.send),
+              ChatInputBar(controller: _ctrl, onSend: () => _send(), hint: tr('Savolingizni yozing...'), icon: AppIcons.send),
             ]),
           ),
         ),

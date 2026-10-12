@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
 import '../../../core/config.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
@@ -42,10 +43,10 @@ class _PostCardState extends ConsumerState<PostCard> {
   Future<void> _menu() async {
     final me = ref.read(currentUserProvider);
     final mine = me?.id == _p.author.id;
-    final action = await showSheet<String>(context, title: 'Post', builder: (ctx) => Column(children: [
-          if (mine || (me?.isAdmin ?? false)) ListRow(icon: AppIcons.trash, label: "O'chirish", danger: true, onTap: () => Navigator.pop(ctx, 'delete')),
-          if (!mine) ListRow(icon: AppIcons.flag, label: 'Shikoyat qilish', onTap: () => Navigator.pop(ctx, 'report')),
-          if (!mine) ListRow(icon: AppIcons.user, label: 'Muallif profili', onTap: () => Navigator.pop(ctx, 'profile')),
+    final action = await showSheet<String>(context, title: tr('Post'), builder: (ctx) => Column(children: [
+          if (mine || (me?.isAdmin ?? false)) ListRow(icon: AppIcons.trash, label: tr("O'chirish"), danger: true, onTap: () => Navigator.pop(ctx, 'delete')),
+          if (!mine) ListRow(icon: AppIcons.flag, label: tr('Shikoyat qilish'), onTap: () => Navigator.pop(ctx, 'report')),
+          if (!mine) ListRow(icon: AppIcons.user, label: tr('Muallif profili'), onTap: () => Navigator.pop(ctx, 'profile')),
         ]));
     if (!mounted || action == null) return;
     final repo = ref.read(communityRepoProvider);
@@ -55,12 +56,12 @@ class _PostCardState extends ConsumerState<PostCard> {
         ref.invalidate(feedProvider('all'));
         ref.invalidate(feedProvider('following'));
         if (mounted) {
-          showToast(context, "Post o'chirildi");
+          showToast(context, tr("Post o'chirildi"));
           if (widget.detail) context.pop();
         }
       } else if (action == 'report') {
-        await repo.report(postId: _p.id, reason: "Nomaqbul kontent");
-        if (mounted) showToast(context, 'Shikoyat yuborildi. Moderator ko\'rib chiqadi.');
+        await repo.report(postId: _p.id, reason: tr("Nomaqbul kontent"));
+        if (mounted) showToast(context, tr('Shikoyat yuborildi. Moderator ko\'rib chiqadi.'));
       } else if (action == 'profile') {
         context.push('/users/${_p.author.id}');
       }
@@ -96,7 +97,7 @@ class _PostCardState extends ConsumerState<PostCard> {
               ),
             ),
             if (p.category != null) Tag(postCategoryLabels[p.category] ?? p.category!, bg: healthy ? c.tagCare : c.primaryLight, fg: healthy ? c.onTagCare : c.primaryDark),
-            IconButton(icon: Icon(Icons.more_vert_rounded, color: c.muted), onPressed: _menu, tooltip: 'Amallar'),
+            IconButton(icon: Icon(Icons.more_vert_rounded, color: c.muted), onPressed: _menu, tooltip: tr('Amallar')),
           ]),
         ),
         if (img != null)
@@ -127,12 +128,12 @@ class _PostCardState extends ConsumerState<PostCard> {
             TextButton.icon(
               onPressed: _like,
               icon: Icon(p.likedByMe ? AppIcons.heartFill : AppIcons.heart, size: 18, color: p.likedByMe ? c.danger : c.muted),
-              label: Text('${p.likes} layk', style: TextStyle(color: p.likedByMe ? c.danger : c.muted, fontWeight: FontWeight.w700, fontSize: 12.5)),
+              label: Text(trf('{0} layk', [p.likes]), style: TextStyle(color: p.likedByMe ? c.danger : c.muted, fontWeight: FontWeight.w700, fontSize: 12.5)),
             ),
             TextButton.icon(
               onPressed: open,
               icon: Icon(AppIcons.chat, size: 17, color: c.muted),
-              label: Text('${p.comments} izoh', style: TextStyle(color: c.muted, fontWeight: FontWeight.w700, fontSize: 12.5)),
+              label: Text(trf('{0} izoh', [p.comments]), style: TextStyle(color: c.muted, fontWeight: FontWeight.w700, fontSize: 12.5)),
             ),
           ]),
         ),

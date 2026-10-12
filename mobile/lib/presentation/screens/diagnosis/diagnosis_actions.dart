@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/widgets/widgets.dart';
@@ -11,7 +12,7 @@ Future<void> shareDiagnosis(BuildContext context, WidgetRef ref, Diagnosis d) as
   try {
     await ref.read(gardenRepoProvider).shareDiagnosis(d.id);
     ref.invalidate(feedProvider('all'));
-    if (context.mounted) showToast(context, 'Jamoatda ulashildi');
+    if (context.mounted) showToast(context, tr('Jamoatda ulashildi'));
   } catch (e) {
     if (context.mounted) showError(context, e);
   }
@@ -48,7 +49,7 @@ class _DiagnosisFeedbackState extends ConsumerState<DiagnosisFeedback> {
         Icon(AppIcons.check, size: 18, color: c.success),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(_value! ? "Rahmat! Fikringiz AI'ni yaxshilashga yordam beradi." : "Rahmat! Mutaxassis rasmni tekshirib, AI'ni shu asosda o'rgatadi.",
+          child: Text(_value! ? tr("Rahmat! Fikringiz AI'ni yaxshilashga yordam beradi.") : tr("Rahmat! Mutaxassis rasmni tekshirib, AI'ni shu asosda o'rgatadi."),
               style: TextStyle(color: c.muted, fontSize: 13, fontWeight: FontWeight.w600)),
         ),
       ]);
@@ -70,10 +71,10 @@ class _DiagnosisFeedbackState extends ConsumerState<DiagnosisFeedback> {
           ),
         );
     return Row(children: [
-      Expanded(child: Text("AI to'g'ri topdimi?", style: TextStyle(color: c.muted, fontSize: 13.5, fontWeight: FontWeight.w700))),
-      btn(true, AppIcons.thumbUp, 'Ha'),
+      Expanded(child: Text(tr("AI to'g'ri topdimi?"), style: TextStyle(color: c.muted, fontSize: 13.5, fontWeight: FontWeight.w700))),
+      btn(true, AppIcons.thumbUp, tr('Ha')),
       const SizedBox(width: 8),
-      btn(false, AppIcons.thumbDown, "Yo'q"),
+      btn(false, AppIcons.thumbDown, tr("Yo'q")),
     ]);
   }
 }

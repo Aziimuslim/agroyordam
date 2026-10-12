@@ -50,6 +50,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {flutter-version: "3.35.4", channel: stable}
       - run: flutter pub get
+      - name: Tarjimalar to'liq va strings_*.dart JSON bilan mos
+        run: python3 tool/i18n/i18n.py check && python3 tool/i18n/i18n.py build && git diff --exit-code lib/core/i18n
       - run: flutter analyze
       - run: flutter test
       - run: flutter build web --release

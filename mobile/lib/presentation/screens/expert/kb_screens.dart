@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../application/providers.dart';
 import '../../../core/catalog_images.dart';
 import '../../../core/config.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
@@ -30,12 +31,12 @@ class _KnowledgeState extends ConsumerState<KnowledgeScreen> {
   Future<void> _add() async {
     final kind = await showSheet<String>(
       context,
-      title: "Yangi qo'shish",
+      title: tr("Yangi qo'shish"),
       builder: (ctx) => Column(
         children: [
-          ListRow(icon: AppIcons.virus, label: 'Kasallik', onTap: () => Navigator.pop(ctx, 'disease')),
-          ListRow(icon: AppIcons.pill, label: 'Dori', onTap: () => Navigator.pop(ctx, 'medicine')),
-          ListRow(icon: AppIcons.plant, label: "O'simlik", onTap: () => Navigator.pop(ctx, 'plant')),
+          ListRow(icon: AppIcons.virus, label: tr('Kasallik'), onTap: () => Navigator.pop(ctx, 'disease')),
+          ListRow(icon: AppIcons.pill, label: tr('Dori'), onTap: () => Navigator.pop(ctx, 'medicine')),
+          ListRow(icon: AppIcons.plant, label: tr("O'simlik"), onTap: () => Navigator.pop(ctx, 'plant')),
         ],
       ),
     );
@@ -55,12 +56,12 @@ class _KnowledgeState extends ConsumerState<KnowledgeScreen> {
       },
       children: [
         ExpertHeader(
-          title: 'Bilimlar bazasi',
-          trailing: CircleIconButton(icon: AppIcons.plus, tooltip: "Qo'shish", onTap: _add, color: c.expert),
+          title: tr('Bilimlar bazasi'),
+          trailing: CircleIconButton(icon: AppIcons.plus, tooltip: tr("Qo'shish"), onTap: _add, color: c.expert),
         ),
         SegmentTabs(
           expert: true,
-          tabs: const [('diseases', 'Kasalliklar'), ('medicines', 'Dorilar'), ('plants', "O'simliklar"), ('history', 'Tarix')],
+          tabs: [('diseases', tr('Kasalliklar')), ('medicines', tr('Dorilar')), ('plants', tr("O'simliklar")), ('history', tr('Tarix'))],
           selected: _tab,
           onSelect: (v) => setState(() => _tab = v),
         ),
@@ -80,7 +81,7 @@ class _KnowledgeState extends ConsumerState<KnowledgeScreen> {
             value: ref.watch(catalogChangesProvider),
             onRetry: () => ref.invalidate(catalogChangesProvider),
             data: (list) => list.isEmpty
-                ? const EmptyNote("Hali o'zgarish yo'q", icon: Icons.history_rounded)
+                ? EmptyNote(tr("Hali o'zgarish yo'q"), icon: Icons.history_rounded)
                 : AppCard(
                     shadow: false,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -104,8 +105,8 @@ class _KnowledgeState extends ConsumerState<KnowledgeScreen> {
                     NoteBox(
                       kind: NoteKind.risk,
                       icon: Icons.image_not_supported_outlined,
-                      title: '${noImage.length} ta kasallikning rasmi yo\'q',
-                      text: '${noImage.map((d) => d.name).join(', ')}. Tasdiqlangan dala rasmlaridan tanlang.',
+                      title: trf('{0} ta kasallikning rasmi yo\'q', [noImage.length]),
+                      text: trf('{0}. Tasdiqlangan dala rasmlaridan tanlang.', [noImage.map((d) => d.name).join(', ')]),
                     ),
                     const SizedBox(height: 12),
                   ],
@@ -127,9 +128,9 @@ class _ChangeRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final verb = switch (ch.action) {
-      'create' => "qo'shildi",
-      'delete' => "o'chirildi",
-      _ => 'tahrirlandi',
+      'create' => tr("qo'shildi"),
+      'delete' => tr("o'chirildi"),
+      _ => tr('tahrirlandi'),
     };
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -152,7 +153,7 @@ class _ChangeRow extends StatelessWidget {
                 Text(ch.summary, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, height: 1.3)),
                 const SizedBox(height: 2),
                 Text(
-                  '${ch.mine ? 'Siz' : (ch.userName ?? 'Admin')} · $verb · ${timeAgo(ch.createdAt)}',
+                  '${ch.mine ? tr('Siz') : (ch.userName ?? 'Admin')} · $verb · ${timeAgo(ch.createdAt)}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -191,25 +192,25 @@ class _KbEditState extends ConsumerState<KbEditScreen> {
 
   List<_Field> get _fields => switch (widget.entity) {
     'medicine' => [
-      _Field('name', 'Nomi'),
-      _Field('active_ingredient', "Ta'sir etuvchi modda", hint: 'Masalan: Mis oksixlorid 90%'),
-      _Field('description', 'Tavsif', lines: 3),
-      _Field('usage', "Qo'llash me'yori", lines: 2, hint: '40 g / 10 l suv, 7–10 kun oralig\'ida'),
-      _Field('precautions', 'Ehtiyot choralari', lines: 2),
-      _Field('manufacturer', 'Ishlab chiqaruvchi'),
+      _Field('name', tr('Nomi')),
+      _Field('active_ingredient', tr("Ta'sir etuvchi modda"), hint: tr('Masalan: Mis oksixlorid 90%')),
+      _Field('description', tr('Tavsif'), lines: 3),
+      _Field('usage', tr("Qo'llash me'yori"), lines: 2, hint: tr('40 g / 10 l suv, 7–10 kun oralig\'ida')),
+      _Field('precautions', tr('Ehtiyot choralari'), lines: 2),
+      _Field('manufacturer', tr('Ishlab chiqaruvchi')),
     ],
     'plant' => [
-      _Field('name', 'Nomi'),
-      _Field('scientific_name', 'Ilmiy nomi', hint: 'Solanum lycopersicum'),
-      _Field('description', 'Tavsif', lines: 3),
-      _Field('care_info', 'Parvarish', lines: 3),
+      _Field('name', tr('Nomi')),
+      _Field('scientific_name', tr('Ilmiy nomi'), hint: 'Solanum lycopersicum'),
+      _Field('description', tr('Tavsif'), lines: 3),
+      _Field('care_info', tr('Parvarish'), lines: 3),
     ],
     _ => [
-      _Field('name', 'Nomi'),
-      _Field('symptoms', 'Belgilari', lines: 3),
-      _Field('causes', 'Sababi', lines: 2),
-      _Field('treatment', 'Davolash', lines: 3),
-      _Field('prevention', 'Oldini olish', lines: 2),
+      _Field('name', tr('Nomi')),
+      _Field('symptoms', tr('Belgilari'), lines: 3),
+      _Field('causes', tr('Sababi'), lines: 2),
+      _Field('treatment', tr('Davolash'), lines: 3),
+      _Field('prevention', tr('Oldini olish'), lines: 2),
     ],
   };
 
@@ -271,17 +272,17 @@ class _KbEditState extends ConsumerState<KbEditScreen> {
 
   Future<void> _save() async {
     if (_c('name').text.trim().length < 2) {
-      showToast(context, 'Nomini yozing');
+      showToast(context, tr('Nomini yozing'));
       return;
     }
     if (widget.entity == 'disease' && widget.id == null && _plantId == null) {
-      showToast(context, "O'simlikni tanlang");
+      showToast(context, tr("O'simlikni tanlang"));
       return;
     }
     final data = _data();
     if (widget.id != null) data.removeWhere((k, v) => _initial[k] == v);
     if (data.isEmpty) {
-      showToast(context, "O'zgarish yo'q");
+      showToast(context, tr("O'zgarish yo'q"));
       context.pop();
       return;
     }
@@ -304,7 +305,7 @@ class _KbEditState extends ConsumerState<KbEditScreen> {
       }
       ref.invalidate(catalogChangesProvider);
       if (!mounted) return;
-      showToast(context, widget.id == null ? "Qo'shildi" : 'Saqlandi');
+      showToast(context, widget.id == null ? tr("Qo'shildi") : tr('Saqlandi'));
       context.pop();
     } catch (e) {
       if (mounted) showError(context, e);
@@ -326,7 +327,7 @@ class _KbEditState extends ConsumerState<KbEditScreen> {
   Future<void> _pickImage() async {
     final label = _aiLabel;
     if (label == null) {
-      showToast(context, "Bu kasallikning AI sinfi yo'q — dataset rasmlari topilmaydi");
+      showToast(context, tr("Bu kasallikning AI sinfi yo'q — dataset rasmlari topilmaydi"));
       return;
     }
     final url = await showModalBottomSheet<String>(
@@ -343,9 +344,9 @@ class _KbEditState extends ConsumerState<KbEditScreen> {
   Widget build(BuildContext context) {
     final c = context.c;
     final title = switch (widget.entity) {
-      'medicine' => 'Dori',
-      'plant' => "O'simlik",
-      _ => 'Kasallik',
+      'medicine' => tr('Dori'),
+      'plant' => tr("O'simlik"),
+      _ => tr('Kasallik'),
     };
     final asset = widget.entity == 'disease' ? CatalogImages.disease(_aiLabel) : null;
     return PageShell(
@@ -371,7 +372,7 @@ class _KbEditState extends ConsumerState<KbEditScreen> {
                   icon: _busy
                       ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.4, color: c.onExpert))
                       : const Icon(AppIcons.check),
-                  label: const Text('Saqlash', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+                  label: Text(tr('Saqlash'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
                 ),
               ),
             ),
@@ -387,13 +388,13 @@ class _KbEditState extends ConsumerState<KbEditScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TopBar(
-                  title: widget.id == null ? "Yangi: ${title.toLowerCase()}" : 'Tahrirlash',
+                  title: widget.id == null ? trf("Yangi: {0}", [title.toLowerCase()]) : tr('Tahrirlash'),
                   subtitle: widget.id == null ? null : _c('name').text,
                   actions: [
                     if (widget.id != null)
                       CircleIconButton(
                         icon: AppIcons.eye,
-                        tooltip: "Dehqon ko'rinishi",
+                        tooltip: tr("Dehqon ko'rinishi"),
                         onTap: () => context.push('/catalog/${widget.entity}/${widget.id}'),
                       ),
                   ],
@@ -407,20 +408,20 @@ class _KbEditState extends ConsumerState<KbEditScreen> {
                         width: double.infinity,
                         height: 180,
                         radius: AppRadius.lg,
-                        placeholderText: "Rasm yo'q",
+                        placeholderText: tr("Rasm yo'q"),
                       ),
                       if (asset == null)
                         Positioned(
                           right: 10,
                           bottom: 10,
-                          child: PillButton(label: 'Datasetdan tanlash', icon: AppIcons.gallery, style: PillStyle.light, onPressed: _pickImage),
+                          child: PillButton(label: tr('Datasetdan tanlash'), icon: AppIcons.gallery, style: PillStyle.light, onPressed: _pickImage),
                         ),
                     ],
                   ),
                   const SizedBox(height: 4),
                 ],
                 if (widget.entity == 'disease' && widget.id == null) ...[
-                  const FieldLabel("O'simlik"),
+                  FieldLabel(tr("O'simlik")),
                   AsyncView(
                     value: ref.watch(plantsProvider),
                     data: (plants) => ChipTabs(
@@ -439,17 +440,17 @@ class _KbEditState extends ConsumerState<KbEditScreen> {
                     decoration: InputDecoration(hintText: f.hint),
                   ),
                   if (f.key == 'name' && widget.entity == 'disease') ...[
-                    const FieldLabel('Xavf darajasi'),
+                    FieldLabel(tr('Xavf darajasi')),
                     SegmentTabs(
                       expert: true,
-                      tabs: const [('low', 'Past'), ('medium', "O'rta"), ('high', 'Yuqori')],
+                      tabs: [('low', tr('Past')), ('medium', tr("O'rta")), ('high', tr('Yuqori'))],
                       selected: _risk ?? 'medium',
                       onSelect: (v) => setState(() => _risk = v),
                     ),
                   ],
                 ],
                 const SizedBox(height: 14),
-                Text("O'zgarish «Tarix»ga yoziladi; admin ko'radi va kerak bo'lsa qaytaradi.", style: Theme.of(context).textTheme.bodySmall),
+                Text(tr("O'zgarish «Tarix»ga yoziladi; admin ko'radi va kerak bo'lsa qaytaradi."), style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 12),
               ],
             ),
@@ -470,16 +471,16 @@ class _DatasetPicker extends ConsumerWidget {
       controller: scroll,
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
       children: [
-        const Text('Datasetdan tanlash', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+        Text(tr('Datasetdan tanlash'), style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
         const SizedBox(height: 4),
-        Text('Agronomlar tasdiqlagan dala rasmlari. Belgilari aniq ko\'ringanini tanlang.', style: Theme.of(context).textTheme.bodyMedium),
+        Text(tr('Agronomlar tasdiqlagan dala rasmlari. Belgilari aniq ko\'ringanini tanlang.'), style: Theme.of(context).textTheme.bodyMedium),
         const SizedBox(height: 14),
         AsyncView(
           value: ref.watch(datasetImagesProvider(label)),
           onRetry: () => ref.invalidate(datasetImagesProvider(label)),
           data: (imgs) => imgs.isEmpty
-              ? const EmptyNote(
-                  "Hali tasdiqlangan rasm yo'q. Navbatda shu kasallikni tasdiqlasangiz, rasmi shu yerda paydo bo'ladi.",
+              ? EmptyNote(
+                  tr("Hali tasdiqlangan rasm yo'q. Navbatda shu kasallikni tasdiqlasangiz, rasmi shu yerda paydo bo'ladi."),
                   icon: Icons.image_search_rounded,
                 )
               : GridView.count(
@@ -492,7 +493,7 @@ class _DatasetPicker extends ConsumerWidget {
                     for (final i in imgs)
                       Semantics(
                         button: true,
-                        label: 'Rasmni tanlash',
+                        label: tr('Rasmni tanlash'),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(AppRadius.md),
                           onTap: () => Navigator.pop(ctx, i.imageUrl),

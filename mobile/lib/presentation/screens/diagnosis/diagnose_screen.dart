@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
@@ -85,8 +86,8 @@ class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
       padBottom: false,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         TopBar(
-          title: 'AI tashxis',
-          subtitle: quota != null && quota.aiDailyLimit != null ? 'Bugun: ${quota.aiUsedToday}/${quota.aiDailyLimit} bepul tashxis' : 'Cheksiz · Premium',
+          title: tr('AI tashxis'),
+          subtitle: quota != null && quota.aiDailyLimit != null ? trf('Bugun: {0}/{1} bepul tashxis', [quota.aiUsedToday, quota.aiDailyLimit]) : tr('Cheksiz · Premium'),
         ),
         if (_step == _Step.analyzing && _image != null) _Analyzing(image: _image!),
         if (_step == _Step.error && _error != null) ...[
@@ -108,14 +109,14 @@ class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
           if (overLimit)
             _LimitCard(onUpgrade: () => context.push('/premium'))
           else ...[
-            PillButton(label: 'Rasmga olish', icon: AppIcons.camera, style: PillStyle.primary, block: true, onPressed: () => _pick(ImageSource.camera)),
+            PillButton(label: tr('Rasmga olish'), icon: AppIcons.camera, style: PillStyle.primary, block: true, onPressed: () => _pick(ImageSource.camera)),
             const SizedBox(height: 10),
-            PillButton(label: 'Galereyadan tanlash', icon: AppIcons.gallery, style: PillStyle.outline, block: true, onPressed: () => _pick(ImageSource.gallery)),
+            PillButton(label: tr('Galereyadan tanlash'), icon: AppIcons.gallery, style: PillStyle.outline, block: true, onPressed: () => _pick(ImageSource.gallery)),
           ],
           const SizedBox(height: 18),
           const _Tips(),
           const SizedBox(height: 8),
-          Text("Yuklangan rasmlar mutaxassis tekshiruvidan so'ng AI'ni yaxshilash uchun anonim ishlatilishi mumkin.",
+          Text(tr("Yuklangan rasmlar mutaxassis tekshiruvidan so'ng AI'ni yaxshilash uchun anonim ishlatilishi mumkin."),
               textAlign: TextAlign.center, style: TextStyle(color: c.subtle, fontSize: 11.5)),
         ],
       ]),
@@ -138,9 +139,9 @@ class _ScanHero extends StatelessWidget {
       child: Stack(alignment: Alignment.center, children: [
         Icon(AppIcons.leaf, size: 92, color: Colors.white.withValues(alpha: 0.22)),
         Icon(AppIcons.scan, size: 150, color: Colors.white.withValues(alpha: 0.9)),
-        const Positioned(
+        Positioned(
           bottom: 14,
-          child: Text("Bargni ramka markaziga oling", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+          child: Text(tr("Bargni ramka markaziga oling"), style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
         ),
       ]),
     );
@@ -160,30 +161,30 @@ class _TargetPicker extends ConsumerWidget {
     return AppCard(
       margin: EdgeInsets.zero,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Qaysi ekin?', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+        Text(tr('Qaysi ekin?'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
         const SizedBox(height: 2),
-        Text("Ekin turini tanlasangiz, AI aniqroq natija beradi", style: TextStyle(color: c.muted, fontSize: 12.5)),
+        Text(tr("Ekin turini tanlasangiz, AI aniqroq natija beradi"), style: TextStyle(color: c.muted, fontSize: 12.5)),
         if (crops.isNotEmpty) ...[
-          const FieldLabel("Bog'imdagi ekin"),
+          FieldLabel(tr("Bog'imdagi ekin")),
           DropdownButtonFormField<String?>(
             initialValue: crops.any((e) => e.id == cropId) ? cropId : null,
             isExpanded: true,
             dropdownColor: c.card,
             items: [
-              const DropdownMenuItem<String?>(value: null, child: Text("— Bog'imga bog'lamasdan —")),
+              DropdownMenuItem<String?>(value: null, child: Text(tr("— Bog'imga bog'lamasdan —"))),
               for (final cr in crops) DropdownMenuItem<String?>(value: cr.id, child: Text('${cr.name}${cr.plantName != null ? ' · ${cr.plantName}' : ''}')),
             ],
             onChanged: onCrop,
           ),
         ],
         if (cropId == null) ...[
-          const FieldLabel('Ekin turi'),
+          FieldLabel(tr('Ekin turi')),
           DropdownButtonFormField<String?>(
             initialValue: plantId,
             isExpanded: true,
             dropdownColor: c.card,
             items: [
-              const DropdownMenuItem<String?>(value: null, child: Text("Bilmayman — AI o'zi aniqlasin")),
+              DropdownMenuItem<String?>(value: null, child: Text(tr("Bilmayman — AI o'zi aniqlasin"))),
               for (final p in plants) DropdownMenuItem<String?>(value: p.id, child: Text(p.name)),
             ],
             onChanged: onPlant,
@@ -256,8 +257,8 @@ class _AnalyzingState extends State<_Analyzing> with SingleTickerProviderStateMi
           const SizedBox(width: 14),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('AI tahlil qilmoqda…', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-              Text("Barg tekshirilmoqda va bilimlar bazasi bilan solishtirilmoqda", style: TextStyle(color: c.muted, fontSize: 12.5)),
+              Text(tr('AI tahlil qilmoqda…'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+              Text(tr("Barg tekshirilmoqda va bilimlar bazasi bilan solishtirilmoqda"), style: TextStyle(color: c.muted, fontSize: 12.5)),
             ]),
           ),
         ]),
@@ -283,12 +284,12 @@ class _ErrorCard extends StatelessWidget {
             child: Icon(AppIcons.alert, color: c.danger, size: 20),
           ),
           const SizedBox(width: 12),
-          const Expanded(child: Text("Tahlil qilib bo'lmadi", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800))),
+          Expanded(child: Text(tr("Tahlil qilib bo'lmadi"), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800))),
         ]),
         const SizedBox(height: 10),
         Text(message, style: TextStyle(color: c.muted, height: 1.45)),
         const SizedBox(height: 14),
-        PillButton(label: 'Qayta urinish', icon: AppIcons.camera, style: PillStyle.primary, block: true, onPressed: onRetry),
+        PillButton(label: tr('Qayta urinish'), icon: AppIcons.camera, style: PillStyle.primary, block: true, onPressed: onRetry),
       ]),
     );
   }
@@ -308,12 +309,12 @@ class _LimitCard extends StatelessWidget {
             child: Icon(AppIcons.star, color: context.c.warning),
           ),
           const SizedBox(height: 10),
-          const Text('Bepul limit tugadi', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+          Text(tr('Bepul limit tugadi'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
           const SizedBox(height: 6),
-          Text(message ?? "Bugungi bepul AI tashxislardan foydalandingiz. Ertaga qayta urinib ko'ring yoki Premium'ga o'ting.",
+          Text(message ?? tr("Bugungi bepul AI tashxislardan foydalandingiz. Ertaga qayta urinib ko'ring yoki Premium'ga o'ting."),
               textAlign: TextAlign.center, style: TextStyle(color: context.c.muted)),
           const SizedBox(height: 14),
-          PillButton(label: "Premium'ga o'tish", icon: AppIcons.star, style: PillStyle.primary, block: true, onPressed: onUpgrade),
+          PillButton(label: tr("Premium'ga o'tish"), icon: AppIcons.star, style: PillStyle.primary, block: true, onPressed: onUpgrade),
         ]),
       );
 }
@@ -335,11 +336,11 @@ class _Tips extends StatelessWidget {
       color: c.cream2,
       margin: EdgeInsets.zero,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Yaxshi natija uchun', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+        Text(tr('Yaxshi natija uchun'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
         const SizedBox(height: 12),
-        tip(AppIcons.sun, "Kunduzgi yorug'likda suratga oling", c.accentSoft, c.warning),
-        tip(AppIcons.scan, 'Bitta zararlangan bargni kadr markaziga oling', c.successBg, c.success),
-        tip(Icons.back_hand_outlined, 'Kamerani qimirlatmang — rasm xira bo\'lmasin', c.infoBg, c.info),
+        tip(AppIcons.sun, tr("Kunduzgi yorug'likda suratga oling"), c.accentSoft, c.warning),
+        tip(AppIcons.scan, tr('Bitta zararlangan bargni kadr markaziga oling'), c.successBg, c.success),
+        tip(Icons.back_hand_outlined, tr('Kamerani qimirlatmang — rasm xira bo\'lmasin'), c.infoBg, c.info),
       ]),
     );
   }

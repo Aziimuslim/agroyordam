@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/widgets.dart';
@@ -25,7 +26,7 @@ class _AddReminderState extends ConsumerState<AddReminderScreen> {
 
   Future<void> _save() async {
     if (_title.text.trim().isEmpty) {
-      showToast(context, 'Sarlavhani kiriting');
+      showToast(context, tr('Sarlavhani kiriting'));
       return;
     }
     setState(() => _loading = true);
@@ -40,7 +41,7 @@ class _AddReminderState extends ConsumerState<AddReminderScreen> {
       });
       ref.invalidate(remindersProvider);
       if (mounted) {
-        showToast(context, "Eslatma qo'shildi");
+        showToast(context, tr("Eslatma qo'shildi"));
         context.pop();
       }
     } catch (e) {
@@ -57,25 +58,25 @@ class _AddReminderState extends ConsumerState<AddReminderScreen> {
     return PageShell(
       padBottom: false,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const TopBar(title: 'Yangi eslatma'),
-        const FieldLabel('Turi'),
+        TopBar(title: tr('Yangi eslatma')),
+        FieldLabel(tr('Turi')),
         ChipTabs(
           tabs: [for (final e in reminderTypeLabels.entries) (e.key, e.value)],
           selected: _type,
           onSelect: (v) => setState(() => _type = v),
         ),
-        const FieldLabel('Sarlavha'),
-        TextField(controller: _title, decoration: const InputDecoration(hintText: "Masalan: Chuqur sug'orish")),
-        const FieldLabel('Tavsif'),
-        TextField(controller: _desc, maxLines: 3, decoration: const InputDecoration(hintText: 'Ixtiyoriy')),
-        const FieldLabel('Ekin'),
+        FieldLabel(tr('Sarlavha')),
+        TextField(controller: _title, decoration: InputDecoration(hintText: tr("Masalan: Chuqur sug'orish"))),
+        FieldLabel(tr('Tavsif')),
+        TextField(controller: _desc, maxLines: 3, decoration: InputDecoration(hintText: tr('Ixtiyoriy'))),
+        FieldLabel(tr('Ekin')),
         crops.maybeWhen(
           data: (list) => DropdownButtonFormField<String?>(
             initialValue: list.any((e) => e.id == _cropId) ? _cropId : null,
             isExpanded: true,
             dropdownColor: c.card,
             items: [
-              const DropdownMenuItem<String?>(value: null, child: Text('Umumiy')),
+              DropdownMenuItem<String?>(value: null, child: Text(tr('Umumiy'))),
               for (final cr in list) DropdownMenuItem<String?>(value: cr.id, child: Text(cr.name)),
             ],
             onChanged: (v) => setState(() => _cropId = v),
@@ -85,7 +86,7 @@ class _AddReminderState extends ConsumerState<AddReminderScreen> {
         Row(children: [
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const FieldLabel('Sana'),
+              FieldLabel(tr('Sana')),
               InkWell(
                 onTap: () async {
                   final d = await showDatePicker(context: context, firstDate: DateTime.now().subtract(const Duration(days: 30)), lastDate: DateTime.now().add(const Duration(days: 365)), initialDate: _date);
@@ -98,19 +99,19 @@ class _AddReminderState extends ConsumerState<AddReminderScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const FieldLabel('Vaqt'),
+              FieldLabel(tr('Vaqt')),
               InkWell(
                 onTap: () async {
                   final t = await showTimePicker(context: context, initialTime: _time ?? const TimeOfDay(hour: 8, minute: 0));
                   if (t != null) setState(() => _time = t);
                 },
-                child: InputDecorator(decoration: const InputDecoration(), child: Text(_time?.format(context) ?? 'Ixtiyoriy', style: TextStyle(color: _time == null ? c.muted : c.text))),
+                child: InputDecorator(decoration: const InputDecoration(), child: Text(_time?.format(context) ?? tr('Ixtiyoriy'), style: TextStyle(color: _time == null ? c.muted : c.text))),
               ),
             ]),
           ),
         ]),
         const SizedBox(height: 24),
-        PillButton(label: 'Saqlash', block: true, loading: _loading, onPressed: _save),
+        PillButton(label: tr('Saqlash'), block: true, loading: _loading, onPressed: _save),
       ]),
     );
   }

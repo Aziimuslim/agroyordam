@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../application/lang.dart';
+import '../../../core/config.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/config.dart';
 import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/lang_sheet.dart';
 import '../../../core/widgets/widgets.dart';
 import 'server_settings.dart';
 
@@ -47,21 +50,44 @@ class WelcomeScreen extends ConsumerWidget {
             child: Stack(
               children: [
                 Positioned(right: -18, top: 40, child: Opacity(opacity: 0.12, child: const BrandLogo(size: 150))),
+                // Til tanlash — ro'yxatdan o'tishdan oldin ham
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: Material(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    shape: const StadiumBorder(),
+                    child: InkWell(
+                      customBorder: const StadiumBorder(),
+                      onTap: () => showLanguageSheet(context, ref),
+
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(6, 6, 12, 6),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          FlagIcon(ref.watch(langProvider), size: 24),
+                          const SizedBox(width: 8),
+                          Text(ref.watch(langProvider).short,
+                              semanticsLabel: tr('Til'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13.5)),
+                        ]),
+                      ),
+                    ),
+                  ),
+                ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const BrandWordmark(size: 46, onDark: true, slogan: true),
                     const SizedBox(height: 28),
                 const Spacer(),
-                    const Text(
-                      "Ekinlaringiz sog'lig'i — cho'ntagingizda",
+                    Text(
+                      tr("Ekinlaringiz sog'lig'i — cho'ntagingizda"),
                       style: TextStyle(color: Colors.white, fontSize: 28, height: 34 / 28, fontWeight: FontWeight.w800, letterSpacing: -0.5),
                     ),
                     const SizedBox(height: 16),
-                    for (final (icon, text) in const [
-                      (Icons.center_focus_strong_rounded, 'AI bir necha soniyada kasallikni aniqlaydi'),
-                      (Icons.event_available_outlined, "Kunlik parvarish va davolash rejasi"),
-                      (Icons.people_outline_rounded, 'Fermerlar jamoasi va tajriba almashish'),
+                    for (final (icon, text) in [
+                      (Icons.center_focus_strong_rounded, tr('AI bir necha soniyada kasallikni aniqlaydi')),
+                      (Icons.event_available_outlined, tr("Kunlik parvarish va davolash rejasi")),
+                      (Icons.people_outline_rounded, tr('Fermerlar jamoasi va tajriba almashish')),
                     ])
                       Padding(
                         padding: const EdgeInsets.only(bottom: 10),
@@ -90,7 +116,7 @@ class WelcomeScreen extends ConsumerWidget {
           ),
         ),
         PillButton(
-          label: 'Telefon raqami bilan davom etish',
+          label: tr('Telefon raqami bilan davom etish'),
           icon: AppIcons.phone,
           style: PillStyle.primary,
           block: true,
@@ -98,7 +124,7 @@ class WelcomeScreen extends ConsumerWidget {
         ),
         const _OrDivider(),
         PillButton(
-          label: 'Email bilan davom etish',
+          label: tr('Email bilan davom etish'),
           icon: AppIcons.mail,
           style: PillStyle.outline,
           block: true,
@@ -108,21 +134,21 @@ class WelcomeScreen extends ConsumerWidget {
         TextButton(
           onPressed: () => context.push('/register'),
           child: Text(
-            "Hisobingiz yo'qmi? Ro'yxatdan o'ting",
+            tr("Hisobingiz yo'qmi? Ro'yxatdan o'ting"),
             style: TextStyle(color: c.primary, fontWeight: FontWeight.w800),
           ),
         ),
         Text(
-          'Davom etish orqali siz Foydalanish shartlari va Maxfiylik siyosatiga rozilik bildirasiz',
+          tr('Davom etish orqali siz Foydalanish shartlari va Maxfiylik siyosatiga rozilik bildirasiz'),
           textAlign: TextAlign.center,
           style: TextStyle(color: c.muted, fontSize: 12.5, height: 1.4),
         ),
         TextButton.icon(
           onPressed: () => showServerSettings(context, ref),
           icon: Icon(Icons.dns_outlined, size: 16, color: c.muted),
-          label: Text('Server: ${AppConfig.apiUrl}', style: TextStyle(color: c.muted, fontSize: 12)),
+          label: Text(trf('Server: {0}', [AppConfig.apiUrl]), style: TextStyle(color: c.muted, fontSize: 12)),
         ),
-        Text('Versiya ${AppConfig.version}', style: TextStyle(color: c.muted, fontSize: 11)),
+        Text(trf('Versiya {0}', [AppConfig.version]), style: TextStyle(color: c.muted, fontSize: 11)),
         const SizedBox(height: 6),
       ],
     );
@@ -139,7 +165,7 @@ class _OrDivider extends StatelessWidget {
         Expanded(child: Divider(color: context.c.border)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text('yoki', style: TextStyle(color: context.c.muted, fontSize: 12.5)),
+          child: Text(tr('yoki'), style: TextStyle(color: context.c.muted, fontSize: 12.5)),
         ),
         Expanded(child: Divider(color: context.c.border)),
       ],

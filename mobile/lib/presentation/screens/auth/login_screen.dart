@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/widgets.dart';
 
@@ -47,9 +48,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const TopBar(title: ''),
           const SizedBox(height: 30),
-          Text(_phone ? 'Telefon raqamingiz bilan kiring' : 'Hisobingizga kiring', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+          Text(_phone ? tr('Telefon raqamingiz bilan kiring') : tr('Hisobingizga kiring'), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
-          Text(_phone ? 'Ro\'yxatdan o\'tgan raqam va parolni kiriting' : 'Email yoki foydalanuvchi nomi va parol',
+          Text(_phone ? tr('Ro\'yxatdan o\'tgan raqam va parolni kiriting') : tr('Email yoki foydalanuvchi nomi va parol'),
               style: TextStyle(color: c.muted, fontSize: 14)),
           const SizedBox(height: 22),
           TextFormField(
@@ -57,12 +58,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             controller: _login,
             keyboardType: _phone ? TextInputType.phone : TextInputType.emailAddress,
             decoration: InputDecoration(
-              hintText: _phone ? '90 123 45 67' : 'email yoki username',
+              hintText: _phone ? '90 123 45 67' : tr('email yoki username'),
               prefixIcon: _phone
                   ? Padding(padding: const EdgeInsets.fromLTRB(16, 14, 8, 14), child: Text('+998', style: TextStyle(fontWeight: FontWeight.w800, color: c.text)))
                   : null,
             ),
-            validator: (v) => (v == null || v.trim().length < 3) ? 'Maydonni to\'ldiring' : null,
+            validator: (v) => (v == null || v.trim().length < 3) ? tr('Maydonni to\'ldiring') : null,
           ),
           const SizedBox(height: 12),
           TextFormField(
@@ -70,29 +71,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             controller: _pass,
             obscureText: _obscure,
             decoration: InputDecoration(
-              hintText: 'Parol',
+              hintText: tr('Parol'),
               suffixIcon: IconButton(
                 icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: c.muted),
                 onPressed: () => setState(() => _obscure = !_obscure),
               ),
             ),
             onFieldSubmitted: (_) => _submit(),
-            validator: (v) => (v == null || v.isEmpty) ? 'Parolni kiriting' : null,
+            validator: (v) => (v == null || v.isEmpty) ? tr('Parolni kiriting') : null,
           ),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: () => context.push('/forgot'),
-              child: Text('Parolni unutdingizmi?', style: TextStyle(color: c.primary, fontWeight: FontWeight.w700)),
+              child: Text(tr('Parolni unutdingizmi?'), style: TextStyle(color: c.primary, fontWeight: FontWeight.w700)),
             ),
           ),
           const SizedBox(height: 18),
-          PillButton(label: 'Kirish', block: true, loading: _loading, onPressed: _submit),
+          PillButton(label: tr('Kirish'), block: true, loading: _loading, onPressed: _submit),
           const SizedBox(height: 10),
           Center(
             child: TextButton(
               onPressed: () => context.pushReplacement('/register'),
-              child: Text("Hisob yo'qmi? Ro'yxatdan o'tish", style: TextStyle(color: c.primary, fontWeight: FontWeight.w800)),
+              child: Text(tr("Hisob yo'qmi? Ro'yxatdan o'tish"), style: TextStyle(color: c.primary, fontWeight: FontWeight.w800)),
             ),
           ),
         ]),

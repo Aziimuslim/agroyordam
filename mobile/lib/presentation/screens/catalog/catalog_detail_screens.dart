@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../application/providers.dart';
 import '../../../core/catalog_images.dart';
 import '../../../core/config.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ds.dart';
@@ -57,16 +58,16 @@ class PlantScreen extends ConsumerWidget {
             final meds = ref.watch(plantMedicinesProvider(id)).value ?? const <Medicine>[];
             return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               TopBar(title: p.name),
-              _hero(context, asset: CatalogImages.plant(p.name), url: p.imageUrl, caption: "Sog'lom barg", placeholder: "Rasm hali yo'q"),
+              _hero(context, asset: CatalogImages.plant(p.name), url: p.imageUrl, caption: tr("Sog'lom barg"), placeholder: tr("Rasm hali yo'q")),
               _title(context, p.name, p.scientificName),
-              TextBlock('Tavsif', p.description),
-              TextBlock('Parvarish', p.careInfo),
+              TextBlock(tr('Tavsif'), p.description),
+              TextBlock(tr('Parvarish'), p.careInfo),
               if (diseases.isNotEmpty) ...[
-                _section(context, 'Kasalliklari · ${diseases.length}'),
+                _section(context, trf('Kasalliklari · {0}', [diseases.length])),
                 for (final d in diseases) DiseaseRow(d, showPlant: false),
               ],
               if (meds.isNotEmpty) ...[
-                _section(context, 'Ishlatiladigan dorilar'),
+                _section(context, tr('Ishlatiladigan dorilar')),
                 for (final m in meds) MedicineRow(m),
               ],
             ]);
@@ -92,7 +93,7 @@ class DiseaseScreen extends ConsumerWidget {
             heightFactor: 1,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
-              child: PillButton(label: 'Ekinimni tekshirish', icon: Icons.photo_camera_outlined, style: PillStyle.primary, block: true,
+              child: PillButton(label: tr('Ekinimni tekshirish'), icon: Icons.photo_camera_outlined, style: PillStyle.primary, block: true,
                   onPressed: () => context.push('/diagnose')),
             ),
           ),
@@ -105,9 +106,9 @@ class DiseaseScreen extends ConsumerWidget {
           final img = CatalogImages.disease(d.aiLabel);
           final healthy = CatalogImages.plant(d.plantName);
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            TopBar(title: d.plantName ?? 'Kasallik'),
-            _hero(context, asset: img, url: AppConfig.mediaUrl(d.imageUrl), caption: img != null ? 'PlantVillage' : 'Dala rasmi',
-                placeholder: "Bu kasallik rasmi hali datasetda yo'q"),
+            TopBar(title: d.plantName ?? tr('Kasallik')),
+            _hero(context, asset: img, url: AppConfig.mediaUrl(d.imageUrl), caption: img != null ? 'PlantVillage' : tr('Dala rasmi'),
+                placeholder: tr("Bu kasallik rasmi hali datasetda yo'q")),
             const SizedBox(height: 14),
             Wrap(spacing: 8, runSpacing: 8, children: [
               RiskTag(d.riskLevel),
@@ -121,10 +122,10 @@ class DiseaseScreen extends ConsumerWidget {
                 margin: EdgeInsets.zero,
                 shadow: false,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('SOLISHTIRING', style: Theme.of(context).textTheme.labelSmall),
+                  Text(tr('SOLISHTIRING'), style: Theme.of(context).textTheme.labelSmall),
                   const SizedBox(height: 10),
                   Row(children: [
-                    for (final (a, label, color) in [(healthy, "Sog'lom", c.muted), (img, 'Kasal', c.danger)]) ...[
+                    for (final (a, label, color) in [(healthy, tr("Sog'lom"), c.muted), (img, tr('Kasal'), c.danger)]) ...[
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           AspectRatio(aspectRatio: 1, child: CatalogImage(asset: a)),
@@ -132,23 +133,23 @@ class DiseaseScreen extends ConsumerWidget {
                           Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: color)),
                         ]),
                       ),
-                      if (label == "Sog'lom") const SizedBox(width: 10),
+                      if (label == tr("Sog'lom")) const SizedBox(width: 10),
                     ],
                   ]),
                 ]),
               ),
             ],
-            TextBlock('Belgilari', d.symptoms),
-            TextBlock('Sababi', d.causes),
+            TextBlock(tr('Belgilari'), d.symptoms),
+            TextBlock(tr('Sababi'), d.causes),
             if (d.treatment != null) ...[
               const SizedBox(height: 16),
-              NoteBox(title: 'Davolash', text: d.treatment),
+              NoteBox(title: tr('Davolash'), text: d.treatment),
             ],
             if (d.medicines.isNotEmpty) ...[
-              _section(context, 'Dorilar'),
+              _section(context, tr('Dorilar')),
               for (final m in d.medicines) MedicineRow(m, sub: m.recommendation ?? m.activeIngredient),
             ],
-            TextBlock('Oldini olish', d.prevention),
+            TextBlock(tr('Oldini olish'), d.prevention),
             const SizedBox(height: 16),
           ]);
         },
@@ -172,7 +173,7 @@ class MedicineScreen extends ConsumerWidget {
             final uses = ref.watch(medicineDiseasesProvider(id)).value ?? const <Disease>[];
             final plants = {for (final d in uses) if (d.plantName != null) d.plantName!}.toList();
             return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              TopBar(title: 'Dori'),
+              TopBar(title: tr('Dori')),
               Container(
                 height: 150,
                 width: double.infinity,
@@ -181,19 +182,19 @@ class MedicineScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 14),
               Wrap(spacing: 8, runSpacing: 8, children: [
-                StatusTag(label, kind: label == 'Biologik' ? StatusKind.healthy : label == 'Insektitsid' ? StatusKind.risk : StatusKind.info, icon: icon),
+                StatusTag(label, kind: label == tr('Biologik') ? StatusKind.healthy : label == tr('Insektitsid') ? StatusKind.risk : StatusKind.info, icon: icon),
                 if (m.manufacturer != null) StatusTag(m.manufacturer!, kind: StatusKind.neutral),
               ]),
               _title(context, m.name, m.activeIngredient),
               if (m.description != null) Padding(padding: const EdgeInsets.only(top: 10), child: Text(m.description!, style: const TextStyle(fontSize: 16.5, height: 1.5))),
-              if (m.usage != null) ...[const SizedBox(height: 16), NoteBox(title: "Qo'llash me'yori", text: m.usage, icon: Icons.water_drop_outlined)],
-              if (m.precautions != null) ...[const SizedBox(height: 10), NoteBox(kind: NoteKind.risk, title: 'Ehtiyot choralari', text: m.precautions)],
+              if (m.usage != null) ...[const SizedBox(height: 16), NoteBox(title: tr("Qo'llash me'yori"), text: m.usage, icon: Icons.water_drop_outlined)],
+              if (m.precautions != null) ...[const SizedBox(height: 10), NoteBox(kind: NoteKind.risk, title: tr('Ehtiyot choralari'), text: m.precautions)],
               if (plants.isNotEmpty) ...[
-                _section(context, 'Qaysi ekinlarda'),
+                _section(context, tr('Qaysi ekinlarda')),
                 Wrap(spacing: 8, runSpacing: 8, children: [for (final p in plants) StatusTag(p, kind: StatusKind.neutral)]),
               ],
               if (uses.isNotEmpty) ...[
-                _section(context, 'Qaysi kasalliklarga qarshi · ${uses.length}'),
+                _section(context, trf('Qaysi kasalliklarga qarshi · {0}', [uses.length])),
                 for (final d in uses) DiseaseRow(d, sub: [d.plantName, d.recommendation].whereType<String>().join(' · ')),
               ],
               const SizedBox(height: 16),

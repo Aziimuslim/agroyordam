@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/widgets.dart';
@@ -47,13 +48,13 @@ class _PostDetailState extends ConsumerState<PostDetailScreen> {
             child: Column(children: [
               Expanded(
                 child: ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 16), children: [
-                  const TopBar(title: 'Post'),
+                  TopBar(title: tr('Post')),
                   AsyncView(value: ref.watch(postProvider(widget.id)), data: (p) => PostCard(post: p, detail: true)),
                   AsyncView(
                     value: ref.watch(commentsProvider(widget.id)),
                     data: (list) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      SectionTitle('Izohlar (${list.length})'),
-                      if (list.isEmpty) const EmptyNote("Hali izoh yo'q"),
+                      SectionTitle(trf('Izohlar ({0})', [list.length])),
+                      if (list.isEmpty) EmptyNote(tr("Hali izoh yo'q")),
                       // Agronom javoblari tepada, "Agronom javobi" belgisi bilan
                       for (final cm in [...list.where((x) => x.author.isExpert), ...list.where((x) => !x.author.isExpert)])
                         AppCard(
@@ -69,7 +70,7 @@ class _PostDetailState extends ConsumerState<PostDetailScreen> {
                                 child: Row(children: [
                                   Icon(Icons.verified_user_outlined, size: 15, color: c.expert),
                                   const SizedBox(width: 5),
-                                  Text('Agronom javobi', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: c.expert)),
+                                  Text(tr('Agronom javobi'), style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: c.expert)),
                                 ]),
                               ),
                             Row(children: [
@@ -95,7 +96,7 @@ class _PostDetailState extends ConsumerState<PostDetailScreen> {
                   ),
                 ]),
               ),
-              ChatInputBar(controller: _ctrl, onSend: _send, hint: 'Izoh yozing...'),
+              ChatInputBar(controller: _ctrl, onSend: _send, hint: tr('Izoh yozing...')),
             ]),
           ),
         ),

@@ -3,6 +3,8 @@ import 'package:agroyordam/application/providers.dart';
 import 'package:agroyordam/core/catalog_images.dart';
 import 'package:agroyordam/core/data/farm_options.dart';
 import 'package:agroyordam/core/data/uz_regions.dart';
+import 'package:agroyordam/core/i18n/i18n.dart';
+import 'package:agroyordam/core/i18n/translit.dart';
 import 'package:agroyordam/core/storage/token_storage.dart';
 import 'package:agroyordam/core/theme/app_colors.dart';
 import 'package:agroyordam/core/utils/format.dart';
@@ -239,5 +241,30 @@ void main() {
     final e = Expert.fromJson({'id': 'e', 'full_name': 'Agro', 'skills': ['Uzum'], 'experience_years': 15, 'ratings_count': 4});
     expect(e.skills, ['Uzum']);
     expect(e.ratingsCount, 4);
+  });
+
+  test('Tillar: tarjima, kirill transliteratsiyasi, o\'rinbosarlar', () {
+    addTearDown(() => I18n.lang = AppLang.uz);
+    expect(toCyrillic("Qo'shimcha ma'lumotlar"), 'Қўшимча маълумотлар');
+    expect(toCyrillic("Yo'q, yangi ekin"), 'Йўқ, янги экин');
+    expect(toCyrillic('SHAXSIY'), 'ШАХСИЙ');
+    expect(toCyrillic("Sug'orish · {0} kun"), 'Суғориш · {0} кун');
+    expect(toCyrillic("AgroYordam AI Premium'ga"), 'AgroYordam AI Премиумга');
+    expect(toCyrillic('iyun, Seshanba'), 'июн, Сешанба');
+
+    I18n.lang = AppLang.uz;
+    expect(trf('{0} kun oldin', [3]), '3 kun oldin');
+    I18n.lang = AppLang.uzCyrl;
+    expect(trf('{0} kun oldin', [3]), '3 кун олдин');
+    I18n.lang = AppLang.ru;
+    expect(tr('Saqlash'), 'Сохранить');
+    expect(trf('{0} kun oldin', [3]), '3 дн. назад');
+    expect(tr('Lug\'atda yo\'q matn'), "Lug'atda yo'q matn"); // topilmasa manba qaytadi
+    I18n.lang = AppLang.en;
+    expect(tr('Saqlash'), 'Save');
+    I18n.lang = AppLang.kaa;
+    expect(tr('Saqlash'), 'Saqlaw');
+    expect(AppLang.fromCode('uz-Cyrl'), AppLang.uzCyrl);
+    expect(AppLang.fromCode('xx'), AppLang.uz);
   });
 }

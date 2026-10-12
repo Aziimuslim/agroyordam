@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/utils/format.dart';
@@ -49,10 +50,10 @@ class NotificationsScreen extends ConsumerWidget {
       padBottom: false,
       onRefresh: () async => ref.invalidate(notificationsProvider),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        TopBar(title: 'Bildirishnomalar', actions: [
+        TopBar(title: tr('Bildirishnomalar'), actions: [
           CircleIconButton(
             icon: Icons.done_all_rounded,
-            tooltip: "Hammasini o'qildi deb belgilash",
+            tooltip: tr("Hammasini o'qildi deb belgilash"),
             onTap: () async {
               await ref.read(communityRepoProvider).readAll();
               ref.invalidate(notificationsProvider);
@@ -63,7 +64,7 @@ class NotificationsScreen extends ConsumerWidget {
           value: ref.watch(notificationsProvider),
           onRetry: () => ref.invalidate(notificationsProvider),
           data: (list) => list.isEmpty
-              ? const EmptyNote("Bildirishnomalar yo'q", icon: AppIcons.bell)
+              ? EmptyNote(tr("Bildirishnomalar yo'q"), icon: AppIcons.bell)
               : Column(children: [
                   for (final n in list)
                     AppCard(

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
 import '../../../core/config.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/format.dart';
@@ -35,7 +36,7 @@ class _AskState extends ConsumerState<AskQuestionScreen> {
 
   Future<void> _send() async {
     if (_title.text.trim().length < 3) {
-      showToast(context, "Savolni qisqacha yozing, masalan «Pomidor barglarida dog'lar»");
+      showToast(context, tr("Savolni qisqacha yozing, masalan «Pomidor barglarida dog'lar»"));
       return;
     }
     setState(() => _busy = true);
@@ -47,7 +48,7 @@ class _AskState extends ConsumerState<AskQuestionScreen> {
       ref.invalidate(questionQuotaProvider);
       if (widget.diagnosisId != null) ref.invalidate(diagnosisProvider(widget.diagnosisId!));
       if (!mounted) return;
-      showToast(context, 'Agronomga yuborildi. Javob kelsa xabar beramiz.');
+      showToast(context, tr('Agronomga yuborildi. Javob kelsa xabar beramiz.'));
       context.pushReplacement('/help/q/${q.id}');
     } catch (e) {
       if (mounted) showError(context, e);
@@ -66,44 +67,44 @@ class _AskState extends ConsumerState<AskQuestionScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const TopBar(title: 'Savol berish'),
+          TopBar(title: tr('Savol berish')),
           if (quota != null && !quota.unlimited)
             Padding(
               padding: const EdgeInsets.only(bottom: 14),
-              child: NoteBox(title: 'Bu oy: ${quota.remaining} ta bepul savol qoldi', text: "Premium'da agronomga cheksiz savol berasiz."),
+              child: NoteBox(title: trf('Bu oy: {0} ta bepul savol qoldi', [quota.remaining]), text: tr("Premium'da agronomga cheksiz savol berasiz.")),
             ),
           if (diag != null) ...[
-            Text('BIRIKTIRILGAN TASHXIS', style: Theme.of(context).textTheme.labelSmall),
+            Text(tr('BIRIKTIRILGAN TASHXIS'), style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 8),
             _DiagnosisChip(d: diag),
             const SizedBox(height: 14),
           ],
           if (crops.isNotEmpty) ...[
-            const FieldLabel('Qaysi ekin?'),
+            FieldLabel(tr('Qaysi ekin?')),
             ChipTabs(
-              tabs: [('', "Ko'rsatmaslik"), for (final cr in crops) (cr.id, cr.name)],
+              tabs: [('', tr("Ko'rsatmaslik")), for (final cr in crops) (cr.id, cr.name)],
               selected: _crop ?? '',
               onSelect: (v) => setState(() => _crop = v.isEmpty ? null : v),
             ),
           ],
-          const FieldLabel('Savol'),
+          FieldLabel(tr('Savol')),
           TextField(
             controller: _title,
             maxLength: 200,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(hintText: "Masalan: Pomidor barglarida qo'ng'ir dog'lar", counterText: ''),
+            decoration: InputDecoration(hintText: tr("Masalan: Pomidor barglarida qo'ng'ir dog'lar"), counterText: ''),
           ),
-          const FieldLabel('Batafsil (ixtiyoriy)'),
+          FieldLabel(tr('Batafsil (ixtiyoriy)')),
           TextField(
             controller: _body,
             maxLines: 4,
             minLines: 3,
-            decoration: const InputDecoration(hintText: "Qachondan beri, qancha joyda, nima qilib ko'rdingiz"),
+            decoration: InputDecoration(hintText: tr("Qachondan beri, qancha joyda, nima qilib ko'rdingiz")),
           ),
           const SizedBox(height: 20),
           if (quota != null && quota.remaining == 0)
             PillButton(
-              label: "Limit tugadi — Premium'ga o'tish",
+              label: tr("Limit tugadi — Premium'ga o'tish"),
               icon: Icons.workspace_premium_outlined,
               style: PillStyle.primary,
               block: true,
@@ -111,7 +112,7 @@ class _AskState extends ConsumerState<AskQuestionScreen> {
             )
           else
             PillButton(
-              label: 'Agronomga yuborish',
+              label: tr('Agronomga yuborish'),
               icon: Icons.send_rounded,
               style: PillStyle.primary,
               block: true,
@@ -144,7 +145,7 @@ class _DiagnosisChip extends StatelessWidget {
               Text(d.title, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
               StatusTag(
-                'AI: ${d.confidence.round()}%${d.lowConfidence ? ' · taxminiy' : ''}',
+                trf('AI: {0}%{1}', [d.confidence.round(), d.lowConfidence ? tr(' · taxminiy') : '']),
                 kind: d.lowConfidence ? StatusKind.risk : StatusKind.neutral,
               ),
             ],
@@ -201,7 +202,7 @@ class _ThreadState extends ConsumerState<QuestionThreadScreen> {
     if (m == null) return;
     final t = _msg.text.trim();
     _msg.clear();
-    await _run(() => ref.read(expertRepoProvider).send(widget.id, body: t.isEmpty ? null : t, medicineId: m.id), 'Dori kartasi yuborildi');
+    await _run(() => ref.read(expertRepoProvider).send(widget.id, body: t.isEmpty ? null : t, medicineId: m.id), tr('Dori kartasi yuborildi'));
   }
 
   @override
@@ -240,11 +241,11 @@ class _ThreadState extends ConsumerState<QuestionThreadScreen> {
                             child: ListView(
                               scrollDirection: Axis.horizontal,
                               children: [
-                                for (final t in const [
-                                  'Rasmga qaradim, tasdiqlayman',
-                                  'Pastki barglarni olib tashlang',
-                                  'Yaqinroqdan yana rasm yuboring',
-                                  '3 kundan keyin holatini yozing',
+                                for (final t in [
+                                  tr('Rasmga qaradim, tasdiqlayman'),
+                                  tr('Pastki barglarni olib tashlang'),
+                                  tr('Yaqinroqdan yana rasm yuboring'),
+                                  tr('3 kundan keyin holatini yozing'),
                                 ])
                                   Padding(
                                     padding: const EdgeInsets.only(right: 8, bottom: 6),
@@ -266,7 +267,7 @@ class _ThreadState extends ConsumerState<QuestionThreadScreen> {
                           children: [
                             if (asExpert) ...[
                               IconButton(
-                                tooltip: 'Dori kartasi',
+                                tooltip: tr('Dori kartasi'),
                                 onPressed: _busy ? null : _sendMedicine,
                                 style: IconButton.styleFrom(
                                   backgroundColor: c.card,
@@ -282,13 +283,13 @@ class _ThreadState extends ConsumerState<QuestionThreadScreen> {
                                 controller: _msg,
                                 minLines: 1,
                                 maxLines: 4,
-                                decoration: const InputDecoration(hintText: 'Xabar yozing'),
+                                decoration: InputDecoration(hintText: tr('Xabar yozing')),
                               ),
                             ),
                             const SizedBox(width: 8),
                             IconButton.filled(
                               style: IconButton.styleFrom(backgroundColor: accent, foregroundColor: c.card, fixedSize: const Size(50, 50)),
-                              tooltip: 'Yuborish',
+                              tooltip: tr('Yuborish'),
                               onPressed: _busy
                                   ? null
                                   : () {
@@ -316,14 +317,14 @@ class _ThreadState extends ConsumerState<QuestionThreadScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TopBar(
-                title: asExpert ? q.author.fullName : (expert?.fullName ?? 'Agronom javobini kutmoqda'),
-                subtitle: asExpert ? ['Dehqon', q.cropName].whereType<String>().join(' · ') : (expert != null ? 'Agronom' : 'Savolingiz navbatda'),
+                title: asExpert ? q.author.fullName : (expert?.fullName ?? tr('Agronom javobini kutmoqda')),
+                subtitle: asExpert ? [tr('Dehqon'), q.cropName].whereType<String>().join(' · ') : (expert != null ? tr('Agronom') : tr('Savolingiz navbatda')),
                 actions: [
                   if (q.status == 'answered' && (q.author.id == me?.id || (asExpert && expert?.id == me.id)))
                     TextButton(
-                      onPressed: _busy ? null : () => _run(() => ref.read(expertRepoProvider).close(widget.id), "Savol yopildi. Javobni baholang"),
+                      onPressed: _busy ? null : () => _run(() => ref.read(expertRepoProvider).close(widget.id), tr("Savol yopildi. Javobni baholang")),
                       child: Text(
-                        "Hal bo'ldi",
+                        tr("Hal bo'ldi"),
                         style: TextStyle(color: accent, fontWeight: FontWeight.w700),
                       ),
                     ),
@@ -351,33 +352,33 @@ class _ThreadState extends ConsumerState<QuestionThreadScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('BIRIKTIRILGAN TASHXIS', style: Theme.of(context).textTheme.labelSmall),
-                            Text(q.diagnosisName ?? 'Tashxis', style: const TextStyle(fontWeight: FontWeight.w700)),
+                            Text(tr('BIRIKTIRILGAN TASHXIS'), style: Theme.of(context).textTheme.labelSmall),
+                            Text(q.diagnosisName ?? tr('Tashxis'), style: const TextStyle(fontWeight: FontWeight.w700)),
                           ],
                         ),
                       ),
-                      if (q.diagnosisConfidence != null) StatusTag('AI ${q.diagnosisConfidence!.round()}%', kind: StatusKind.neutral),
+                      if (q.diagnosisConfidence != null) StatusTag(trf('AI {0}%', [q.diagnosisConfidence!.round()]), kind: StatusKind.neutral),
                     ],
                   ),
                 ),
               ],
               const SizedBox(height: 16),
-              if (takenByOther) NoteBox(kind: NoteKind.expert, title: 'Bu savolni ${expert!.fullName} olgan', text: "Faqat o'qishingiz mumkin."),
+              if (takenByOther) NoteBox(kind: NoteKind.expert, title: trf('Bu savolni {0} olgan', [expert!.fullName]), text: tr("Faqat o'qishingiz mumkin.")),
               if (q.messages.isEmpty)
                 asExpert
-                    ? const NoteBox(
+                    ? NoteBox(
                         kind: NoteKind.expert,
-                        title: 'Hali hech kim javob bermagan',
-                        text: 'Birinchi javob yozsangiz, savol sizga biriktiriladi.',
+                        title: tr('Hali hech kim javob bermagan'),
+                        text: tr('Birinchi javob yozsangiz, savol sizga biriktiriladi.'),
                       )
-                    : const NoteBox(
-                        title: 'Savolingiz agronomlarga yuborildi',
-                        text: 'Birinchi javob bergan agronom shu yerda yozadi. Javob kelsa bildirishnoma keladi.',
+                    : NoteBox(
+                        title: tr('Savolingiz agronomlarga yuborildi'),
+                        text: tr('Birinchi javob bergan agronom shu yerda yozadi. Javob kelsa bildirishnoma keladi.'),
                       ),
               for (final m in q.messages) _Bubble(m: m, mine: m.sender.id == me?.id, color: m.sender.id == me?.id ? accent : null),
               if (closed) ...[
                 const SizedBox(height: 12),
-                const NoteBox(kind: NoteKind.expert, title: 'Savol yopilgan'),
+                NoteBox(kind: NoteKind.expert, title: tr('Savol yopilgan')),
                 if (q.rating == null && q.author.id == me?.id && expert != null) ...[
                   const SizedBox(height: 12),
                   AppCard(
@@ -386,14 +387,14 @@ class _ThreadState extends ConsumerState<QuestionThreadScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Javob yordam berdimi?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                        Text(tr('Javob yordam berdimi?'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                         const SizedBox(height: 6),
                         Row(
                           children: [
                             for (var i = 1; i <= 5; i++)
                               IconButton(
-                                tooltip: '$i yulduz',
-                                onPressed: _busy ? null : () => _run(() => ref.read(expertRepoProvider).rate(widget.id, i), 'Baho uchun rahmat'),
+                                tooltip: trf('{0} yulduz', [i]),
+                                onPressed: _busy ? null : () => _run(() => ref.read(expertRepoProvider).rate(widget.id, i), tr('Baho uchun rahmat')),
                                 icon: Icon(Icons.star_rounded, color: c.gold, size: 32),
                               ),
                           ],
@@ -404,7 +405,7 @@ class _ThreadState extends ConsumerState<QuestionThreadScreen> {
                 ] else if (q.rating != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
-                    child: StatusTag('Sizning bahoyingiz: ${q.rating}', kind: StatusKind.premium, icon: Icons.star_rounded),
+                    child: StatusTag(trf('Sizning bahoyingiz: {0}', [q.rating]), kind: StatusKind.premium, icon: Icons.star_rounded),
                   ),
               ],
               const SizedBox(height: 12),
@@ -453,7 +454,7 @@ class _Bubble extends StatelessWidget {
                     Icon(Icons.verified_user_outlined, size: 14, color: c.expert),
                     const SizedBox(width: 4),
                     Text(
-                      'Agronom · ${m.sender.fullName}',
+                      trf('Agronom · {0}', [m.sender.fullName]),
                       style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: c.expert),
                     ),
                   ],
@@ -509,9 +510,9 @@ class _MedicinePicker extends ConsumerWidget {
         controller: scroll,
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
         children: [
-          const Text('Dori kartasi', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+          Text(tr('Dori kartasi'), style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
           const SizedBox(height: 4),
-          Text("Dehqon dori nomi va qo'llash me'yorini karta ko'rinishida oladi.", style: Theme.of(context).textTheme.bodyMedium),
+          Text(tr("Dehqon dori nomi va qo'llash me'yorini karta ko'rinishida oladi."), style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 14),
           for (final m in list)
             AppCard(

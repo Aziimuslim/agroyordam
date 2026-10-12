@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
 import '../../../core/data/uz_regions.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ds.dart';
@@ -35,7 +36,7 @@ class ExpertPublicScreen extends ConsumerWidget {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 440),
                     child: PillButton(
-                      label: 'Savol berish',
+                      label: tr('Savol berish'),
                       icon: Icons.chat_bubble_outline_rounded,
                       style: PillStyle.primary,
                       block: true,
@@ -65,35 +66,35 @@ class _Body extends StatelessWidget {
     final c = context.c;
     final place = placeText(e.region, e.district);
     final info = <(IconData, String, String)>[
-      if (place.isNotEmpty) (Icons.location_on_outlined, 'Hudud', place),
-      if (e.workHours != null) (Icons.schedule_rounded, 'Ish vaqti', e.workHours!),
-      if (e.education != null) (Icons.school_outlined, "Ta'lim", e.education!),
+      if (place.isNotEmpty) (Icons.location_on_outlined, tr('Hudud'), place),
+      if (e.workHours != null) (Icons.schedule_rounded, tr('Ish vaqti'), e.workHours!),
+      if (e.education != null) (Icons.school_outlined, tr("Ta'lim"), e.education!),
     ];
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      TopBar(title: self ? "Dehqonlar shunday ko'radi" : 'Agronom'),
+      TopBar(title: self ? tr("Dehqonlar shunday ko'radi") : tr('Agronom')),
       Center(
         child: Column(children: [
           ExpertAvatar(name: e.fullName, url: e.avatarUrl, size: 96),
           const SizedBox(height: 12),
           Text(e.fullName, textAlign: TextAlign.center, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
           const SizedBox(height: 2),
-          Text(e.specialization ?? 'Agronom', textAlign: TextAlign.center, style: TextStyle(color: c.muted, fontSize: 14.5)),
+          Text(e.specialization ?? tr('Agronom'), textAlign: TextAlign.center, style: TextStyle(color: c.muted, fontSize: 14.5)),
           const SizedBox(height: 8),
-          StatusTag(e.acceptingQuestions ? 'Onlayn · savol qabul qiladi' : 'Hozir oflayn',
+          StatusTag(e.acceptingQuestions ? tr('Onlayn · savol qabul qiladi') : tr('Hozir oflayn'),
               kind: e.acceptingQuestions ? StatusKind.healthy : StatusKind.neutral),
         ]),
       ),
       const SizedBox(height: 18),
       Row(children: [
-        _Stat(value: e.rating?.toStringAsFixed(1) ?? '—', label: '${e.ratingsCount} baho', icon: Icons.star_rounded, iconColor: c.gold),
+        _Stat(value: e.rating?.toStringAsFixed(1) ?? '—', label: trf('{0} baho', [e.ratingsCount]), icon: Icons.star_rounded, iconColor: c.gold),
         const SizedBox(width: 8),
-        _Stat(value: '${e.answers}', label: 'javob'),
+        _Stat(value: '${e.answers}', label: tr('javob')),
         const SizedBox(width: 8),
-        _Stat(value: e.experienceYears == null ? '—' : '${e.experienceYears} yil', label: 'tajriba'),
+        _Stat(value: e.experienceYears == null ? '—' : trf('{0} yil', [e.experienceYears]), label: tr('tajriba')),
       ]),
       if (e.about != null) ...[
         const SizedBox(height: 20),
-        Text('MEN HAQIMDA', style: Theme.of(context).textTheme.labelSmall),
+        Text(tr('MEN HAQIMDA'), style: Theme.of(context).textTheme.labelSmall),
         const SizedBox(height: 6),
         Text(e.about!, style: Theme.of(context).textTheme.bodyLarge),
       ],
@@ -118,17 +119,17 @@ class _Body extends StatelessWidget {
         ),
       ],
       if (e.skills.isNotEmpty) ...[
-        Text("YO'NALISHLAR", style: Theme.of(context).textTheme.labelSmall),
+        Text(tr("YO'NALISHLAR"), style: Theme.of(context).textTheme.labelSmall),
         const SizedBox(height: 8),
         Wrap(spacing: 6, runSpacing: 6, children: [for (final s in e.skills) StatusTag(s, kind: StatusKind.expert)]),
       ],
       if (self && e.about == null && e.skills.isEmpty)
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(top: 16),
           child: NoteBox(
             kind: NoteKind.expert,
-            title: "Profilingiz bo'sh ko'rinmoqda",
-            text: "«Ma'lumotlarim» bo'limida o'zingiz, tajribangiz va yo'nalishlaringiz haqida yozing — dehqonlar ishonchi ortadi.",
+            title: tr("Profilingiz bo'sh ko'rinmoqda"),
+            text: tr("«Ma'lumotlarim» bo'limida o'zingiz, tajribangiz va yo'nalishlaringiz haqida yozing — dehqonlar ishonchi ortadi."),
           ),
         ),
       const SizedBox(height: 16),

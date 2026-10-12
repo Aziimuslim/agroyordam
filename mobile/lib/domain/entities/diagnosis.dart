@@ -1,3 +1,4 @@
+import '../../core/i18n/i18n.dart';
 import '../../core/utils/format.dart';
 import 'catalog.dart';
 
@@ -47,7 +48,7 @@ class Diagnosis {
   bool get expertChecked => reviewStatus == 'confirmed' || reviewStatus == 'corrected';
   bool get canAskExpert => reviewStatus == 'pending' && !reviewRequested;
 
-  String get title => isHealthy ? "O'simlik sog'lom" : (diseaseName ?? 'Aniqlanmadi');
+  String get title => isHealthy ? tr("O'simlik sog'lom") : (diseaseName ?? tr('Aniqlanmadi'));
 
   factory Diagnosis.fromJson(Map<String, dynamic> j) => Diagnosis(
         id: j['id'],

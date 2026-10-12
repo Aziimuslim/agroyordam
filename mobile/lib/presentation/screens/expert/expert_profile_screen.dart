@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../application/app_mode.dart';
+import '../../../application/lang.dart';
 import '../../../application/providers.dart';
 import '../../../core/config.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/lang_sheet.dart';
 import '../../../core/widgets/widgets.dart';
 import '../profile/profile_screen.dart';
 import 'expert_shell.dart';
@@ -38,7 +41,7 @@ class ExpertProfileScreen extends ConsumerWidget {
             decoration: InputDecoration(hintText: hint),
           ),
           const SizedBox(height: 12),
-          PillButton(label: 'Saqlash', style: PillStyle.dark, block: true, onPressed: () => Navigator.pop(ctx, true)),
+          PillButton(label: tr('Saqlash'), style: PillStyle.dark, block: true, onPressed: () => Navigator.pop(ctx, true)),
         ],
       ),
     );
@@ -48,7 +51,7 @@ class ExpertProfileScreen extends ConsumerWidget {
     try {
       await save(v);
       await ref.read(authProvider.notifier).refreshUser();
-      if (context.mounted) showToast(context, 'Saqlandi');
+      if (context.mounted) showToast(context, tr('Saqlandi'));
     } catch (e) {
       if (context.mounted) showError(context, e);
     }
@@ -68,7 +71,7 @@ class ExpertProfileScreen extends ConsumerWidget {
         await ref.read(authProvider.notifier).refreshUser();
       },
       children: [
-        const ExpertHeader(title: 'Profil'),
+        ExpertHeader(title: tr('Profil')),
         Row(
           children: [
             Container(
@@ -85,14 +88,14 @@ class ExpertProfileScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(user.fullName, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
-                  Text(['Agronom', user.specialization].whereType<String>().join(' · '), style: TextStyle(color: c.muted, fontSize: 13.5)),
+                  Text([tr('Agronom'), user.specialization].whereType<String>().join(' · '), style: TextStyle(color: c.muted, fontSize: 13.5)),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       Icon(Icons.star_rounded, size: 18, color: c.gold),
                       const SizedBox(width: 3),
                       Text(s?.rating?.toStringAsFixed(1) ?? '—', style: const TextStyle(fontWeight: FontWeight.w800)),
-                      Text(' · ${s?.ratingsCount ?? 0} baho', style: TextStyle(color: c.muted, fontSize: 13)),
+                      Text(trf(' · {0} baho', [s?.ratingsCount ?? 0]), style: TextStyle(color: c.muted, fontSize: 13)),
                     ],
                   ),
                 ],
@@ -103,11 +106,11 @@ class ExpertProfileScreen extends ConsumerWidget {
         const SizedBox(height: 16),
         Row(
           children: [
-            StatTile('${s?.answers ?? '—'}', 'javob'),
+            StatTile('${s?.answers ?? '—'}', tr('javob')),
             const SizedBox(width: 8),
-            StatTile('${s?.reviewedTotal ?? '—'}', 'tekshirilgan\ntashxis'),
+            StatTile('${s?.reviewedTotal ?? '—'}', tr('tekshirilgan\ntashxis')),
             const SizedBox(width: 8),
-            StatTile(formatWait(s?.avgAnswerMinutes), "o'rtacha\njavob"),
+            StatTile(formatWait(s?.avgAnswerMinutes), tr("o'rtacha\njavob")),
           ],
         ),
         const SizedBox(height: 16),
@@ -118,28 +121,28 @@ class ExpertProfileScreen extends ConsumerWidget {
             children: [
               _Row(
                 icon: AppIcons.clock,
-                label: 'Ish vaqti',
-                value: user.workHours ?? "Ko'rsatilmagan",
+                label: tr('Ish vaqti'),
+                value: user.workHours ?? tr("Ko'rsatilmagan"),
                 onTap: () => _editText(
                   context,
                   ref,
-                  title: 'Ish vaqti',
+                  title: tr('Ish vaqti'),
                   initial: user.workHours ?? '',
-                  hint: 'Du–Ju, 9:00–18:00',
+                  hint: tr('Du–Ju, 9:00–18:00'),
                   save: (v) => repo.updateMe(workHours: v),
                 ),
               ),
               Divider(height: 1, color: c.border),
               _Row(
                 icon: AppIcons.leaf,
-                label: 'Mutaxassislik',
-                value: user.specialization ?? "Ko'rsatilmagan",
+                label: tr('Mutaxassislik'),
+                value: user.specialization ?? tr("Ko'rsatilmagan"),
                 onTap: () => _editText(
                   context,
                   ref,
-                  title: 'Mutaxassislik',
+                  title: tr('Mutaxassislik'),
                   initial: user.specialization ?? '',
-                  hint: 'Mevali daraxtlar, sabzavotlar',
+                  hint: tr('Mevali daraxtlar, sabzavotlar'),
                   save: (v) => repo.updateMe(specialization: v),
                 ),
               ),
@@ -149,12 +152,12 @@ class ExpertProfileScreen extends ConsumerWidget {
                 child: Row(
                   children: [
                     SizedBox(width: 34, child: Icon(Icons.inbox_outlined, color: c.expert)),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Yangi savollar qabul qilish', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
-                          Text("O'chirsangiz, dehqonlar sizni «Oflayn» ko'radi", style: TextStyle(fontSize: 12.5)),
+                          Text(tr('Yangi savollar qabul qilish'), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+                          Text(tr("O'chirsangiz, dehqonlar sizni «Oflayn» ko'radi"), style: TextStyle(fontSize: 12.5)),
                         ],
                       ),
                     ),
@@ -176,36 +179,37 @@ class ExpertProfileScreen extends ConsumerWidget {
             ],
           ),
         ),
-        Text('MAVZU', style: Theme.of(context).textTheme.labelSmall),
+        Text(tr('MAVZU'), style: Theme.of(context).textTheme.labelSmall),
         const SizedBox(height: 8),
         const ThemePicker(expert: true),
         const SizedBox(height: 16),
+        ListRow(icon: AppIcons.globe, label: tr('Ilova tili'), value: ref.watch(langProvider).label, onTap: () => showLanguageSheet(context, ref)),
         ListRow(
           icon: AppIcons.home,
-          label: "Dehqon rejimiga o'tish",
-          value: "Bog'im, tashxis",
+          label: tr("Dehqon rejimiga o'tish"),
+          value: tr("Bog'im, tashxis"),
           onTap: () async {
             await ref.read(expertModePrefProvider.notifier).set(false);
             if (context.mounted) context.go('/home');
           },
         ),
-        ListRow(icon: AppIcons.edit, label: "Ma'lumotlarim", value: "Tajriba, ta'lim, yo'nalish", onTap: () => context.push('/profile/edit')),
-        ListRow(icon: Icons.visibility_outlined, label: "Dehqonlar ko'radigan profil", onTap: () => context.push('/help/agronom/${user.id}')),
-        ListRow(icon: Icons.notifications_none_rounded, label: 'Bildirishnomalar', onTap: () => context.push('/notifications')),
-        ListRow(icon: AppIcons.chat, label: 'Xabarlar', onTap: () => context.push('/messages')),
+        ListRow(icon: AppIcons.edit, label: tr("Ma'lumotlarim"), value: tr("Tajriba, ta'lim, yo'nalish"), onTap: () => context.push('/profile/edit')),
+        ListRow(icon: Icons.visibility_outlined, label: tr("Dehqonlar ko'radigan profil"), onTap: () => context.push('/help/agronom/${user.id}')),
+        ListRow(icon: Icons.notifications_none_rounded, label: tr('Bildirishnomalar'), onTap: () => context.push('/notifications')),
+        ListRow(icon: AppIcons.chat, label: tr('Xabarlar'), onTap: () => context.push('/messages')),
         ListRow(
           icon: AppIcons.logout,
-          label: 'Chiqish',
+          label: tr('Chiqish'),
           danger: true,
           onTap: () async {
-            if (await confirm(context, 'Chiqish', 'Hisobdan chiqmoqchimisiz?', ok: 'Chiqish', danger: true)) {
+            if (await confirm(context, tr('Chiqish'), tr('Hisobdan chiqmoqchimisiz?'), ok: tr('Chiqish'), danger: true)) {
               await ref.read(authProvider.notifier).logout();
             }
           },
         ),
         const SizedBox(height: 10),
         Center(
-          child: Text('Versiya ${AppConfig.version}', style: TextStyle(color: c.muted, fontSize: 11)),
+          child: Text(trf('Versiya {0}', [AppConfig.version]), style: TextStyle(color: c.muted, fontSize: 11)),
         ),
       ],
     );

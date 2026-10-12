@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
 import '../../../core/catalog_images.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
@@ -52,7 +53,7 @@ class HomeScreen extends ConsumerWidget {
               Text(formatDayLong(), style: TextStyle(color: c.muted, fontSize: 13, fontWeight: FontWeight.w600)),
             ]),
           ),
-          CircleIconButton(icon: AppIcons.bell, badge: unread > 0, tooltip: 'Bildirishnomalar', onTap: () => context.push('/notifications')),
+          CircleIconButton(icon: AppIcons.bell, badge: unread > 0, tooltip: tr('Bildirishnomalar'), onTap: () => context.push('/notifications')),
         ]),
         const SizedBox(height: 20),
         if (weather != null) _WeatherCard(w: weather),
@@ -60,24 +61,24 @@ class HomeScreen extends ConsumerWidget {
           onCamera: () => context.push('/diagnose?source=camera'),
           onGallery: () => context.push('/diagnose?source=gallery'),
         ),
-        SectionTitle("Ma'lumotnoma", action: 'Ochish', onAction: () => context.push('/catalog')),
+        SectionTitle(tr("Ma'lumotnoma"), action: tr('Ochish'), onAction: () => context.push('/catalog')),
         const _CatalogTiles(),
         const SizedBox(height: 22),
         _TasksSection(),
-        SectionTitle("Mening bog'im", action: 'Barchasi', onAction: () => context.go('/garden')),
+        SectionTitle(tr("Mening bog'im"), action: tr('Barchasi'), onAction: () => context.go('/garden')),
         AsyncView(
           value: crops,
           onRetry: () => ref.invalidate(cropsProvider),
           data: (list) => list.isEmpty ? const _EmptyGarden() : _CropStrip(crops: list),
         ),
         const SizedBox(height: 8),
-        const SectionTitle("Bo'limlar"),
+        SectionTitle(tr("Bo'limlar")),
         Row(children: [
-          _Shortcut(icon: Icons.verified_user_outlined, label: 'Agronom', onTap: () => context.go('/help')),
+          _Shortcut(icon: Icons.verified_user_outlined, label: tr('Agronom'), onTap: () => context.go('/help')),
           const SizedBox(width: 10),
-          _Shortcut(icon: AppIcons.bot, label: 'AI yordamchi', onTap: () => context.push('/assistant')),
+          _Shortcut(icon: AppIcons.bot, label: tr('AI yordamchi'), onTap: () => context.push('/assistant')),
           const SizedBox(width: 10),
-          _Shortcut(icon: AppIcons.history, label: 'Tashxislar', onTap: () => context.push('/diagnoses')),
+          _Shortcut(icon: AppIcons.history, label: tr('Tashxislar'), onTap: () => context.push('/diagnoses')),
         ]),
       ]),
     );
@@ -92,9 +93,9 @@ class _CatalogTiles extends ConsumerWidget {
     final c = context.c;
     final counts = [ref.watch(plantsProvider).value?.length, ref.watch(diseasesProvider).value?.length, ref.watch(medicinesProvider).value?.length];
     final tiles = [
-      ("O'simliklar", 'plants', CatalogImages.disease('Tomato_healthy'), null),
-      ('Kasalliklar', 'diseases', CatalogImages.disease('Tomato_Late_blight'), null),
-      ('Dorilar', 'medicines', null, Icons.science_outlined),
+      (tr("O'simliklar"), 'plants', CatalogImages.disease('Tomato_healthy'), null),
+      (tr('Kasalliklar'), 'diseases', CatalogImages.disease('Tomato_Late_blight'), null),
+      (tr('Dorilar'), 'medicines', null, Icons.science_outlined),
     ];
     return Row(children: [
       for (var i = 0; i < tiles.length; i++) ...[
@@ -145,9 +146,9 @@ class _WeatherCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final (label, bg, fg) = switch (w.risk) {
-      'high' => ('Yuqori xavf', c.dangerBg, c.danger),
-      'medium' => ("O'rta xavf", c.warningBg, c.warning),
-      _ => ('Past xavf', c.successBg, c.success),
+      'high' => (tr('Yuqori xavf'), c.dangerBg, c.danger),
+      'medium' => (tr("O'rta xavf"), c.warningBg, c.warning),
+      _ => (tr('Past xavf'), c.successBg, c.success),
     };
     final rainy = w.condition.contains("yomg'ir") || w.condition.contains('momaqaldiroq');
     return AppCard(
@@ -165,7 +166,7 @@ class _WeatherCard extends StatelessWidget {
             Text('${w.city} · ${w.temperature.round()}°, ${w.condition}', maxLines: 1, overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
             const SizedBox(height: 2),
-            Text('Namlik ${w.humidity}%${w.rainMm > 0 ? ' · yog\'in ${w.rainMm.toStringAsFixed(1)} mm' : ''} — ${switch (w.risk) { 'high' => "zamburug' kasalliklari xavfi yuqori", 'medium' => "zamburug' xavfi o'rtacha", _ => "kasallik xavfi past" }}',
+            Text(trf('Namlik {0}%{1} — {2}', [w.humidity, w.rainMm > 0 ? trf(" · yog'in {0} mm", [w.rainMm.toStringAsFixed(1)]) : '', switch (w.risk) { 'high' => tr("zamburug' kasalliklari xavfi yuqori"), 'medium' => tr("zamburug' xavfi o'rtacha"), _ => tr("kasallik xavfi past") }]),
                 maxLines: 2, overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 12.5, color: c.muted, height: 1.35, fontWeight: FontWeight.w500)),
           ]),
@@ -198,12 +199,12 @@ class _HeroCard extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Tag('AI · 97% aniqlik', bg: c.gold, fg: c.onGold),
+            Tag(tr('AI · 97% aniqlik'), bg: c.gold, fg: c.onGold),
             const SizedBox(height: 12),
-            const Text("Ekiningiz sog'lig'ini tekshiring",
+            Text(tr("Ekiningiz sog'lig'ini tekshiring"),
                 style: TextStyle(color: Colors.white, fontSize: 23, height: 28 / 23, fontWeight: FontWeight.w800, letterSpacing: -0.35)),
             const SizedBox(height: 8),
-            Text("Barg rasmini oling — AI bir necha soniyada tashxis qo'yib, davolash rejasini tuzadi",
+            Text(tr("Barg rasmini oling — AI bir necha soniyada tashxis qo'yib, davolash rejasini tuzadi"),
                 style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13.5, height: 1.4, fontWeight: FontWeight.w500)),
             const SizedBox(height: 16),
             Row(children: [
@@ -218,14 +219,14 @@ class _HeroCard extends StatelessWidget {
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Icon(AppIcons.camera, size: 19, color: c.onGold),
                       const SizedBox(width: 8),
-                      Text('Rasmga olish', style: TextStyle(color: c.onGold, fontSize: 15, fontWeight: FontWeight.w800)),
+                      Text(tr('Rasmga olish'), style: TextStyle(color: c.onGold, fontSize: 15, fontWeight: FontWeight.w800)),
                     ]),
                   ),
                 ),
               ),
               const SizedBox(width: 10),
               Tooltip(
-                message: 'Galereyadan tanlash',
+                message: tr('Galereyadan tanlash'),
                 child: Material(
                   color: Colors.white.withValues(alpha: 0.18),
                   shape: const CircleBorder(),
@@ -257,13 +258,13 @@ class _TasksSection extends ConsumerWidget {
       Padding(
         padding: const EdgeInsets.only(top: 4, bottom: 12),
         child: Row(children: [
-          const Text('Bugungi vazifalar', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
+          Text(tr('Bugungi vazifalar'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
           const SizedBox(width: 8),
           if (todays.isNotEmpty) Tag('$done / ${todays.length}', bg: c.primaryLight, fg: c.primaryDark),
           const Spacer(),
           InkWell(
             onTap: () => context.push('/reminders'),
-            child: Text('Barchasi', style: TextStyle(fontSize: 14, color: c.primary, fontWeight: FontWeight.w700)),
+            child: Text(tr('Barchasi'), style: TextStyle(fontSize: 14, color: c.primary, fontWeight: FontWeight.w700)),
           ),
         ]),
       ),
@@ -300,7 +301,7 @@ class _CropCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final pct = crop.healthScore;
-    final status = pct >= 70 ? "Sog'lom" : (pct >= 45 ? 'Kuzatuvda' : 'Davolanmoqda');
+    final status = pct >= 70 ? tr("Sog'lom") : (pct >= 45 ? tr('Kuzatuvda') : tr('Davolanmoqda'));
     return SizedBox(
       width: 168,
       child: AppCard(
@@ -355,7 +356,7 @@ class _AddCropTile extends StatelessWidget {
                 child: Icon(AppIcons.plus, color: c.primary),
               ),
               const SizedBox(height: 8),
-              Text("Ekin qo'shish", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: c.primary)),
+              Text(tr("Ekin qo'shish"), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: c.primary)),
             ]),
           ),
         ),
@@ -381,9 +382,9 @@ class _EmptyGarden extends StatelessWidget {
         const SizedBox(width: 14),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text("Birinchi ekiningizni qo'shing", style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+            Text(tr("Birinchi ekiningizni qo'shing"), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
             const SizedBox(height: 2),
-            Text("Sog'lig'ini kuzatib, eslatmalar olasiz", style: TextStyle(color: c.muted, fontSize: 12.5)),
+            Text(tr("Sog'lig'ini kuzatib, eslatmalar olasiz"), style: TextStyle(color: c.muted, fontSize: 12.5)),
           ]),
         ),
         Icon(AppIcons.plus, color: c.primary),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../i18n/i18n.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_motion.dart';
 import '../theme/app_theme.dart';
@@ -53,9 +54,9 @@ class RiskTag extends StatelessWidget {
   final String? risk;
   @override
   Widget build(BuildContext context) => switch (risk) {
-        'high' => const StatusTag('Yuqori xavf', kind: StatusKind.disease),
-        'low' => const StatusTag('Past xavf', kind: StatusKind.info),
-        _ => const StatusTag("O'rta xavf", kind: StatusKind.risk),
+        'high' => StatusTag(tr('Yuqori xavf'), kind: StatusKind.disease),
+        'low' => StatusTag(tr('Past xavf'), kind: StatusKind.info),
+        _ => StatusTag(tr("O'rta xavf"), kind: StatusKind.risk),
       };
 }
 
@@ -125,13 +126,17 @@ class SegmentTabs extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                     boxShadow: selected == id ? [BoxShadow(color: c.shadow, blurRadius: 3, offset: const Offset(0, 1))] : null,
                   ),
-                  child: Text(label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: selected == id ? (expert ? c.expert : c.text) : c.muted)),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  // Uzun tarjimalar (ru/kaa) kesilmasin — sig'masa kichrayadi
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(label,
+                        maxLines: 1,
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: selected == id ? (expert ? c.expert : c.text) : c.muted)),
+                  ),
                 ),
               ),
             ),

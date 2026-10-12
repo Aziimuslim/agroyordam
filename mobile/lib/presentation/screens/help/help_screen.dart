@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_motion.dart';
@@ -40,7 +41,7 @@ class _HelpState extends ConsumerState<HelpScreen> {
               foregroundColor: c.card,
               onPressed: () => context.push('/community/new'),
               icon: const Icon(AppIcons.edit),
-              label: const Text('Post yozish', style: TextStyle(fontWeight: FontWeight.w700)),
+              label: Text(tr('Post yozish'), style: TextStyle(fontWeight: FontWeight.w700)),
             )
           : null,
       body: SafeArea(
@@ -56,11 +57,11 @@ class _HelpState extends ConsumerState<HelpScreen> {
                 ref.invalidate(feedProvider(_feed));
               },
               child: ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 100), children: [
-                TopBar(title: 'Maslahat', showBack: false, actions: [
-                  CircleIconButton(icon: AppIcons.chat, badge: unread, tooltip: 'Xabarlar', onTap: () => context.push('/messages')),
+                TopBar(title: tr('Maslahat'), showBack: false, actions: [
+                  CircleIconButton(icon: AppIcons.chat, badge: unread, tooltip: tr('Xabarlar'), onTap: () => context.push('/messages')),
                 ]),
                 SegmentTabs(
-                  tabs: const [('agro', 'Agronomlar'), ('ai', 'AI yordamchi'), ('comm', 'Jamoat')],
+                  tabs: [('agro', tr('Agronomlar')), ('ai', tr('AI yordamchi')), ('comm', tr('Jamoat'))],
                   selected: _tab,
                   onSelect: (v) => setState(() => _tab = v),
                 ),
@@ -94,8 +95,8 @@ class _ExpertsTab extends ConsumerWidget {
     final quotaText = quota == null
         ? null
         : quota.unlimited
-            ? 'Premium: cheksiz savol'
-            : 'Bu oy: ${quota.remaining} ta bepul savol qoldi';
+            ? tr('Premium: cheksiz savol')
+            : trf('Bu oy: {0} ta bepul savol qoldi', [quota.remaining]);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Container(
         padding: const EdgeInsets.all(18),
@@ -104,10 +105,10 @@ class _ExpertsTab extends ConsumerWidget {
           Row(children: [
             Icon(Icons.verified_user_outlined, color: c.onDark),
             const SizedBox(width: 10),
-            Expanded(child: Text("Agronomdan so'rang", style: TextStyle(color: c.onDark, fontSize: 17, fontWeight: FontWeight.w700))),
+            Expanded(child: Text(tr("Agronomdan so'rang"), style: TextStyle(color: c.onDark, fontSize: 17, fontWeight: FontWeight.w700))),
           ]),
           const SizedBox(height: 4),
-          Text([quotaText, if (experts.isNotEmpty) '$online agronom onlayn'].whereType<String>().join(' · '),
+          Text([quotaText, if (experts.isNotEmpty) trf('{0} agronom onlayn', [online])].whereType<String>().join(' · '),
               style: TextStyle(color: c.onDarkMuted, fontSize: 14)),
           const SizedBox(height: 14),
           SizedBox(
@@ -116,25 +117,25 @@ class _ExpertsTab extends ConsumerWidget {
               style: TextButton.styleFrom(backgroundColor: c.onDark, foregroundColor: c.dark, padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md))),
               onPressed: quota != null && quota.remaining == 0 ? () => context.push('/premium') : () => context.push('/help/ask'),
-              child: Text(quota != null && quota.remaining == 0 ? "Limit tugadi — Premium'ga o'tish" : 'Savol berish',
+              child: Text(quota != null && quota.remaining == 0 ? tr("Limit tugadi — Premium'ga o'tish") : tr('Savol berish'),
                   style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
             ),
           ),
         ]),
       ),
       const SizedBox(height: 22),
-      const SectionTitle('Savollarim'),
+      SectionTitle(tr('Savollarim')),
       AsyncView(
         value: ref.watch(myQuestionsProvider),
         onRetry: () => ref.invalidate(myQuestionsProvider),
         data: (list) => list.isEmpty
-            ? const EmptyNote("Hali savol bermagansiz. Ekiningiz haqida agronomdan so'rang — rasm va tashxis o'zi biriktiriladi.",
+            ? EmptyNote(tr("Hali savol bermagansiz. Ekiningiz haqida agronomdan so'rang — rasm va tashxis o'zi biriktiriladi."),
                 icon: Icons.forum_outlined)
             : Column(children: [for (final q in list) QuestionTile(q)]),
       ),
       if (experts.isNotEmpty) ...[
         const SizedBox(height: 10),
-        const SectionTitle('Agronomlar'),
+        SectionTitle(tr('Agronomlar')),
         for (final e in experts)
           AppCard(
             shadow: false,
@@ -147,16 +148,16 @@ class _ExpertsTab extends ConsumerWidget {
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(e.fullName, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700)),
-                  Text([e.specialization, e.district ?? e.region, if (e.experienceYears != null) '${e.experienceYears} yil tajriba'].whereType<String>().join(' · '),
+                  Text([e.specialization, e.district ?? e.region, if (e.experienceYears != null) trf('{0} yil tajriba', [e.experienceYears])].whereType<String>().join(' · '),
                       style: Theme.of(context).textTheme.bodySmall),
                   const SizedBox(height: 4),
                   Row(children: [
                     if (e.rating != null) ...[Icon(Icons.star_rounded, size: 16, color: c.gold), Text(' ${e.rating!.toStringAsFixed(1)} · ', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700))],
-                    Text('${e.answers} javob', style: Theme.of(context).textTheme.bodySmall),
+                    Text(trf('{0} javob', [e.answers]), style: Theme.of(context).textTheme.bodySmall),
                   ]),
                 ]),
               ),
-              StatusTag(e.acceptingQuestions ? 'Onlayn' : 'Oflayn', kind: e.acceptingQuestions ? StatusKind.healthy : StatusKind.neutral),
+              StatusTag(e.acceptingQuestions ? tr('Onlayn') : tr('Oflayn'), kind: e.acceptingQuestions ? StatusKind.healthy : StatusKind.neutral),
             ]),
           ),
       ],
@@ -171,9 +172,9 @@ class QuestionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, kind) = switch (q.status) {
-      'answered' => ('Javob berildi', StatusKind.expert),
-      'closed' => ('Yopilgan', StatusKind.neutral),
-      _ => ('Javob kutilmoqda', StatusKind.info),
+      'answered' => (tr('Javob berildi'), StatusKind.expert),
+      'closed' => (tr('Yopilgan'), StatusKind.neutral),
+      _ => (tr('Javob kutilmoqda'), StatusKind.info),
     };
     return AppCard(
       shadow: false,
@@ -217,7 +218,7 @@ class _AiTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    const examples = ['Pomidorni qachon purkash kerak?', 'Uzumni qachon kesish kerak?', "Olma qo'turiga qarshi nima qilay?"];
+    final examples = [tr('Pomidorni qachon purkash kerak?'), tr('Uzumni qachon kesish kerak?'), tr("Olma qo'turiga qarshi nima qilay?")];
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       AppCard(
         shadow: false,
@@ -225,16 +226,16 @@ class _AiTab extends StatelessWidget {
           Row(children: [
             Container(width: 44, height: 44, decoration: BoxDecoration(color: c.primaryLight, shape: BoxShape.circle), child: Icon(AppIcons.bot, color: c.primary)),
             const SizedBox(width: 12),
-            const Expanded(child: Text('AI yordamchi', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700))),
+            Expanded(child: Text(tr('AI yordamchi'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700))),
           ]),
           const SizedBox(height: 8),
-          Text("Ekinlar, kasalliklar va dorilar haqida istalgan savolga darhol javob beradi. Murakkab holatda agronomga yo'naltiradi.",
+          Text(tr("Ekinlar, kasalliklar va dorilar haqida istalgan savolga darhol javob beradi. Murakkab holatda agronomga yo'naltiradi."),
               style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 14),
-          PillButton(label: 'Suhbatni ochish', style: PillStyle.primary, block: true, onPressed: () => context.push('/assistant')),
+          PillButton(label: tr('Suhbatni ochish'), style: PillStyle.primary, block: true, onPressed: () => context.push('/assistant')),
         ]),
       ),
-      Text('MASALAN', style: Theme.of(context).textTheme.labelSmall),
+      Text(tr('MASALAN'), style: Theme.of(context).textTheme.labelSmall),
       const SizedBox(height: 8),
       for (final e in examples)
         ListRow(icon: Icons.chat_bubble_outline_rounded, label: e, onTap: () => context.push('/assistant')),
@@ -248,12 +249,12 @@ class _CommunityTab extends ConsumerWidget {
   final ValueChanged<String> onFeed;
   @override
   Widget build(BuildContext context, WidgetRef ref) => Column(children: [
-        ChipTabs(tabs: const [('all', 'Barchasi'), ('following', 'Obunalarim')], selected: feed, onSelect: onFeed),
+        ChipTabs(tabs: [('all', tr('Barchasi')), ('following', tr('Obunalarim'))], selected: feed, onSelect: onFeed),
         AsyncView(
           value: ref.watch(feedProvider(feed)),
           onRetry: () => ref.invalidate(feedProvider(feed)),
           data: (posts) => posts.isEmpty
-              ? EmptyNote(feed == 'following' ? "Obuna bo'lgan fermerlaringiz hali post yozmagan" : "Hali post yo'q. Birinchi bo'ling!", icon: AppIcons.chat)
+              ? EmptyNote(feed == 'following' ? tr("Obuna bo'lgan fermerlaringiz hali post yozmagan") : tr("Hali post yo'q. Birinchi bo'ling!"), icon: AppIcons.chat)
               : Column(children: [for (final p in posts) PostCard(post: p, feed: feed)]),
         ),
       ]);

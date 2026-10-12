@@ -7,6 +7,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../../../application/providers.dart';
 import '../../../core/config.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
@@ -150,8 +151,8 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 child: TopBar(
-                  title: _other?.fullName ?? 'Suhbat',
-                  subtitle: _typing ? 'yozmoqda...' : (_online ? 'Onlayn' : 'Oflayn'),
+                  title: _other?.fullName ?? tr('Suhbat'),
+                  subtitle: _typing ? 'yozmoqda...' : (_online ? tr('Onlayn') : tr('Oflayn')),
                   leading: _other == null ? null : Avatar(name: _other!.fullName, url: _other!.avatarUrl, size: 34),
                 ),
               ),
@@ -162,7 +163,7 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
                         controller: _scroll,
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                         children: [
-                          if (_messages.isEmpty) const EmptyNote('Suhbatni boshlang'),
+                          if (_messages.isEmpty) EmptyNote(tr('Suhbatni boshlang')),
                           for (final m in _messages)
                             MessageBubble(text: m.content ?? '', me: m.senderId == me?.id, time: m.createdAt, read: m.senderId == me?.id ? m.isRead : null),
                         ],

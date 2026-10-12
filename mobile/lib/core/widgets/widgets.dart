@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../config.dart';
+import '../i18n/i18n.dart';
 import '../network/api_exception.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_icons.dart';
@@ -71,7 +72,7 @@ class TopBar extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Row(children: [
-        if (showBack) ...[CircleIconButton(icon: AppIcons.back, onTap: () => context.canPop() ? context.pop() : context.go('/home'), tooltip: 'Orqaga'), const SizedBox(width: 12)],
+        if (showBack) ...[CircleIconButton(icon: AppIcons.back, onTap: () => context.canPop() ? context.pop() : context.go('/home'), tooltip: tr('Orqaga')), const SizedBox(width: 12)],
         if (leading != null) ...[leading!, const SizedBox(width: 10)],
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -441,7 +442,7 @@ class AsyncView<T> extends StatelessWidget {
           Icon(Icons.cloud_off_rounded, size: 36, color: context.c.muted),
           const SizedBox(height: 10),
           Text(ApiException.from(e).message, textAlign: TextAlign.center, style: TextStyle(color: context.c.muted)),
-          if (onRetry != null) ...[const SizedBox(height: 12), PillButton(label: 'Qayta urinish', style: PillStyle.soft, onPressed: onRetry)],
+          if (onRetry != null) ...[const SizedBox(height: 12), PillButton(label: tr('Qayta urinish'), style: PillStyle.soft, onPressed: onRetry)],
         ]),
       ),
     );
@@ -548,15 +549,15 @@ Future<T?> showSheet<T>(BuildContext context, {required String title, required W
   );
 }
 
-Future<bool> confirm(BuildContext context, String title, String message, {String ok = 'Ha', bool danger = false}) async {
+Future<bool> confirm(BuildContext context, String title, String message, {String? ok, bool danger = false}) async {
   final r = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
       content: Text(message),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Bekor qilish', style: TextStyle(color: context.c.muted))),
-        TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ok, style: TextStyle(color: danger ? context.c.danger : context.c.primary, fontWeight: FontWeight.w800))),
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Bekor qilish'), style: TextStyle(color: context.c.muted))),
+        TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ok ?? tr('Ha'), style: TextStyle(color: danger ? context.c.danger : context.c.primary, fontWeight: FontWeight.w800))),
       ],
     ),
   );

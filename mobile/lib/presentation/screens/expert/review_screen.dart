@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../application/providers.dart';
 import '../../../core/catalog_images.dart';
 import '../../../core/config.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
@@ -54,15 +55,15 @@ class _ReviewState extends ConsumerState<ReviewScreen> {
       ref.invalidate(expertStatsProvider);
       if (!mounted) return;
       final done = switch (status) {
-        'confirmed' => 'Tasdiqlandi',
-        'corrected' => 'Tuzatildi',
-        _ => 'Rad etildi',
+        'confirmed' => tr('Tasdiqlandi'),
+        'corrected' => tr('Tuzatildi'),
+        _ => tr('Rad etildi'),
       };
       if (next != null) {
-        showToast(context, '$done. Keyingi tashxis');
+        showToast(context, trf('{0}. Keyingi tashxis', [done]));
         context.pushReplacement('/expert/review/${next.id}');
       } else {
-        showToast(context, "$done. Navbat bo'sh");
+        showToast(context, trf("{0}. Navbat bo'sh", [done]));
         context.canPop() ? context.pop() : context.go('/expert');
       }
     } catch (e) {
@@ -101,12 +102,12 @@ class _ReviewState extends ConsumerState<ReviewScreen> {
               child: Center(child: Image.network(url, fit: BoxFit.contain)),
             ),
           ),
-          const Positioned(
+          Positioned(
             left: 0,
             right: 0,
             bottom: 32,
             child: Text(
-              'Yopish uchun bosing',
+              tr('Yopish uchun bosing'),
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white70, fontSize: 13),
             ),
@@ -123,12 +124,12 @@ class _ReviewState extends ConsumerState<ReviewScreen> {
     final i = value.value;
     final choice = _choice ?? i?.aiLabel;
     final label = i == null || choice == null
-        ? 'Tasdiqlash'
+        ? tr('Tasdiqlash')
         : choice == _rejected
-        ? 'Rad etish: rasm yaroqsiz'
+        ? tr('Rad etish: rasm yaroqsiz')
         : choice == i.aiLabel
-        ? "To'g'ri — tasdiqlash"
-        : 'Tuzatish: ${_nameOf(i, choice)}';
+        ? tr("To'g'ri — tasdiqlash")
+        : trf('Tuzatish: {0}', [_nameOf(i, choice)]);
     return PageShell(
       padBottom: false,
       bottom: i == null
@@ -175,10 +176,10 @@ class _ReviewState extends ConsumerState<ReviewScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TopBar(title: 'Tashxisni tekshirish', subtitle: i.plantName),
+              TopBar(title: tr('Tashxisni tekshirish'), subtitle: i.plantName),
               Semantics(
                 button: true,
-                label: 'Rasmni kattalashtirish',
+                label: tr('Rasmni kattalashtirish'),
                 child: GestureDetector(
                   onTap: url == null ? null : () => _zoom(url),
                   child: Stack(
@@ -190,12 +191,12 @@ class _ReviewState extends ConsumerState<ReviewScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                           decoration: BoxDecoration(color: const Color(0x8C000000), borderRadius: BorderRadius.circular(AppRadius.pill)),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.zoom_in_rounded, size: 15, color: Color(0xFFFFFFFF)),
                               SizedBox(width: 4),
-                              Text('bosib kattalashtiring', style: TextStyle(color: Color(0xFFFFFFFF), fontSize: 11.5)),
+                              Text(tr('bosib kattalashtiring'), style: TextStyle(color: Color(0xFFFFFFFF), fontSize: 11.5)),
                             ],
                           ),
                         ),
@@ -213,12 +214,12 @@ class _ReviewState extends ConsumerState<ReviewScreen> {
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
-                  if (i.reviewRequested) const StatusTag("Dehqon so'radi", kind: StatusKind.expert, icon: Icons.send_outlined),
+                  if (i.reviewRequested) StatusTag(tr("Dehqon so'radi"), kind: StatusKind.expert, icon: Icons.send_outlined),
                 ],
               ),
               if (i.reviewNote != null) ...[
                 const SizedBox(height: 12),
-                NoteBox(title: 'Dehqon izohi', text: i.reviewNote, icon: Icons.chat_bubble_outline_rounded),
+                NoteBox(title: tr('Dehqon izohi'), text: i.reviewNote, icon: Icons.chat_bubble_outline_rounded),
               ],
               const SizedBox(height: 14),
               AppCard(
@@ -228,13 +229,13 @@ class _ReviewState extends ConsumerState<ReviewScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("AI JAVOBI — TO'G'RI KASALLIKNI TANLANG", style: Theme.of(context).textTheme.labelSmall),
+                    Text(tr("AI JAVOBI — TO'G'RI KASALLIKNI TANLANG"), style: Theme.of(context).textTheme.labelSmall),
                     const SizedBox(height: 10),
-                    if (alts.isEmpty) const Text("AI javob bermagan — «Boshqa kasallik» orqali tanlang."),
+                    if (alts.isEmpty) Text(tr("AI javob bermagan — «Boshqa kasallik» orqali tanlang.")),
                     for (final a in alts) _AltTile(a: a, selected: choice == a.label, onTap: () => setState(() => _choice = a.label)),
                     const SizedBox(height: 4),
                     PillButton(
-                      label: 'Boshqa kasallik tanlash',
+                      label: tr('Boshqa kasallik tanlash'),
                       icon: Icons.search_rounded,
                       style: PillStyle.outline,
                       block: true,
@@ -242,7 +243,7 @@ class _ReviewState extends ConsumerState<ReviewScreen> {
                     ),
                     const SizedBox(height: 8),
                     PillButton(
-                      label: 'Rasm yaroqsiz',
+                      label: tr('Rasm yaroqsiz'),
                       icon: Icons.highlight_off_rounded,
                       style: PillStyle.outline,
                       fg: c.danger,
@@ -253,7 +254,7 @@ class _ReviewState extends ConsumerState<ReviewScreen> {
                 ),
               ),
               const SizedBox(height: 18),
-              Text('Dehqonga izoh', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              Text(tr('Dehqonga izoh'), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -261,16 +262,16 @@ class _ReviewState extends ConsumerState<ReviewScreen> {
                 children: [
                   for (final t
                       in choice == _rejected
-                          ? const [
-                              'Bargni yaqinroqdan, kunduzi suratga oling',
-                              'Rasm xira chiqqan, qayta oling',
-                              'Bitta bargni oq fonda suratga oling',
+                          ? [
+                              tr('Bargni yaqinroqdan, kunduzi suratga oling'),
+                              tr('Rasm xira chiqqan, qayta oling'),
+                              tr('Bitta bargni oq fonda suratga oling'),
                             ]
-                          : const [
-                              'Pastki barglarni olib tashlang',
-                              "Rejadagi dorini qo'llang",
-                              "3 kundan keyin yangi rasm yuboring",
-                              "Sug'orishni kamaytiring",
+                          : [
+                              tr('Pastki barglarni olib tashlang'),
+                              tr("Rejadagi dorini qo'llang"),
+                              tr("3 kundan keyin yangi rasm yuboring"),
+                              tr("Sug'orishni kamaytiring"),
                             ])
                     ActionChip(
                       label: Text(t),
@@ -290,11 +291,11 @@ class _ReviewState extends ConsumerState<ReviewScreen> {
                 minLines: 2,
                 maxLines: 5,
                 maxLength: 1000,
-                decoration: const InputDecoration(hintText: "Ixtiyoriy: dehqon tashxis sahifasida ko'radi", counterText: ''),
+                decoration: InputDecoration(hintText: tr("Ixtiyoriy: dehqon tashxis sahifasida ko'radi"), counterText: ''),
               ),
               const SizedBox(height: 12),
               Text(
-                "Natija dehqonga bildirishnoma bo'lib boradi; rasm datasetga tasdiqlangan bo'lib tushadi.",
+                tr("Natija dehqonga bildirishnoma bo'lib boradi; rasm datasetga tasdiqlangan bo'lib tushadi."),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 12),
@@ -394,21 +395,21 @@ class _OtherDiseaseSheet extends ConsumerWidget {
             controller: scroll,
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
             children: [
-              const Text('Boshqa kasallik', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+              Text(tr('Boshqa kasallik'), style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
               const SizedBox(height: 4),
               Text(
                 plantName == null
-                    ? "Ma'lumotnomadagi rasmlar bilan solishtiring."
-                    : "$plantName kasalliklari — ma'lumotnomadagi rasmlar bilan solishtiring.",
+                    ? tr("Ma'lumotnomadagi rasmlar bilan solishtiring.")
+                    : trf("{0} kasalliklari — ma'lumotnomadagi rasmlar bilan solishtiring.", [plantName]),
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 14),
               if (prefix != null)
                 _SheetRow(
                   asset: CatalogImages.disease('${prefix}_healthy'),
-                  title: "Sog'lom",
-                  tag: const StatusTag("Sog'lom", kind: StatusKind.healthy),
-                  onTap: () => Navigator.pop(ctx, Alternative(label: '${prefix}_healthy', diseaseName: "Sog'lom", healthy: true)),
+                  title: tr("Sog'lom"),
+                  tag: StatusTag(tr("Sog'lom"), kind: StatusKind.healthy),
+                  onTap: () => Navigator.pop(ctx, Alternative(label: '${prefix}_healthy', diseaseName: tr("Sog'lom"), healthy: true)),
                 ),
               for (final d in items)
                 _SheetRow(
@@ -419,7 +420,7 @@ class _OtherDiseaseSheet extends ConsumerWidget {
                   tag: RiskTag(d.riskLevel),
                   onTap: () => Navigator.pop(ctx, Alternative(label: d.aiLabel!, diseaseId: d.id, diseaseName: d.name)),
                 ),
-              if (items.isEmpty) const EmptyNote("Bu ekin uchun ma'lumotnomada kasallik yo'q"),
+              if (items.isEmpty) EmptyNote(tr("Bu ekin uchun ma'lumotnomada kasallik yo'q")),
             ],
           );
         },

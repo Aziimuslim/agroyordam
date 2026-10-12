@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
@@ -27,7 +28,7 @@ class _AddCropState extends ConsumerState<AddCropScreen> {
 
   Future<void> _save() async {
     if (_name.text.trim().isEmpty) {
-      showToast(context, 'Ekin nomini kiriting');
+      showToast(context, tr('Ekin nomini kiriting'));
       return;
     }
     setState(() => _loading = true);
@@ -50,7 +51,7 @@ class _AddCropState extends ConsumerState<AddCropScreen> {
       }
       ref.invalidate(cropsProvider);
       if (mounted) {
-        showToast(context, widget.crop == null ? "Ekin qo'shildi" : 'Saqlandi');
+        showToast(context, widget.crop == null ? tr("Ekin qo'shildi") : tr('Saqlandi'));
         context.pop();
       }
     } catch (e) {
@@ -67,16 +68,16 @@ class _AddCropState extends ConsumerState<AddCropScreen> {
     return PageShell(
       padBottom: false,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        TopBar(title: widget.crop == null ? "Ekin qo'shish" : 'Ekinni tahrirlash'),
-        const FieldLabel('Nomi (masalan, taxallus)'),
-        TextField(controller: _name, decoration: const InputDecoration(hintText: 'Masalan: Yashilvoy')),
-        const FieldLabel('Ekin turi'),
+        TopBar(title: widget.crop == null ? tr("Ekin qo'shish") : tr('Ekinni tahrirlash')),
+        FieldLabel(tr('Nomi (masalan, taxallus)')),
+        TextField(controller: _name, decoration: InputDecoration(hintText: tr('Masalan: Yashilvoy'))),
+        FieldLabel(tr('Ekin turi')),
         plants.when(
           data: (list) => DropdownButtonFormField<String>(
             initialValue: _plantId,
             isExpanded: true,
             dropdownColor: c.card,
-            hint: const Text('Tanlang'),
+            hint: Text(tr('Tanlang')),
             items: [for (final p in list) DropdownMenuItem(value: p.id, child: Text(p.name))],
             onChanged: (v) {
               setState(() => _plantId = v);
@@ -84,21 +85,21 @@ class _AddCropState extends ConsumerState<AddCropScreen> {
             },
           ),
           loading: () => const LinearProgressIndicator(),
-          error: (e, _) => Text('Turlarni yuklab bo\'lmadi', style: TextStyle(color: c.danger)),
+          error: (e, _) => Text(tr('Turlarni yuklab bo\'lmadi'), style: TextStyle(color: c.danger)),
         ),
-        const FieldLabel('Navi'),
-        TextField(controller: _variety, decoration: const InputDecoration(hintText: 'Masalan: Pushti gigant')),
+        FieldLabel(tr('Navi')),
+        TextField(controller: _variety, decoration: InputDecoration(hintText: tr('Masalan: Pushti gigant'))),
         Row(children: [
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const FieldLabel('Maydon (sotix)'),
+              FieldLabel(tr('Maydon (sotix)')),
               TextField(controller: _area, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(hintText: '5')),
             ]),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const FieldLabel('Ekilgan sana'),
+              FieldLabel(tr('Ekilgan sana')),
               InkWell(
                 onTap: () async {
                   final d = await showDatePicker(context: context, firstDate: DateTime(2015), lastDate: DateTime.now(), initialDate: _date ?? DateTime.now());
@@ -106,18 +107,18 @@ class _AddCropState extends ConsumerState<AddCropScreen> {
                 },
                 child: InputDecorator(
                   decoration: const InputDecoration(),
-                  child: Text(_date == null ? 'Tanlang' : DateFormat('dd.MM.yyyy').format(_date!), style: TextStyle(color: _date == null ? c.muted : c.text)),
+                  child: Text(_date == null ? tr('Tanlang') : DateFormat('dd.MM.yyyy').format(_date!), style: TextStyle(color: _date == null ? c.muted : c.text)),
                 ),
               ),
             ]),
           ),
         ]),
-        const FieldLabel('Joylashuv'),
-        TextField(controller: _location, decoration: const InputDecoration(hintText: 'Masalan: Issiqxona, 2-qator')),
-        const FieldLabel('Izoh'),
-        TextField(controller: _notes, maxLines: 3, decoration: const InputDecoration(hintText: 'Ixtiyoriy')),
+        FieldLabel(tr('Joylashuv')),
+        TextField(controller: _location, decoration: InputDecoration(hintText: tr('Masalan: Issiqxona, 2-qator'))),
+        FieldLabel(tr('Izoh')),
+        TextField(controller: _notes, maxLines: 3, decoration: InputDecoration(hintText: tr('Ixtiyoriy'))),
         const SizedBox(height: 24),
-        PillButton(label: 'Saqlash', block: true, loading: _loading, onPressed: _save),
+        PillButton(label: tr('Saqlash'), block: true, loading: _loading, onPressed: _save),
       ]),
     );
   }

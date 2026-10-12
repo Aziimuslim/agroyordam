@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../application/providers.dart';
 import '../../../core/catalog_images.dart';
 import '../../../core/config.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
@@ -33,7 +34,7 @@ class DiagnosisDetailScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(children: [
-              const TopBar(title: 'Tashxis natijasi'),
+              TopBar(title: tr('Tashxis natijasi')),
               AsyncView(value: value, onRetry: () => ref.invalidate(diagnosisProvider(id)), data: (_) => const SizedBox()),
             ]),
           ),
@@ -84,9 +85,9 @@ class _BodyState extends ConsumerState<_Body> {
                   left: 16,
                   right: 16,
                   child: Row(children: [
-                    _GlassButton(icon: AppIcons.back, tooltip: 'Orqaga', onTap: () => context.canPop() ? context.pop() : context.go('/home')),
+                    _GlassButton(icon: AppIcons.back, tooltip: tr('Orqaga'), onTap: () => context.canPop() ? context.pop() : context.go('/home')),
                     const Spacer(),
-                    _GlassButton(icon: AppIcons.share, tooltip: 'Jamoatda ulashish', onTap: () => shareDiagnosis(context, ref, d)),
+                    _GlassButton(icon: AppIcons.share, tooltip: tr('Jamoatda ulashish'), onTap: () => shareDiagnosis(context, ref, d)),
                   ]),
                 ),
               ]),
@@ -104,7 +105,7 @@ class _BodyState extends ConsumerState<_Body> {
                   Wrap(spacing: 8, runSpacing: 8, children: [
                     if (d.plantName != null) _IconChip(icon: AppIcons.leaf, label: d.plantName!, bg: c.successBg, fg: c.success),
                     if (d.isHealthy)
-                      _IconChip(icon: AppIcons.check, label: "Sog'lom", bg: c.successBg, fg: c.success)
+                      _IconChip(icon: AppIcons.check, label: tr("Sog'lom"), bg: c.successBg, fg: c.success)
                     else if (d.riskLevel != null)
                       _IconChip(
                         icon: AppIcons.alert,
@@ -112,9 +113,9 @@ class _BodyState extends ConsumerState<_Body> {
                         bg: d.riskLevel == 'high' ? c.dangerBg : c.warningBg,
                         fg: d.riskLevel == 'high' ? c.danger : c.warning,
                       ),
-                    if (d.lowConfidence && !d.isHealthy) _IconChip(icon: Icons.help_outline_rounded, label: 'Taxminiy', bg: c.accentSoft, fg: c.warning),
+                    if (d.lowConfidence && !d.isHealthy) _IconChip(icon: Icons.help_outline_rounded, label: tr('Taxminiy'), bg: c.accentSoft, fg: c.warning),
                     if (d.expertChecked)
-                      _IconChip(icon: Icons.verified_user_outlined, label: 'Agronom tasdiqladi', bg: c.expertBg, fg: c.expert),
+                      _IconChip(icon: Icons.verified_user_outlined, label: tr('Agronom tasdiqladi'), bg: c.expertBg, fg: c.expert),
                   ]),
                   const SizedBox(height: 10),
                   Text(d.title, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 25, height: 30 / 25)),
@@ -126,11 +127,11 @@ class _BodyState extends ConsumerState<_Body> {
                   if (d.diseaseId != null) _CatalogLink(d: d),
                   if (d.isHealthy)
                     AppCard(
-                      child: Text(d.recommendations ?? "Parvarishni davom ettiring: muntazam sug'orish va haftalik ko'rik.",
+                      child: Text(d.recommendations ?? tr("Parvarishni davom ettiring: muntazam sug'orish va haftalik ko'rik."),
                           style: const TextStyle(fontSize: 14.5, height: 1.5, fontWeight: FontWeight.w500)),
                     )
                   else ...[
-                    _Segmented(labels: const ['Davolash', 'Belgilar', 'Oldini olish'], index: _tab, onChanged: (i) => setState(() => _tab = i)),
+                    _Segmented(labels: [tr('Davolash'), tr('Belgilar'), tr('Oldini olish')], index: _tab, onChanged: (i) => setState(() => _tab = i)),
                     const SizedBox(height: 14),
                     _Steps(text: switch (_tab) { 0 => d.treatment ?? d.recommendations, 1 => [d.symptoms, d.causes].whereType<String>().join('. '), _ => d.prevention }),
                     const SizedBox(height: 8),
@@ -203,7 +204,7 @@ class _ConfidenceCard extends StatelessWidget {
     return AppCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Expanded(child: Text('AI ishonchi', style: TextStyle(color: c.muted, fontSize: 13.5, fontWeight: FontWeight.w700))),
+          Expanded(child: Text(tr('AI ishonchi'), style: TextStyle(color: c.muted, fontSize: 13.5, fontWeight: FontWeight.w700))),
           Text('${pct.toStringAsFixed(0)}%', style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.w800)),
         ]),
         const SizedBox(height: 10),
@@ -213,7 +214,7 @@ class _ConfidenceCard extends StatelessWidget {
         ),
         if (d.lowConfidence && !d.isHealthy) ...[
           const SizedBox(height: 10),
-          Text("AI to'liq ishonch hosil qilmadi — belgilarni quyidagi tavsif bilan solishtiring. Ekin turini tanlab qayta tekshirsangiz, natija aniqroq bo'ladi.",
+          Text(tr("AI to'liq ishonch hosil qilmadi — belgilarni quyidagi tavsif bilan solishtiring. Ekin turini tanlab qayta tekshirsangiz, natija aniqroq bo'ladi."),
               style: TextStyle(color: c.muted, fontSize: 12.5, height: 1.4)),
         ],
       ]),
@@ -263,7 +264,7 @@ class _Steps extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final parts = (text ?? '').split(RegExp(r'(?<=[.;!])\s+')).map((s) => s.trim().replaceAll(RegExp(r'[.;]$'), '')).where((s) => s.length > 2).toList();
-    if (parts.isEmpty) return Text("Ma'lumot mavjud emas", style: TextStyle(color: c.muted));
+    if (parts.isEmpty) return Text(tr("Ma'lumot mavjud emas"), style: TextStyle(color: c.muted));
     return Column(children: [
       for (final (i, p) in parts.indexed)
         Padding(
@@ -308,7 +309,7 @@ class _MedicineCard extends StatelessWidget {
             Text(m.recommendation ?? m.activeIngredient ?? '', style: TextStyle(color: c.muted, fontSize: 12.5, height: 1.35, fontWeight: FontWeight.w500)),
           ]),
         ),
-        if (primary) ...[const SizedBox(width: 8), Tag('Asosiy', bg: c.primaryLight, fg: c.primaryDark)],
+        if (primary) ...[const SizedBox(width: 8), Tag(tr('Asosiy'), bg: c.primaryLight, fg: c.primaryDark)],
       ]),
     );
   }
@@ -323,7 +324,7 @@ class _PlanBar extends StatelessWidget {
     if (!d.isHealthy && d.diseaseName == null) {
       return const SizedBox.shrink();
     }
-    final label = d.cropId != null ? 'Davolash rejasi · ${planDays(d)} kun' : "Bog'imga qo'shish · ${planDays(d)} kunlik reja";
+    final label = d.cropId != null ? trf('Davolash rejasi · {0} kun', [planDays(d)]) : trf("Bog'imga qo'shish · {0} kunlik reja", [planDays(d)]);
     return Container(
       decoration: BoxDecoration(color: c.card, border: Border(top: BorderSide(color: c.border))),
       child: SafeArea(
@@ -357,20 +358,20 @@ class _ExpertBlockState extends ConsumerState<_ExpertBlock> {
 
   Future<void> _send() async {
     final note = TextEditingController();
-    final ok = await showSheet<bool>(context, title: 'Agronomga yuborish', builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text("Rasm va AI natijasi biriktiriladi. Agronom tasdiqlaydi yoki to'g'ri kasallikni ko'rsatadi — javob bildirishnoma bo'lib keladi.",
+    final ok = await showSheet<bool>(context, title: tr('Agronomga yuborish'), builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(tr("Rasm va AI natijasi biriktiriladi. Agronom tasdiqlaydi yoki to'g'ri kasallikni ko'rsatadi — javob bildirishnoma bo'lib keladi."),
               style: Theme.of(ctx).textTheme.bodyMedium),
           const SizedBox(height: 12),
-          TextField(controller: note, maxLines: 3, decoration: const InputDecoration(hintText: 'Izoh (ixtiyoriy): qachondan beri, qancha joyda')),
+          TextField(controller: note, maxLines: 3, decoration: InputDecoration(hintText: tr('Izoh (ixtiyoriy): qachondan beri, qancha joyda'))),
           const SizedBox(height: 16),
-          PillButton(label: 'Yuborish', icon: Icons.send_rounded, style: PillStyle.primary, block: true, onPressed: () => Navigator.pop(ctx, true)),
+          PillButton(label: tr('Yuborish'), icon: Icons.send_rounded, style: PillStyle.primary, block: true, onPressed: () => Navigator.pop(ctx, true)),
         ]));
     if (ok != true || !mounted) return;
     setState(() => _busy = true);
     try {
       await ref.read(gardenRepoProvider).requestReview(widget.d.id, note: note.text.trim());
       ref.invalidate(diagnosisProvider(widget.d.id));
-      if (mounted) showToast(context, 'Agronomga yuborildi. Javob kelsa xabar beramiz.');
+      if (mounted) showToast(context, tr('Agronomga yuborildi. Javob kelsa xabar beramiz.'));
     } catch (e) {
       if (mounted) showError(context, e);
     } finally {
@@ -384,15 +385,15 @@ class _ExpertBlockState extends ConsumerState<_ExpertBlock> {
     final d = widget.d;
     Widget pad(Widget w) => Padding(padding: const EdgeInsets.only(bottom: 14), child: w);
     if (d.expertChecked) {
-      return pad(NoteBox(kind: NoteKind.expert, title: d.reviewStatus == 'corrected' ? 'Agronom tashxisni tuzatdi' : 'Agronom tashxisni tasdiqladi',
+      return pad(NoteBox(kind: NoteKind.expert, title: d.reviewStatus == 'corrected' ? tr('Agronom tashxisni tuzatdi') : tr('Agronom tashxisni tasdiqladi'),
           text: d.expertComment));
     }
     if (d.reviewStatus == 'rejected') {
-      return pad(NoteBox(kind: NoteKind.risk, title: 'Agronom: rasmni qayta oling',
-          text: d.expertComment ?? "Bargni yorug' joyda, yaqinroqdan, tiniq qilib suratga oling."));
+      return pad(NoteBox(kind: NoteKind.risk, title: tr('Agronom: rasmni qayta oling'),
+          text: d.expertComment ?? tr("Bargni yorug' joyda, yaqinroqdan, tiniq qilib suratga oling.")));
     }
     if (d.reviewRequested) {
-      return pad(const NoteBox(title: 'Agronomga yuborildi', text: "Agronom tekshirib javob beradi. Javob kelsa bildirishnoma keladi.",
+      return pad(NoteBox(title: tr('Agronomga yuborildi'), text: tr("Agronom tekshirib javob beradi. Javob kelsa bildirishnoma keladi."),
           icon: Icons.hourglass_top_rounded));
     }
     final expertButton = TextButton.icon(
@@ -404,16 +405,16 @@ class _ExpertBlockState extends ConsumerState<_ExpertBlock> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       ),
       icon: _busy ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.4, color: c.onExpert)) : const Icon(Icons.send_rounded),
-      label: const Text('Agronomga yuborish', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+      label: Text(tr('Agronomga yuborish'), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
     );
     final askLink = TextButton(
       onPressed: () => context.push('/help/ask?diagnosis=${d.id}${d.cropId != null ? '&crop=${d.cropId}' : ''}'),
-      child: Text('Yoki agronomga savol bering', style: TextStyle(color: c.expert, fontWeight: FontWeight.w700)),
+      child: Text(tr('Yoki agronomga savol bering'), style: TextStyle(color: c.expert, fontWeight: FontWeight.w700)),
     );
     if (d.lowConfidence && !d.isHealthy) {
       return pad(Column(children: [
-        const NoteBox(kind: NoteKind.risk, title: 'AI ishonchi past',
-            text: "Natija taxminiy. Agronomga yuboring yoki bargni yorug' joyda yaqinroqdan qayta oling."),
+        NoteBox(kind: NoteKind.risk, title: tr('AI ishonchi past'),
+            text: tr("Natija taxminiy. Agronomga yuboring yoki bargni yorug' joyda yaqinroqdan qayta oling.")),
         const SizedBox(height: 10),
         expertButton,
         askLink,
@@ -424,7 +425,7 @@ class _ExpertBlockState extends ConsumerState<_ExpertBlock> {
       child: TextButton.icon(
         onPressed: _busy ? null : _send,
         icon: Icon(Icons.verified_user_outlined, color: c.expert),
-        label: Text("Agronomga ko'rsatish", style: TextStyle(color: c.expert, fontWeight: FontWeight.w700)),
+        label: Text(tr("Agronomga ko'rsatish"), style: TextStyle(color: c.expert, fontWeight: FontWeight.w700)),
       ),
     ));
   }
@@ -444,8 +445,8 @@ class _CatalogLink extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text("Ma'lumotnomada ko'rish", style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700)),
-              Text("Rasm bilan solishtiring, dorilar va me'yorlar", style: Theme.of(context).textTheme.bodySmall),
+              Text(tr("Ma'lumotnomada ko'rish"), style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700)),
+              Text(tr("Rasm bilan solishtiring, dorilar va me'yorlar"), style: Theme.of(context).textTheme.bodySmall),
             ]),
           ),
           Icon(Icons.chevron_right_rounded, color: context.c.subtle),

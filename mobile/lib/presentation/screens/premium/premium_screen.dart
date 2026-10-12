@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
@@ -23,10 +24,10 @@ class _PremiumState extends ConsumerState<PremiumScreen> {
   String _plan = 'monthly';
 
   Future<void> _checkout(Plan plan) async {
-    final provider = await showSheet<String>(context, title: "To'lov usulini tanlang", builder: (ctx) => Column(children: [
+    final provider = await showSheet<String>(context, title: tr("To'lov usulini tanlang"), builder: (ctx) => Column(children: [
           for (final (id, label) in providers)
             ListRow(icon: AppIcons.card, label: label, onTap: () => Navigator.pop(ctx, id)),
-          PillButton(label: 'Bekor qilish', style: PillStyle.soft, block: true, onPressed: () => Navigator.pop(ctx)),
+          PillButton(label: tr('Bekor qilish'), style: PillStyle.soft, block: true, onPressed: () => Navigator.pop(ctx)),
         ]));
     if (provider == null || !mounted) return;
     final repo = ref.read(subscriptionRepoProvider);
@@ -35,34 +36,34 @@ class _PremiumState extends ConsumerState<PremiumScreen> {
       if (!mounted) return;
       if (co.sandbox) {
         final label = providers.firstWhere((p) => p.$1 == provider).$2;
-        final ok = await showSheet<bool>(context, title: '$label — test to\'lov', builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Sandbox rejimi: haqiqiy pul yechilmaydi.', style: TextStyle(color: ctx.c.muted)),
+        final ok = await showSheet<bool>(context, title: trf('{0} — test to\'lov', [label]), builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(tr('Sandbox rejimi: haqiqiy pul yechilmaydi.'), style: TextStyle(color: ctx.c.muted)),
               InfoBox(label: plan.title, value: formatMoney(co.amount)),
               const SizedBox(height: 10),
-              PillButton(label: "To'lash", icon: AppIcons.lock, block: true, onPressed: () => Navigator.pop(ctx, true)),
+              PillButton(label: tr("To'lash"), icon: AppIcons.lock, block: true, onPressed: () => Navigator.pop(ctx, true)),
             ]));
         if (ok != true) return;
         await repo.sandboxConfirm(co.subscriptionId);
       } else {
         await launchUrl(Uri.parse(co.paymentUrl), mode: LaunchMode.externalApplication);
-        if (mounted) showToast(context, "To'lovdan so'ng ilovaga qayting — Premium avtomatik faollashadi");
+        if (mounted) showToast(context, tr("To'lovdan so'ng ilovaga qayting — Premium avtomatik faollashadi"));
         return;
       }
       await ref.read(authProvider.notifier).refreshUser();
       ref.invalidate(mySubscriptionProvider);
       ref.invalidate(paymentsProvider);
-      if (mounted) showToast(context, 'Premium faollashtirildi!');
+      if (mounted) showToast(context, tr('Premium faollashtirildi!'));
     } catch (e) {
       if (mounted) showError(context, e);
     }
   }
 
   Future<void> _cancel() async {
-    if (!await confirm(context, 'Obunani bekor qilish', "Avto-yangilanish o'chadi. Premium joriy muddat oxirigacha ishlaydi.", ok: 'Bekor qilish', danger: true)) return;
+    if (!await confirm(context, tr('Obunani bekor qilish'), tr("Avto-yangilanish o'chadi. Premium joriy muddat oxirigacha ishlaydi."), ok: tr('Bekor qilish'), danger: true)) return;
     try {
       await ref.read(subscriptionRepoProvider).cancel();
       ref.invalidate(mySubscriptionProvider);
-      if (mounted) showToast(context, 'Avto-yangilanish o\'chirildi');
+      if (mounted) showToast(context, tr('Avto-yangilanish o\'chirildi'));
     } catch (e) {
       if (mounted) showError(context, e);
     }
@@ -80,14 +81,14 @@ class _PremiumState extends ConsumerState<PremiumScreen> {
         ref.invalidate(plansProvider);
       },
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const TopBar(title: 'Obunam'),
+        TopBar(title: tr('Obunam')),
         me.maybeWhen(
           data: (s) => RowCard(
             leading: const ThumbIcon(icon: AppIcons.clock),
-            title: 'Joriy reja: ${s.isPremium ? 'Premium' : 'Bepul'}',
+            title: trf('Joriy reja: {0}', [s.isPremium ? 'Premium' : tr('Bepul')]),
             subtitle: s.isPremium
-                ? (s.premiumUntil != null && s.premiumUntil!.year < 2100 ? '${formatDate(s.premiumUntil)} gacha · AI tashxis cheksiz' : 'Umrbod · AI tashxis cheksiz')
-                : 'AI tashxis: bugun ${s.aiUsedToday}/${s.aiDailyLimit} · Ekinlar: ${s.cropsUsed}/${s.cropLimit}',
+                ? (s.premiumUntil != null && s.premiumUntil!.year < 2100 ? trf('{0} gacha · AI tashxis cheksiz', [formatDate(s.premiumUntil)]) : tr('Umrbod · AI tashxis cheksiz'))
+                : trf('AI tashxis: bugun {0}/{1} · Ekinlar: {2}/{3}', [s.aiUsedToday, s.aiDailyLimit, s.cropsUsed, s.cropLimit]),
           ),
           orElse: () => const SizedBox.shrink(),
         ),
@@ -96,11 +97,11 @@ class _PremiumState extends ConsumerState<PremiumScreen> {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(color: c.card, borderRadius: BorderRadius.circular(AppRadius.lg), boxShadow: softShadow(context)),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Row(children: [Expanded(child: Text('Bepul', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800))), Text("0 so'm", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15))]),
+            Row(children: [Expanded(child: Text(tr('Bepul'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800))), Text(tr("0 so'm"), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15))]),
             const SizedBox(height: 6),
-            _Feat('AI tashxis — kuniga 3 marta', c.success),
-            _Feat("\"Mening bog'im\" — 3 tagacha ekin", c.success),
-            _Feat("Ensiklopediya, eslatmalar, jamoat — to'liq ochiq", c.success),
+            _Feat(tr('AI tashxis — kuniga 3 marta'), c.success),
+            _Feat(tr("\"Mening bog'im\" — 3 tagacha ekin"), c.success),
+            _Feat(tr("Ensiklopediya, eslatmalar, jamoat — to'liq ochiq"), c.success),
           ]),
         ),
         plans.maybeWhen(
@@ -115,8 +116,8 @@ class _PremiumState extends ConsumerState<PremiumScreen> {
                 Row(children: [
                   Icon(AppIcons.star, color: c.gold, size: 20),
                   const SizedBox(width: 6),
-                  Expanded(child: Text('Premium', style: TextStyle(color: c.onDark, fontSize: 17, fontWeight: FontWeight.w800))),
-                  Text(formatMoney(plan.price) + (plan.code == 'monthly' ? '/oy' : plan.code == 'yearly' ? '/yil' : ''), style: TextStyle(color: c.gold, fontWeight: FontWeight.w800, fontSize: 15)),
+                  Expanded(child: Text(tr('Premium'), style: TextStyle(color: c.onDark, fontSize: 17, fontWeight: FontWeight.w800))),
+                  Text(formatMoney(plan.price) + (plan.code == 'monthly' ? tr('/oy') : plan.code == 'yearly' ? tr('/yil') : ''), style: TextStyle(color: c.gold, fontWeight: FontWeight.w800, fontSize: 15)),
                 ]),
                 const SizedBox(height: 12),
                 Wrap(spacing: 8, children: [
@@ -129,14 +130,14 @@ class _PremiumState extends ConsumerState<PremiumScreen> {
                         onTap: () => setState(() => _plan = p.code),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          child: Text(switch (p.code) { 'monthly' => '1 oy', 'yearly' => '1 yil', _ => 'Umrbod' },
+                          child: Text(switch (p.code) { 'monthly' => tr('1 oy'), 'yearly' => tr('1 yil'), _ => tr('Umrbod') },
                               style: TextStyle(color: _plan == p.code ? c.onGold : c.onDark, fontWeight: FontWeight.w800, fontSize: 13)),
                         ),
                       ),
                     ),
                 ]),
                 const SizedBox(height: 6),
-                for (final f in plan.features) _Feat(f, c.gold, dark: true),
+                for (final f in plan.features) _Feat(tr(f), c.gold, dark: true),
                 const SizedBox(height: 8),
                 isPremium
                     ? Container(
@@ -144,16 +145,16 @@ class _PremiumState extends ConsumerState<PremiumScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(color: c.onDark.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(999)),
                         alignment: Alignment.center,
-                        child: Text('Faol reja', style: TextStyle(color: c.onDark, fontWeight: FontWeight.w800)),
+                        child: Text(tr('Faol reja'), style: TextStyle(color: c.onDark, fontWeight: FontWeight.w800)),
                       )
-                    : PillButton(label: "Premium'ga o'tish", style: PillStyle.light, block: true, onPressed: () => _checkout(plan)),
+                    : PillButton(label: tr("Premium'ga o'tish"), style: PillStyle.light, block: true, onPressed: () => _checkout(plan)),
               ]),
             );
           },
           orElse: () => const Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator())),
         ),
-        ListRow(icon: AppIcons.card, label: "To'lovlar tarixi", onTap: () => context.push('/premium/payments')),
-        if (me.value?.active?.autoRenew == true) ListRow(icon: Icons.cancel_outlined, label: 'Avto-yangilanishni bekor qilish', danger: true, onTap: _cancel),
+        ListRow(icon: AppIcons.card, label: tr("To'lovlar tarixi"), onTap: () => context.push('/premium/payments')),
+        if (me.value?.active?.autoRenew == true) ListRow(icon: Icons.cancel_outlined, label: tr('Avto-yangilanishni bekor qilish'), danger: true, onTap: _cancel),
       ]),
     );
   }
@@ -181,21 +182,21 @@ class PaymentsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
-    const statusLabels = {'active': 'Muvaffaqiyatli', 'expired': 'Muddati tugagan', 'cancelled': 'Bekor qilingan', 'trial': 'Sinov'};
+    final statusLabels = {'active': tr('Muvaffaqiyatli'), 'expired': tr('Muddati tugagan'), 'cancelled': tr('Bekor qilingan'), 'trial': tr('Sinov')};
     return PageShell(
       padBottom: false,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const TopBar(title: "To'lovlar tarixi"),
+        TopBar(title: tr("To'lovlar tarixi")),
         AsyncView(
           value: ref.watch(paymentsProvider),
           onRetry: () => ref.invalidate(paymentsProvider),
           data: (list) => list.isEmpty
-              ? const EmptyNote("To'lovlar yo'q", icon: AppIcons.card)
+              ? EmptyNote(tr("To'lovlar yo'q"), icon: AppIcons.card)
               : Column(children: [
                   for (final s in list)
                     RowCard(
                       leading: ThumbIcon(icon: AppIcons.star, bg: s.status == 'cancelled' ? c.dangerBg : c.primaryLight, fg: s.status == 'cancelled' ? c.danger : c.primaryDark),
-                      title: switch (s.plan) { 'monthly' => 'Premium obuna — 1 oy', 'yearly' => 'Premium obuna — 1 yil', _ => 'Premium — umrbod' },
+                      title: switch (s.plan) { 'monthly' => tr('Premium obuna — 1 oy'), 'yearly' => tr('Premium obuna — 1 yil'), _ => tr('Premium — umrbod') },
                       subtitle: '${providers.firstWhere((p) => p.$1 == s.provider, orElse: () => ('', s.provider ?? '')).$2} · ${formatDate(s.startedAt)}',
                       trailing: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                         Text(formatMoney(s.price ?? 0), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),

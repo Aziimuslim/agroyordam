@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/utils/format.dart';
@@ -19,12 +20,12 @@ class ConversationsScreen extends ConsumerWidget {
       padBottom: false,
       onRefresh: () async => ref.invalidate(conversationsProvider),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const TopBar(title: 'Xabarlar'),
+        TopBar(title: tr('Xabarlar')),
         AsyncView(
           value: ref.watch(conversationsProvider),
           onRetry: () => ref.invalidate(conversationsProvider),
           data: (list) => list.isEmpty
-              ? const EmptyNote("Xabarlar yo'q. Jamoatdagi fermer profiliga kirib suhbat boshlang.", icon: AppIcons.chat)
+              ? EmptyNote(tr("Xabarlar yo'q. Jamoatdagi fermer profiliga kirib suhbat boshlang."), icon: AppIcons.chat)
               : Column(children: [
                   for (final conv in list)
                     AppCard(
@@ -37,9 +38,9 @@ class ConversationsScreen extends ConsumerWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text(conv.other?.fullName ?? 'Suhbat', style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
+                            Text(conv.other?.fullName ?? tr('Suhbat'), style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
                             Text(
-                              '${conv.lastMessage?.senderId == me?.id ? 'Siz: ' : ''}${conv.lastMessage?.content ?? ''}',
+                              '${conv.lastMessage?.senderId == me?.id ? tr('Siz: ') : ''}${conv.lastMessage?.content ?? ''}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(color: c.muted, fontSize: 12.5),

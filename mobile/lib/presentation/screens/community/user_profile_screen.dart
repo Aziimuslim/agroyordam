@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/widgets/widgets.dart';
@@ -22,7 +23,7 @@ class UserProfileScreen extends ConsumerWidget {
         value: ref.watch(profileProvider(id)),
         onRetry: () => ref.invalidate(profileProvider(id)),
         data: (p) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const TopBar(title: 'Fermer profili'),
+          TopBar(title: tr('Fermer profili')),
           Center(
             child: Column(children: [
               Avatar(name: p.user.fullName, url: p.user.avatarUrl, size: 84),
@@ -33,18 +34,18 @@ class UserProfileScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 18),
           Row(children: [
-            _Stat(value: p.posts, label: 'Post'),
+            _Stat(value: p.posts, label: tr('Post')),
             const SizedBox(width: 10),
-            _Stat(value: p.followers, label: 'Obunachi'),
+            _Stat(value: p.followers, label: tr('Obunachi')),
             const SizedBox(width: 10),
-            _Stat(value: p.following, label: 'Obuna'),
+            _Stat(value: p.following, label: tr('Obuna')),
           ]),
           const SizedBox(height: 18),
           if (me?.id != p.user.id)
             Row(children: [
               Expanded(
                 child: PillButton(
-                  label: p.isFollowing ? 'Obunani bekor qilish' : "Obuna bo'lish",
+                  label: p.isFollowing ? tr('Obunani bekor qilish') : tr("Obuna bo'lish"),
                   style: p.isFollowing ? PillStyle.outline : PillStyle.primary,
                   block: true,
                   onPressed: () async {
@@ -60,7 +61,7 @@ class UserProfileScreen extends ConsumerWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: PillButton(
-                  label: 'Xabar',
+                  label: tr('Xabar'),
                   icon: AppIcons.chat,
                   block: true,
                   onPressed: () async {
@@ -75,10 +76,10 @@ class UserProfileScreen extends ConsumerWidget {
               ),
             ]),
           const SizedBox(height: 18),
-          const SectionTitle('Postlari'),
+          SectionTitle(tr('Postlari')),
           AsyncView(
             value: ref.watch(userPostsProvider(id)),
-            data: (posts) => posts.isEmpty ? const EmptyNote("Hali post yo'q") : Column(children: [for (final post in posts) PostCard(post: post)]),
+            data: (posts) => posts.isEmpty ? EmptyNote(tr("Hali post yo'q")) : Column(children: [for (final post in posts) PostCard(post: post)]),
           ),
         ]),
       ),

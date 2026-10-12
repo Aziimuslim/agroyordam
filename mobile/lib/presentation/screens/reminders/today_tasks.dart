@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/utils/format.dart';
@@ -40,7 +41,7 @@ class TaskTile extends ConsumerWidget {
     final overdue = !r.isCompleted && r.date.isBefore(_today());
     final meta = [
       if (showCrop && r.cropName != null) r.cropName!,
-      overdue ? "Muddati o'tgan · ${formatDate(r.date)}" : (r.time != null ? r.time!.substring(0, 5) : 'Bugun'),
+      overdue ? trf("Muddati o'tgan · {0}", [formatDate(r.date)]) : (r.time != null ? r.time!.substring(0, 5) : tr('Bugun')),
     ].join(' · ');
     final (bg, fg) = _typeColors(c, r.type);
     return InkWell(
@@ -118,7 +119,7 @@ class TodayTasks extends ConsumerWidget {
                 child: Row(children: [
                   Icon(AppIcons.check, color: c.success),
                   const SizedBox(width: 10),
-                  Expanded(child: Text("Bugun bajariladigan vazifa yo'q", style: TextStyle(color: c.muted, fontWeight: FontWeight.w600))),
+                  Expanded(child: Text(tr("Bugun bajariladigan vazifa yo'q"), style: TextStyle(color: c.muted, fontWeight: FontWeight.w600))),
                 ]),
               );
             }
@@ -132,7 +133,7 @@ class TodayTasks extends ConsumerWidget {
                     width: double.infinity,
                     decoration: BoxDecoration(border: Border(top: BorderSide(color: c.border))),
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Text('yana ${rows.length - limit} ta vazifa', style: TextStyle(color: c.primary, fontSize: 13, fontWeight: FontWeight.w700)),
+                    child: Text(trf('yana {0} ta vazifa', [rows.length - limit]), style: TextStyle(color: c.primary, fontSize: 13, fontWeight: FontWeight.w700)),
                   ),
               ]),
             );

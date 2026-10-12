@@ -82,4 +82,4 @@ class UserUpdate(BaseModel):
     work_hours: str | None = Field(default=None, max_length=100)
     education: str | None = Field(default=None, max_length=255)
     skills: list[Tag] | None = Field(default=None, max_length=20)
-    language: str | None = Field(default=None, pattern=r"^(uz|ru|en)$")
+    language: str | None = Field(default=None, pattern=r"^(uz|uz-Cyrl|ru|en|kaa)$")

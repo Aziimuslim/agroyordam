@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../i18n/i18n.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_icons.dart';
 
@@ -35,11 +36,13 @@ class AppBottomNav extends StatelessWidget {
                   child: Icon(icon, size: 22, color: color),
                 ),
                 const SizedBox(height: 4),
-                Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.fade,
-                    softWrap: false,
-                    style: TextStyle(fontSize: 11, fontWeight: active ? FontWeight.w800 : FontWeight.w600, color: color)),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(label,
+                      maxLines: 1,
+                      softWrap: false,
+                      style: TextStyle(fontSize: 11, fontWeight: active ? FontWeight.w800 : FontWeight.w600, color: color)),
+                ),
               ]),
             ),
           ),
@@ -58,8 +61,8 @@ class AppBottomNav extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
               child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                item('/home', 'Bosh sahifa', AppIcons.home),
-                item('/garden', "Bog'im", AppIcons.leaf),
+                item('/home', tr('Bosh sahifa'), AppIcons.home),
+                item('/garden', tr("Bog'im"), AppIcons.leaf),
                 SizedBox(
                   width: 76,
                   height: 54,
@@ -67,7 +70,7 @@ class AppBottomNav extends StatelessWidget {
                     maxHeight: 90,
                     alignment: Alignment.center,
                     child: Tooltip(
-                      message: 'AI Tashxis',
+                      message: tr('AI Tashxis'),
                       child: Transform.translate(
                         offset: const Offset(0, -18),
                         child: Container(
@@ -90,8 +93,8 @@ class AppBottomNav extends StatelessWidget {
                     ),
                   ),
                 ),
-                item('/help', 'Maslahat', AppIcons.chat),
-                item('/profile', 'Profil', AppIcons.sliders),
+                item('/help', tr('Maslahat'), AppIcons.chat),
+                item('/profile', tr('Profil'), AppIcons.sliders),
               ]),
             ),
           ),

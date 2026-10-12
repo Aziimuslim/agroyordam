@@ -5,13 +5,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../application/providers.dart';
 import '../../../core/config.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/widgets.dart';
 
 /// Server manzilini sozlash (telefonda backend kompyuterda ishlaganda: http://192.168.x.x:8000).
 Future<void> showServerSettings(BuildContext context, WidgetRef ref) async {
   final ctrl = TextEditingController(text: AppConfig.apiUrl);
-  await showSheet(context, title: 'Server manzili', builder: (ctx) => _ServerForm(ctrl: ctrl, ref: ref));
+  await showSheet(context, title: tr('Server manzili'), builder: (ctx) => _ServerForm(ctrl: ctrl, ref: ref));
 }
 
 class _ServerForm extends StatefulWidget {
@@ -33,10 +34,10 @@ class _ServerFormState extends State<_ServerForm> {
     try {
       final r = await Dio(BaseOptions(connectTimeout: const Duration(seconds: 6), receiveTimeout: const Duration(seconds: 6))).get('$_url/health');
       _ok = r.data is Map && r.data['status'] != null;
-      _status = _ok ? 'Server bilan aloqa bor (versiya ${r.data['version']})' : 'Javob noto\'g\'ri';
+      _status = _ok ? trf('Server bilan aloqa bor (versiya {0})', [r.data['version']]) : tr('Javob noto\'g\'ri');
     } catch (_) {
       _ok = false;
-      _status = "Serverga ulanib bo'lmadi. Manzil va Wi-Fi tarmog'ini tekshiring.";
+      _status = tr("Serverga ulanib bo'lmadi. Manzil va Wi-Fi tarmog'ini tekshiring.");
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -48,7 +49,7 @@ class _ServerFormState extends State<_ServerForm> {
     widget.ref.invalidate(apiClientProvider);
     if (mounted) {
       Navigator.pop(context);
-      showToast(context, 'Server manzili saqlandi');
+      showToast(context, tr('Server manzili saqlandi'));
     }
   }
 
@@ -56,7 +57,7 @@ class _ServerFormState extends State<_ServerForm> {
   Widget build(BuildContext context) {
     final c = context.c;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Backend (FastAPI) ishlayotgan kompyuterning manzili. Telefon va kompyuter bitta Wi-Fi\'da bo\'lishi kerak.',
+      Text(tr('Backend (FastAPI) ishlayotgan kompyuterning manzili. Telefon va kompyuter bitta Wi-Fi\'da bo\'lishi kerak.'),
           style: TextStyle(color: c.muted, fontSize: 13)),
       const SizedBox(height: 12),
       TextField(controller: widget.ctrl, keyboardType: TextInputType.url, decoration: const InputDecoration(hintText: 'http://192.168.1.10:8000')),
@@ -67,9 +68,9 @@ class _ServerFormState extends State<_ServerForm> {
         ),
       const SizedBox(height: 14),
       Row(children: [
-        Expanded(child: PillButton(label: 'Tekshirish', style: PillStyle.outline, block: true, loading: _loading, onPressed: _check)),
+        Expanded(child: PillButton(label: tr('Tekshirish'), style: PillStyle.outline, block: true, loading: _loading, onPressed: _check)),
         const SizedBox(width: 10),
-        Expanded(child: PillButton(label: 'Saqlash', block: true, onPressed: _save)),
+        Expanded(child: PillButton(label: tr('Saqlash'), block: true, onPressed: _save)),
       ]),
     ]);
   }

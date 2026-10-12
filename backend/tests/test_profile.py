@@ -62,3 +62,10 @@ async def test_application_fills_expert_profile(client, user_headers, admin_head
     await client.post(f"{API}/admin/expert-applications/{app_id}/approve", headers=admin_headers)
     m = await me(client, user_headers)
     assert m["about"] == "Issiqxona bo'yicha mutaxassis" and m["experience_years"] == 7
+
+
+async def test_language_codes(client, user_headers):
+    for code in ("uz-Cyrl", "ru", "en", "kaa", "uz"):
+        r = await client.put(f"{API}/users/me", json={"language": code}, headers=user_headers)
+        assert r.status_code == 200 and r.json()["language"] == code
+    assert (await client.put(f"{API}/users/me", json={"language": "de"}, headers=user_headers)).status_code == 422

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
@@ -27,7 +28,7 @@ class ExpertBottomNav extends ConsumerWidget {
         child: Semantics(
           button: true,
           selected: active,
-          label: count > 0 ? '$label, $count ta yangi' : label,
+          label: count > 0 ? trf('{0}, {1} ta yangi', [label, count]) : label,
           excludeSemantics: true,
           onTap: () => context.go(route),
           child: InkWell(
@@ -45,12 +46,14 @@ class ExpertBottomNav extends ConsumerWidget {
                     child: badge(count, Icon(icon, size: 22, color: color)),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.fade,
-                    softWrap: false,
-                    style: TextStyle(fontSize: 11, fontWeight: active ? FontWeight.w800 : FontWeight.w600, color: color),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      softWrap: false,
+                      style: TextStyle(fontSize: 11, fontWeight: active ? FontWeight.w800 : FontWeight.w600, color: color),
+                    ),
                   ),
                 ],
               ),
@@ -77,8 +80,8 @@ class ExpertBottomNav extends ConsumerWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  item('/expert/questions', 'Savollar', Icons.inbox_outlined, stats?.questionsNew ?? 0),
-                  item('/expert/community', 'Jamoat', AppIcons.users),
+                  item('/expert/questions', tr('Savollar'), Icons.inbox_outlined, stats?.questionsNew ?? 0),
+                  item('/expert/community', tr('Jamoat'), AppIcons.users),
                   SizedBox(
                     width: 76,
                     height: 54,
@@ -88,7 +91,7 @@ class ExpertBottomNav extends ConsumerWidget {
                       child: Semantics(
                         button: true,
                         selected: queueActive,
-                        label: (stats?.queuePending ?? 0) > 0 ? 'Navbat, ${stats!.queuePending} ta kutmoqda' : 'Navbat',
+                        label: (stats?.queuePending ?? 0) > 0 ? trf('Navbat, {0} ta kutmoqda', [stats!.queuePending]) : tr('Navbat'),
                         excludeSemantics: true,
                         onTap: () => context.go('/expert'),
                         child: Transform.translate(
@@ -117,7 +120,7 @@ class ExpertBottomNav extends ConsumerWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Navbat',
+                                tr('Navbat'),
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: queueActive ? FontWeight.w800 : FontWeight.w600,
@@ -130,8 +133,8 @@ class ExpertBottomNav extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  item('/expert/kb', 'Bilimlar', AppIcons.book),
-                  item('/expert/profile', 'Profil', AppIcons.user),
+                  item('/expert/kb', tr('Bilimlar'), AppIcons.book),
+                  item('/expert/profile', tr('Profil'), AppIcons.user),
                 ],
               ),
             ),
@@ -164,7 +167,7 @@ class ExpertHeader extends StatelessWidget {
                     Icon(Icons.verified_user_outlined, size: 14, color: c.expert),
                     const SizedBox(width: 4),
                     Text(
-                      'AGRONOM REJIMI',
+                      tr('AGRONOM REJIMI'),
                       style: TextStyle(fontSize: 11.5, letterSpacing: 0.8, fontWeight: FontWeight.w800, color: c.expert),
                     ),
                   ],
@@ -196,7 +199,7 @@ class _OnlineToggleState extends ConsumerState<OnlineToggle> {
     try {
       await ref.read(expertRepoProvider).updateMe(acceptingQuestions: on);
       await ref.read(authProvider.notifier).refreshUser();
-      if (mounted) showToast(context, on ? 'Onlayn: yangi savollar qabul qilinadi' : 'Oflayn: dehqonlar sizni band deb ko\'radi');
+      if (mounted) showToast(context, on ? tr('Onlayn: yangi savollar qabul qilinadi') : tr('Oflayn: dehqonlar sizni band deb ko\'radi'));
     } catch (e) {
       if (mounted) showError(context, e);
     } finally {
@@ -212,7 +215,7 @@ class _OnlineToggleState extends ConsumerState<OnlineToggle> {
     return Semantics(
       button: true,
       toggled: on,
-      label: on ? 'Onlayn' : 'Oflayn',
+      label: on ? tr('Onlayn') : tr('Oflayn'),
       child: Material(
         color: on ? c.successBg : c.cream2,
         shape: StadiumBorder(side: BorderSide(color: fg.withValues(alpha: 0.5), width: 1.5)),
@@ -231,7 +234,7 @@ class _OnlineToggleState extends ConsumerState<OnlineToggle> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  on ? 'Onlayn' : 'Oflayn',
+                  on ? tr('Onlayn') : tr('Oflayn'),
                   style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: fg),
                 ),
               ],
@@ -271,9 +274,9 @@ class StatTile extends StatelessWidget {
 /// O'rtacha javob vaqti: "35 daq", "2 soat", "1 kun".
 String formatWait(int? minutes) {
   if (minutes == null) return '—';
-  if (minutes < 60) return '$minutes daq';
-  if (minutes < 60 * 24) return '${(minutes / 60).round()} soat';
-  return '${(minutes / 1440).round()} kun';
+  if (minutes < 60) return trf('{0} daq', [minutes]);
+  if (minutes < 60 * 24) return trf('{0} soat', [(minutes / 60).round()]);
+  return trf('{0} kun', [(minutes / 1440).round()]);
 }
 
 /// Agronom rejimidagi tab ekrani qobig'i.

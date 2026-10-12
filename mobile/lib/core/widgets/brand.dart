@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../i18n/i18n.dart';
 
 /// AgroYordam belgisi (assets/brand/logo-mark.png; manba — logo-mark.svg).
 class BrandLogo extends StatelessWidget {
@@ -49,7 +50,7 @@ class BrandWordmark extends StatelessWidget {
                 ),
                 if (slogan)
                   Text(
-                    "QISHLOQ XO'JALIGI UCHUN AQLLI YECHIM",
+                    tr("QISHLOQ XO'JALIGI UCHUN AQLLI YECHIM"),
                     style: TextStyle(
                       fontSize: size * 0.2,
                       fontWeight: FontWeight.w600,

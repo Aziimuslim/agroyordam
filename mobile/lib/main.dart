@@ -6,11 +6,14 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 
 import 'app.dart';
 import 'core/config.dart';
+import 'core/i18n/i18n.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    AppConfig.runtimeOverride = (await SharedPreferences.getInstance()).getString(AppConfig.prefsKey);
+    final prefs = await SharedPreferences.getInstance();
+    AppConfig.runtimeOverride = prefs.getString(AppConfig.prefsKey);
+    I18n.lang = AppLang.fromCode(prefs.getString('agro_lang')); // birinchi kadrdanoq tanlangan tilda
   } catch (_) {}
   usePathUrlStrategy();
   // Web: push() bilan ochilgan sahifalar ham manzil satrida ko'rinadi (yangilanganda saqlanadi)

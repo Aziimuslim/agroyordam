@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/ds.dart';
 import '../../../core/widgets/widgets.dart';
@@ -35,10 +36,10 @@ class _QuestionsState extends ConsumerState<ExpertQuestionsScreen> {
         ref.invalidate(expertStatsProvider);
       },
       children: [
-        const ExpertHeader(title: 'Savollar', trailing: OnlineToggle()),
+        ExpertHeader(title: tr('Savollar'), trailing: OnlineToggle()),
         SegmentTabs(
           expert: true,
-          tabs: [('new', 'Yangi${count('new')}'), ('mine', 'Jarayonda${count('mine')}'), ('closed_mine', 'Yopilgan${count('closed_mine')}')],
+          tabs: [('new', trf('Yangi{0}', [count('new')])), ('mine', trf('Jarayonda{0}', [count('mine')])), ('closed_mine', trf('Yopilgan{0}', [count('closed_mine')]))],
           selected: _tab,
           onSelect: (v) => setState(() => _tab = v),
         ),
@@ -48,9 +49,9 @@ class _QuestionsState extends ConsumerState<ExpertQuestionsScreen> {
           onRetry: () => ref.invalidate(inboxProvider(_tab)),
           data: (list) => list.isEmpty
               ? EmptyNote(switch (_tab) {
-                  'new' => "Yangi savol yo'q. Dehqon savol bersa shu yerda va bildirishnomada ko'rinadi.",
-                  'mine' => "Javob berayotgan savolingiz yo'q",
-                  _ => "Yopilgan savollar yo'q",
+                  'new' => tr("Yangi savol yo'q. Dehqon savol bersa shu yerda va bildirishnomada ko'rinadi."),
+                  'mine' => tr("Javob berayotgan savolingiz yo'q"),
+                  _ => tr("Yopilgan savollar yo'q"),
                 }, icon: Icons.inbox_outlined)
               : Column(children: [for (final q in list) InboxTile(q)]),
         ),
@@ -91,19 +92,19 @@ class InboxTile extends StatelessWidget {
                   children: [
                     if (q.diagnosisName != null)
                       StatusTag(
-                        'AI: ${q.diagnosisName}${q.diagnosisConfidence != null ? ' ${q.diagnosisConfidence!.round()}%' : ''}',
+                        trf('AI: {0}{1}', [q.diagnosisName, q.diagnosisConfidence != null ? ' ${q.diagnosisConfidence!.round()}%' : '']),
                         kind: (q.diagnosisConfidence ?? 100) < 70 ? StatusKind.risk : StatusKind.neutral,
                         icon: Icons.auto_awesome_outlined,
                       )
                     else if (q.diagnosisId == null)
-                      const StatusTag('Tashxissiz', kind: StatusKind.neutral),
+                      StatusTag(tr('Tashxissiz'), kind: StatusKind.neutral),
                     switch (q.status) {
-                      'new' => const StatusTag('Yangi', kind: StatusKind.info),
+                      'new' => StatusTag(tr('Yangi'), kind: StatusKind.info),
                       'closed' =>
                         q.rating != null
                             ? StatusTag('${q.rating}', kind: StatusKind.premium, icon: Icons.star_rounded)
-                            : const StatusTag('Yopilgan', kind: StatusKind.neutral),
-                      _ => StatusTag('${q.messagesCount} xabar', kind: StatusKind.expert, icon: Icons.chat_bubble_outline_rounded),
+                            : StatusTag(tr('Yopilgan'), kind: StatusKind.neutral),
+                      _ => StatusTag(trf('{0} xabar', [q.messagesCount]), kind: StatusKind.expert, icon: Icons.chat_bubble_outline_rounded),
                     },
                   ],
                 ),
@@ -137,26 +138,26 @@ class _CommunityState extends ConsumerState<ExpertCommunityScreen> {
         ref.invalidate(feedProvider('all'));
       },
       children: [
-        const ExpertHeader(title: 'Jamoat'),
+        ExpertHeader(title: tr('Jamoat')),
         ExpertChips(
-          tabs: [('unanswered', n == null ? 'Javobsiz' : 'Javobsiz · $n'), ('all', 'Hammasi')],
+          tabs: [('unanswered', n == null ? tr('Javobsiz') : trf('Javobsiz · {0}', [n])), ('all', tr('Hammasi'))],
           selected: _tab,
           onSelect: (v) => setState(() => _tab = v),
         ),
         if (_tab == 'unanswered')
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(bottom: 14),
             child: NoteBox(
               kind: NoteKind.expert,
-              title: 'Agronom javobi',
-              text: "Siz yozgan izoh postda birinchi bo'lib, «Agronom javobi» belgisi bilan ko'rinadi.",
+              title: tr('Agronom javobi'),
+              text: tr("Siz yozgan izoh postda birinchi bo'lib, «Agronom javobi» belgisi bilan ko'rinadi."),
             ),
           ),
         AsyncView(
           value: value,
           onRetry: () => ref.invalidate(unansweredPostsProvider),
           data: (posts) => posts.isEmpty
-              ? EmptyNote(_tab == 'unanswered' ? 'Hamma postlarga agronom javob bergan' : "Hali post yo'q", icon: Icons.forum_outlined)
+              ? EmptyNote(_tab == 'unanswered' ? tr('Hamma postlarga agronom javob bergan') : tr("Hali post yo'q"), icon: Icons.forum_outlined)
               : Column(
                   children: [for (final p in posts) PostCard(post: p, feed: 'all')],
                 ),

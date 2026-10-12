@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
+import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
@@ -23,15 +24,15 @@ class _RemindersState extends ConsumerState<RemindersScreen> {
   Future<void> _clearDone(List<Reminder> list) async {
     final done = list.where((r) => r.isCompleted).toList();
     if (done.isEmpty) {
-      showToast(context, "Bajarilgan eslatma yo'q");
+      showToast(context, tr("Bajarilgan eslatma yo'q"));
       return;
     }
-    if (!await confirm(context, 'Tozalash', '${done.length} ta bajarilgan eslatma o\'chiriladi')) return;
+    if (!await confirm(context, tr('Tozalash'), trf('{0} ta bajarilgan eslatma o\'chiriladi', [done.length]))) return;
     for (final r in done) {
       await ref.read(gardenRepoProvider).deleteReminder(r.id);
     }
     ref.invalidate(remindersProvider);
-    if (mounted) showToast(context, 'Bajarilgan eslatmalar tozalandi');
+    if (mounted) showToast(context, tr('Bajarilgan eslatmalar tozalandi'));
   }
 
   @override
@@ -58,12 +59,12 @@ class _RemindersState extends ConsumerState<RemindersScreen> {
           final overdue = all.where((r) => !r.isCompleted && r.date.isBefore(today)).length;
           final cropName = widget.cropId == null ? null : all.map((r) => r.cropName).whereType<String>().firstOrNull;
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            TopBar(title: 'Eslatmalar', subtitle: cropName, actions: [
-              CircleIconButton(icon: AppIcons.trash, tooltip: 'Bajarilganlarni tozalash', onTap: () => _clearDone(all)),
+            TopBar(title: tr('Eslatmalar'), subtitle: cropName, actions: [
+              CircleIconButton(icon: AppIcons.trash, tooltip: tr('Bajarilganlarni tozalash'), onTap: () => _clearDone(all)),
               const SizedBox(width: 8),
               CircleIconButton(
                 icon: AppIcons.plus,
-                tooltip: "Eslatma qo'shish",
+                tooltip: tr("Eslatma qo'shish"),
                 onTap: () => context.push(widget.cropId == null ? '/reminders/add' : '/reminders/add?crop=${widget.cropId}'),
               ),
             ]),
@@ -75,18 +76,18 @@ class _RemindersState extends ConsumerState<RemindersScreen> {
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('$pending ta eslatma', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                    if (overdue > 0) Text("$overdue tasi muddati o'tgan", style: TextStyle(color: c.danger, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                    Text(trf('{0} ta eslatma', [pending]), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                    if (overdue > 0) Text(trf("{0} tasi muddati o'tgan", [overdue]), style: TextStyle(color: c.danger, fontSize: 12.5, fontWeight: FontWeight.w700)),
                   ]),
                 ),
               ]),
             ),
             ChipTabs(
-              tabs: const [('today', 'Bugun'), ('all', 'Barchasi'), ('care', 'Parvarish'), ('treat', 'Davolash')],
+              tabs: [('today', tr('Bugun')), ('all', tr('Barchasi')), ('care', tr('Parvarish')), ('treat', tr('Davolash'))],
               selected: _filter,
               onSelect: (v) => setState(() => _filter = v),
             ),
-            if (list.isEmpty) EmptyNote(_filter == 'today' ? "Bugun bajariladigan vazifa yo'q" : "Bu bo'limda eslatma yo'q", icon: AppIcons.bell),
+            if (list.isEmpty) EmptyNote(_filter == 'today' ? tr("Bugun bajariladigan vazifa yo'q") : tr("Bu bo'limda eslatma yo'q"), icon: AppIcons.bell),
             for (final r in list) ReminderCard(reminder: r),
           ]);
         },
@@ -120,10 +121,10 @@ class ReminderCard extends ConsumerWidget {
               child: Icon(AppIcons.forReminder(r.type), size: 18, color: c.primaryDark),
             ),
             const SizedBox(width: 8),
-            Flexible(child: Text(r.cropName ?? 'Umumiy', style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800), overflow: TextOverflow.ellipsis)),
+            Flexible(child: Text(r.cropName ?? tr('Umumiy'), style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800), overflow: TextOverflow.ellipsis)),
             const SizedBox(width: 8),
-            Tag(reminderTypeLabels[r.type] ?? 'Parvarish', bg: r.isTreatment ? c.tagTreat : c.tagCare, fg: r.isTreatment ? c.primaryDark : c.onTagCare),
-            if (overdue) ...[const SizedBox(width: 6), Tag("Muddati o'tgan", bg: c.dangerBg, fg: c.danger)],
+            Tag(reminderTypeLabels[r.type] ?? tr('Parvarish'), bg: r.isTreatment ? c.tagTreat : c.tagCare, fg: r.isTreatment ? c.primaryDark : c.onTagCare),
+            if (overdue) ...[const SizedBox(width: 6), Tag(tr("Muddati o'tgan"), bg: c.dangerBg, fg: c.danger)],
           ]),
           const SizedBox(height: 10),
           Text(r.title, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800)),
@@ -137,7 +138,7 @@ class ReminderCard extends ConsumerWidget {
           Row(children: [
             Expanded(
               child: PillButton(
-                label: r.isCompleted ? 'Bajarildi' : 'Bajarildi deb belgilash',
+                label: r.isCompleted ? tr('Bajarildi') : tr('Bajarildi deb belgilash'),
                 icon: r.isCompleted ? AppIcons.check : null,
                 style: PillStyle.primary,
                 fg: null,
@@ -155,7 +156,7 @@ class ReminderCard extends ConsumerWidget {
             const SizedBox(width: 10),
             CircleIconButton(
               icon: AppIcons.trash,
-              tooltip: "O'chirish",
+              tooltip: tr("O'chirish"),
               onTap: () async {
                 await ref.read(gardenRepoProvider).deleteReminder(r.id);
                 ref.invalidate(remindersProvider);

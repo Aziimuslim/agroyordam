@@ -1,3 +1,4 @@
+import '../../core/i18n/i18n.dart';
 import '../../core/utils/format.dart';
 import 'user.dart';
 
@@ -177,12 +178,12 @@ class QueueItem {
   final DateTime? diagnosedAt;
 
   bool get lowConfidence => (confidence ?? 0) < 70;
-  String get title => diseaseName ?? (aiLabel != null && aiLabel!.endsWith('healthy') ? "Sog'lom" : 'Aniqlanmagan');
+  String get title => diseaseName ?? (aiLabel != null && aiLabel!.endsWith('healthy') ? tr("Sog'lom") : tr('Aniqlanmagan'));
 
   factory QueueItem.fromJson(Map<String, dynamic> j) => QueueItem(
         id: j['id'],
         imageUrl: j['image_url'],
-        farmerName: j['farmer_name'] ?? 'Dehqon',
+        farmerName: j['farmer_name'] ?? tr('Dehqon'),
         aiLabel: j['ai_label'],
         diseaseName: j['disease_name'],
         plantId: j['plant_id'],
