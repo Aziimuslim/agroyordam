@@ -491,7 +491,7 @@
     document.body.append(s, d); d.querySelector('select,input,button:not([data-act=close])')?.focus();
   }
   function shell() {
-    root.innerHTML = `<div class="app"><nav class="side" aria-label="Admin menyusi"><div class="logo"><i>${I('leaf')}</i><span>AgroYordam</span></div><div id="navs"></div>
+    root.innerHTML = `<div class="app"><nav class="side" aria-label="Admin menyusi"><div class="logo"><img src="/admin/logo.svg?v=1" alt="" width="34" height="34"><span>Agro<em>Yordam</em></span></div><div id="navs"></div>
       ${themeSwitch()}
       <div class="me"><div class="av">${initials(S.me.full_name)}</div><div style="min-width:0"><b class="me-name">${esc(S.me.full_name)}</b><div class="me-role">${esc((ROLES[S.me.role] || [, S.me.role])[1])}</div></div></div>
       <button class="logout" data-act="logout">${I('logout', 'ico s')}<span>Hisobdan chiqish</span></button></nav>
@@ -598,7 +598,7 @@
 
   // ---------- Kirish ----------
   function showLogin(msg = '') {
-    root.innerHTML = `<div class="login"><form data-form="login" autocomplete="on"><div class="row" style="justify-content:space-between"><div class="logo"><i>${I('leaf')}</i><span>AgroYordam</span></div>${themeSwitch()}</div>
+    root.innerHTML = `<div class="login"><form data-form="login" autocomplete="on"><div class="row" style="justify-content:space-between"><div class="logo"><img src="/admin/logo.svg?v=1" alt="" width="34" height="34"><span>Agro<em>Yordam</em></span></div>${themeSwitch()}</div>
       <div><h1>Admin paneli</h1><p class="muted" style="margin:4px 0 0">Admin yoki moderator hisobi bilan kiring.</p></div>
       <div class="fld"><label for="lg-u">Login yoki email</label><input id="lg-u" name="login" autocomplete="username" required></div>
       <div class="fld"><label for="lg-p">Parol</label><input id="lg-p" name="password" type="password" autocomplete="current-password" required></div>

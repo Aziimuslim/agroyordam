@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Android/PWA maskable: to'liq fon, belgi xavfsiz zonada (deploy: assets/brand/README.md) -->
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1f6e3c"/><stop offset="1" stop-color="#0a2a17"/></linearGradient>
+    <radialGradient id="glow" cx=".6" cy=".52" r=".55"><stop offset="0" stop-color="#f6b72c" stop-opacity=".2"/><stop offset="1" stop-color="#f6b72c" stop-opacity="0"/></radialGradient></defs>
+  <rect width="512" height="512" rx="0" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="0" fill="url(#glow)"/>
+  <g transform="translate(92.2 88.2) scale(3.277)">
+  <!-- AgroYordam belgisi: A harfi ichida quyosh va dala egatlari, chapda barglar, o'ngda AI tarmog'i -->
+  <defs>
+    <linearGradient id="ay-a" x1=".55" y1="0" x2=".15" y2="1"><stop offset="0" stop-color="#a3e553"/><stop offset=".5" stop-color="#4cb540"/><stop offset="1" stop-color="#1b7c36"/></linearGradient>
+    <linearGradient id="ay-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b4ec62"/><stop offset=".6" stop-color="#4fb53f"/><stop offset="1" stop-color="#22813a"/></linearGradient>
+    <linearGradient id="ay-leaf2" x1="0" y1="1" x2=".8" y2="0"><stop offset="0" stop-color="#2f9a3c"/><stop offset="1" stop-color="#c2f075"/></linearGradient>
+    <radialGradient id="ay-sun" cx=".42" cy=".38" r=".75"><stop offset="0" stop-color="#ffe684"/><stop offset=".65" stop-color="#f7b82d"/><stop offset="1" stop-color="#e48f17"/></radialGradient>
+    <linearGradient id="ay-gold" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#cfe04a"/><stop offset="1" stop-color="#f6b72c"/></linearGradient>
+    <clipPath id="ay-win"><path d="M56 37 86 87H36z"/></clipPath>
+    <clipPath id="ay-out"><path d="M44.4 11.4c2.5-4.4 8.7-4.4 11.2 0L92 78.2c2.4 4.3-.7 9.6-5.6 9.6H13.6c-4.9 0-8-5.3-5.6-9.6z"/></clipPath>
+  </defs>
+  <!-- A: chap oyoq yo'g'on, o'ng oyoq ingichka -->
+  <path d="M44.4 11.4c2.5-4.4 8.7-4.4 11.2 0L92 78.2c2.4 4.3-.7 9.6-5.6 9.6H13.6c-4.9 0-8-5.3-5.6-9.6z" fill="url(#ay-a)"/>
+  <path d="M56 37 86 87H36z" fill="#0b2717"/>
+  <!-- Quyosh va nurlar -->
+  <g clip-path="url(#ay-win)">
+    <g stroke="#f7b82d" stroke-width="1.7" stroke-linecap="round">
+      <path d="M64 46v-4"/><path d="M71.5 48.5l2.6-3"/><path d="M56.5 48.5l-2.6-3"/><path d="M77 54l3.4-1.4"/><path d="M51 54l-3.4-1.4"/>
+    </g>
+    <circle cx="64" cy="64" r="13.5" fill="url(#ay-sun)"/>
+  </g>
+  <!-- Dala egatlari: pastki qismni to'ldiradi, o'ng oyoqning pastini ham qoplaydi -->
+  <g clip-path="url(#ay-out)">
+    <path d="M30 80C44 68 62 63 94 66v6C66 69 50 74 35 86z" fill="#a3e553"/>
+    <path d="M40 90C53 79 70 74 98 75v7C74 81 60 85 51 92z" fill="#58bb42"/>
+    <path d="M50 95C61 85 78 81 100 82v13z" fill="url(#ay-gold)"/>
+  </g>
+  <!-- Barglar -->
+  <path d="M31 85C27 65 33 47 49 37c3 17-3 35-18 48z" fill="url(#ay-leaf2)"/>
+  <path d="M33 87C14 85 2 69 2 46c19 3 32 18 31 41z" fill="url(#ay-leaf)"/>
+  <path d="M32 85C24 72 14 61 5 50" fill="none" stroke="#1a6b2e" stroke-width="1.3" stroke-linecap="round" opacity=".75"/>
+  <path d="M32 82C35 67 40 53 47 42" fill="none" stroke="#1a6b2e" stroke-width="1.1" stroke-linecap="round" opacity=".5"/>
+  <!-- AI tarmog'i: o'ng oyoqdan chiqadi -->
+  <g fill="none" stroke="#b4ec62" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M63 29h8l5-6h6"/><path d="M67 37h18"/><path d="M71 45h6l5 6h3"/>
+    <circle cx="85.6" cy="23" r="3.3"/><circle cx="88.6" cy="37" r="3.3"/><circle cx="88.6" cy="51" r="3.3"/>
+  </g>
+</g>
+</svg>

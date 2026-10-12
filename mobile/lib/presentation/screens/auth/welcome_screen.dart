@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/config.dart';
+import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/widgets.dart';
 import 'server_settings.dart';
 
@@ -45,25 +46,11 @@ class WelcomeScreen extends ConsumerWidget {
             ),
             child: Stack(
               children: [
-                Positioned(right: -6, top: 44, child: Icon(AppIcons.scan, size: 120, color: Colors.white.withValues(alpha: 0.14))),
+                Positioned(right: -18, top: 40, child: Opacity(opacity: 0.12, child: const BrandLogo(size: 150))),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(color: c.gold, borderRadius: BorderRadius.circular(12)),
-                          child: Icon(AppIcons.leaf, color: c.onGold, size: 22),
-                        ),
-                        const SizedBox(width: 10),
-                        const Text(
-                          'AgroYordam',
-                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
-                        ),
-                      ],
-                    ),
+                    const BrandWordmark(size: 46, onDark: true, slogan: true),
                     const SizedBox(height: 28),
                 const Spacer(),
                     const Text(

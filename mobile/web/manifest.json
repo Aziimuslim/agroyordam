@@ -3,9 +3,9 @@
     "short_name": "AgroYordam",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#FBF1E0",
-    "theme_color": "#B25A28",
-    "description": "AgroYordam — AI yordamida ekin kasalliklarini tashxislash",
+    "background_color": "#F4F7F2",
+    "theme_color": "#0F3D27",
+    "description": "AgroYordam — qishloq xo'jaligi uchun aqlli yechim: AI tashxis, agronom maslahati, ma'lumotnoma",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

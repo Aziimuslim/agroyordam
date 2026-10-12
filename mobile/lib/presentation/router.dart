@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../application/app_mode.dart';
 import '../application/providers.dart';
+import '../core/widgets/brand.dart';
 import 'screens/auth/forgot_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
@@ -144,5 +145,13 @@ final routerProvider = Provider<GoRouter>((ref) {
 class _Splash extends StatelessWidget {
   const _Splash();
   @override
-  Widget build(BuildContext context) => const Scaffold(body: Center(child: CircularProgressIndicator()));
+  Widget build(BuildContext context) => const Scaffold(
+        body: Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            BrandLogo(size: 96),
+            SizedBox(height: 24),
+            SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 3)),
+          ]),
+        ),
+      );
 }
