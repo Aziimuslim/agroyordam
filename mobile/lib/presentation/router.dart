@@ -33,6 +33,7 @@ import 'screens/help/help_screen.dart';
 import 'screens/help/question_screens.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/premium/premium_screen.dart';
+import 'screens/profile/change_password_screen.dart';
 import 'screens/profile/diagnoses_history_screen.dart';
 import 'screens/profile/edit_profile_screen.dart';
 import 'screens/profile/expert_application_screen.dart';
@@ -100,6 +101,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ]),
       GoRoute(path: '/profile', pageBuilder: (_, s) => _tab(const ProfileScreen(), s), routes: [
         GoRoute(path: 'edit', builder: (_, __) => const EditProfileScreen()),
+        GoRoute(path: 'password', builder: (_, __) => const ChangePasswordScreen()),
         GoRoute(path: 'expert', builder: (_, __) => const ExpertApplicationScreen()),
       ]),
 

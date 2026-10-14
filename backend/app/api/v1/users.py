@@ -1,13 +1,15 @@
 import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from sqlalchemy import func, select
+from pydantic import BaseModel, Field
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.models import Follower, Post, User
+from app.core.security import hash_password, hash_refresh_token, verify_password
+from app.models import Follower, Post, RefreshToken, User
 from app.schemas.user import EXPERT_FIELDS, UserMe, UserProfile, UserPublic, UserUpdate
 from app.services.notification_service import notify
 from app.services.storage import get_storage, read_image
@@ -45,6 +47,26 @@ async def update_me(body: UserUpdate, user: User = Depends(get_current_user), db
         raise HTTPException(status.HTTP_409_CONFLICT, "Email yoki telefon band")
     await db.refresh(user)
     return user
+
+
+class PasswordChangeIn(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+    refresh_token: str | None = None  # joriy seans saqlanadi, qolganlari tugatiladi
+
+
+@router.put("/me/password", status_code=204)
+async def change_password(body: PasswordChangeIn, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if not verify_password(body.current_password, user.password_hash):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Joriy parol noto'g'ri")
+    if body.new_password == body.current_password:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Yangi parol eskisidan farq qilishi kerak")
+    user.password_hash = hash_password(body.new_password)
+    stmt = update(RefreshToken).where(RefreshToken.user_id == user.id)
+    if body.refresh_token:
+        stmt = stmt.where(RefreshToken.token_hash != hash_refresh_token(body.refresh_token))
+    await db.execute(stmt.values(revoked=True))
+    await db.commit()
 
 
 @router.post("/me/avatar", response_model=UserMe)

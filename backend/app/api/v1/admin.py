@@ -1,15 +1,16 @@
+import secrets
 import uuid
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import require_admin, require_superadmin
-from app.core.security import utcnow
-from app.models import CatalogChange, Comment, Crop, Diagnosis, Disease, ExpertApplication, Post, Question, Report, Subscription, User
+from app.core.security import hash_password, utcnow
+from app.models import CatalogChange, RefreshToken, Comment, Crop, Diagnosis, Disease, ExpertApplication, Post, Question, Report, Subscription, User
 from app.api.v1.experts import ApplicationOut
 from app.schemas.user import UserMe
 from app.services.app_settings import audit
@@ -114,6 +115,34 @@ async def toggle_block(user_id: uuid.UUID, blocked: bool = True, reason: str | N
     await db.commit()
     await db.refresh(u)
     return await _user_out(db, u)
+
+
+# Chalkashtiriladigan belgilarsiz (0/O, 1/l/I): telefonda aytib berish oson
+_PW_ALPHABET = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+
+def temp_password() -> str:
+    part = lambda: "".join(secrets.choice(_PW_ALPHABET) for _ in range(4))  # noqa: E731
+    return f"{part()}-{part()}-{part()}"
+
+
+@router.post("/users/{user_id}/reset-password")
+async def reset_password(user_id: uuid.UUID, admin: User = Depends(require_superadmin), db: AsyncSession = Depends(get_db)):
+    """Vaqtinchalik parol: faqat shu javobda bir marta ko'rsatiladi, bazada hash holida.
+    Foydalanuvchining barcha seanslari tugatiladi."""
+    u = await db.get(User, user_id)
+    if u is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Foydalanuvchi topilmadi")
+    if u.id == admin.id or u.role == "admin":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Admin parolini faqat serverdan (create_admin) almashtirish mumkin")
+    password = temp_password()
+    u.password_hash = hash_password(password)
+    await db.execute(update(RefreshToken).where(RefreshToken.user_id == u.id).values(revoked=True))
+    await notify(db, u.id, "password_reset", "Parolingiz yangilandi",
+                 "Administrator sizga vaqtinchalik parol berdi. Kirgach, Profil → «Parolni o'zgartirish» orqali o'zingiznikini qo'ying.")
+    await audit(db, admin, "password_reset", f"«{u.full_name}» (@{u.username}) uchun vaqtinchalik parol berildi", u.id)
+    await db.commit()
+    return {"username": u.username, "full_name": u.full_name, "password": password}
 
 
 class RoleIn(BaseModel):

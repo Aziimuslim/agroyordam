@@ -119,7 +119,7 @@ async def experts(db: AsyncSession = Depends(get_db)):
         waits = [(b - a).total_seconds() / 60 for a, b in first if a and b]
         agree, reviewed = await _agreement(db, Diagnosis.reviewed_by == u.id)
         out.append({
-            "id": u.id, "full_name": u.full_name, "region": u.region, "specialization": u.specialization,
+            "id": u.id, "full_name": u.full_name, "username": u.username, "region": u.region, "specialization": u.specialization,
             "accepting_questions": u.accepting_questions, "answers_30d": answered,
             "rating": round(float(rating), 1) if rating is not None else None,
             "avg_answer_minutes": round(sum(waits) / len(waits)) if waits else None,

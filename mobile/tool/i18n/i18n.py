@@ -18,6 +18,7 @@ EXTRA = ['Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba', 'Y
          "Suhbat topilmadi", "Tashxis topilmadi", "Token yaroqsiz yoki allaqachon ishlatilgan", "Token yaroqsiz yoki muddati o'tgan",
          "Topilmadi", "Xabar bo'sh", "Xabar topilmadi", "Yozuv o'chirilgan", "Email yoki telefon raqamidan kamida bittasi kerak",
          # Tarif imkoniyatlari (backend payment_service.PREMIUM_FEATURES, premium_screen: tr(f))
+         "Joriy parol noto'g'ri", "Yangi parol eskisidan farq qilishi kerak",
          "AI tashxis — cheksiz", "\"Mening bog'im\" — cheksiz ekin", "AI Yordamchi — cheksiz va ustuvor javob", "Batafsil sog'liq tarixi"]
 
 

@@ -112,6 +112,7 @@ class ProfileScreen extends ConsumerWidget {
           value: switch (mode) { ThemeMode.dark => tr("Qorong'i"), ThemeMode.light => tr("Yorug'"), _ => tr('Tizim') },
           onTap: () => _themeSheet(context, ref),
         ),
+        ListRow(icon: Icons.lock_outline_rounded, label: tr("Parolni o'zgartirish"), onTap: () => context.push('/profile/password')),
         ListRow(icon: Icons.dns_outlined, label: tr('Server manzili'), onTap: () => showServerSettings(context, ref)),
         ListRow(icon: AppIcons.globe, label: tr('Ilova tili'), value: ref.watch(langProvider).label, onTap: () => showLanguageSheet(context, ref)),
         if (user.isAdmin)

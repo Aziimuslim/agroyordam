@@ -52,7 +52,8 @@
     db: '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3 3 7 3s7-1.3 7-3"/>',
     refresh: '<path d="M20 11a8 8 0 0 0-14.5-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5L20 16M20 20v-4h-4"/>',
     send: '<path d="M4 12l16-8-6 16-3-7z"/>', download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
-    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', key: '<circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3M16 7l3 3M14 9l2 2"/>',
+    copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>', lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
     table: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 4v16"/>', chart: '<path d="M4 20V4M4 20h16M8 16l4-5 3 3 5-6"/>',
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
     moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
@@ -274,9 +275,19 @@
       <div class="fld"><label for="role-s">Rol</label><select id="role-s">${Object.entries(ROLES).map(([k, [, t]]) => `<option value="${k}" ${u.role === k ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <button class="btn pri" data-act="saverole" data-v="${u.id}">Rolni saqlash</button>
       <hr style="border:0;border-top:1px solid var(--line);width:100%">
+      ${u.role === 'admin' ? '' : `<div class="pw-box"><div><b>Parol</b><div class="muted small">Unutgan bo'lsa — vaqtinchalik parol beriladi</div></div><button class="btn out" data-act="pwreset" data-v="${u.id}" data-n="${esc(u.full_name)}">${I('key', 'ico s')}Parolni tiklash</button></div>`}
       ${!u.is_active ? `<button class="btn out" data-act="unblock" data-v="${u.id}">${I('lock', 'ico s')}Blokdan chiqarish</button>`
         : u.role === 'admin' ? '<p class="muted small" style="margin:0">Adminni bloklab bo\'lmaydi.</p>'
           : `<div class="fld"><label for="blk-r">Bloklash sababi</label><input id="blk-r" placeholder="Masalan: spam, reklama" maxlength="200"></div><button class="btn dan" data-act="block" data-v="${u.id}">${I('lock', 'ico s')}Bloklash</button>`}`);
+  }
+
+  // Vaqtinchalik parol faqat shu oynada bir marta ko'rinadi (serverda hash holida)
+  function pwDrawer(r) {
+    drawer(`<div class="row" style="justify-content:space-between"><h3>Vaqtinchalik parol</h3><button class="btn ghost" data-act="close" aria-label="Yopish">${I('x')}</button></div>
+      <p class="muted" style="margin:0">${esc(r.full_name)} uchun yangi parol yaratildi. Uni shaxsan (qo'ng'iroq yoki SMS orqali) bering.</p>
+      <dl class="kv"><dt>Login</dt><dd class="mono">${esc(r.username)}</dd><dt>Parol</dt><dd><span class="pw-val mono" aria-label="Parol">${esc(r.password)}</span></dd></dl>
+      <button class="btn pri" data-act="pwcopy" data-u="${esc(r.username)}" data-p="${esc(r.password)}">${I('copy', 'ico s')}Login va parolni nusxalash</button>
+      <div class="banner b-risk">${I('alert')}<p>Bu oynani yopgach parolni qayta ko'rib bo'lmaydi. Foydalanuvchi kirgach, Profil → «Parolni o'zgartirish» orqali o'z parolini qo'yadi.</p><span></span></div>`);
   }
 
   // ---------- Agronomlar ----------
@@ -294,10 +305,11 @@
           <div class="row"><button class="btn exp sm" data-act="approve" data-v="${a.id}">${I('check', 'ico s')}Tasdiqlash</button><button class="btn out sm" data-act="reject" data-v="${a.id}" data-n="${esc(a.full_name)}">Rad etish</button></div></div></div>`).join('')
           : `<div class="banner b-ok">${I('check')}<p>Barcha arizalar ko'rib chiqildi.</p><span></span></div>`}
       </div>
-      <div class="tw"><table><thead><tr><th>Agronom</th><th>Viloyat</th><th class="n">Javoblar (30 kun)</th><th class="n">Tekshirgan (30 kun)</th><th class="n">Reyting</th><th class="n">O'rtacha javob</th><th>AI bilan mos</th><th>Holat</th></tr></thead><tbody>
+      <div class="tw"><table><thead><tr><th>Agronom</th><th>Viloyat</th><th class="n">Javoblar (30 kun)</th><th class="n">Tekshirgan (30 kun)</th><th class="n">Reyting</th><th class="n">O'rtacha javob</th><th>AI bilan mos</th><th>Holat</th><th><span class="sr">Amallar</span></th></tr></thead><tbody>
       ${experts.map(e => `<tr><td><div class="who"><div class="av exp">${initials(e.full_name)}</div><div><b>${esc(e.full_name)}</b><div class="muted small">${esc(e.specialization || '')}</div></div></div></td><td>${esc(e.region || '—')}</td>
         <td class="n">${e.answers_30d}</td><td class="n">${e.reviewed_30d}</td><td class="n">${e.rating == null ? '—' : '★ ' + String(e.rating).replace('.', ',')}</td><td class="n">${wait(e.avg_answer_minutes)}</td>
-        <td>${meter(e.ai_agreement)}</td><td>${e.accepting_questions ? tag('t-ok', 'check', 'Onlayn') : tag('t-neu', 'clock', 'Oflayn')}</td></tr>`).join('') || '<tr><td colspan="8" class="muted">Hali agronom yo\'q. Arizani tasdiqlang yoki Foydalanuvchilar bo\'limida rol bering.</td></tr>'}
+        <td>${meter(e.ai_agreement)}</td><td>${e.accepting_questions ? tag('t-ok', 'check', 'Onlayn') : tag('t-neu', 'clock', 'Oflayn')}</td>
+        <td><button class="btn out sm" data-act="pwreset" data-v="${e.id}" data-n="${esc(e.full_name)}" title="Vaqtinchalik parol berish">${I('key', 'ico s')}Parol</button></td></tr>`).join('') || '<tr><td colspan="9" class="muted">Hali agronom yo\'q. Arizani tasdiqlang yoki Foydalanuvchilar bo\'limida rol bering.</td></tr>'}
       </tbody></table></div>`;
     },
   };
@@ -543,6 +555,15 @@
         const r = document.getElementById('blk-r');
         if (!r.value.trim()) { r.focus(); r.style.borderColor = 'var(--disease)'; r.placeholder = 'Sababni yozing — u jurnalga tushadi'; break; }
         act(() => api(`/admin/users/${v}/block?blocked=true&reason=${encodeURIComponent(r.value.trim())}`, { method: 'PUT' }), 'Bloklandi');
+      } break;
+      case 'pwreset':
+        if (!confirm(`${t.dataset.n} uchun yangi vaqtinchalik parol yaratilsinmi?\n\nEski parol ishlamay qoladi va u barcha qurilmalardan chiqariladi.`)) break;
+        api(`/admin/users/${v}/reset-password`, { method: 'POST' }).then(pwDrawer).catch(fail);
+        break;
+      case 'pwcopy': {
+        const txt = `AgroYordam\nLogin: ${t.dataset.u}\nVaqtinchalik parol: ${t.dataset.p}`;
+        (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject(new Error('Brauzer nusxalashga ruxsat bermadi')))
+          .then(() => { t.innerHTML = `${I('check', 'ico s')}Nusxalandi`; }).catch(fail);
       } break;
       case 'unblock': act(() => api(`/admin/users/${v}/block?blocked=false`, { method: 'PUT' }), 'Blokdan chiqarildi'); break;
       case 'approve': act(() => api(`/admin/expert-applications/${v}/approve`, { method: 'POST' }), "Agronom bo'ldi. Ilovasi agronom rejimida ochiladi"); break;

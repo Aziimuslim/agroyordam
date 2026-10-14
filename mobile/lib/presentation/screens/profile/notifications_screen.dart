@@ -25,6 +25,10 @@ class NotificationsScreen extends ConsumerWidget {
       };
 
   void _open(BuildContext context, AppNotification n) {
+    if (n.type == 'password_reset') {
+      context.push('/profile/password');
+      return;
+    }
     final id = n.referenceId;
     if (id == null) return;
     switch (n.type) {

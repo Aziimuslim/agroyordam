@@ -69,3 +69,34 @@ async def test_language_codes(client, user_headers):
         r = await client.put(f"{API}/users/me", json={"language": code}, headers=user_headers)
         assert r.status_code == 200 and r.json()["language"] == code
     assert (await client.put(f"{API}/users/me", json={"language": "de"}, headers=user_headers)).status_code == 422
+
+
+async def test_admin_password_reset_and_change(client, user_headers, admin_headers):
+    eh = await make_expert(client, admin_headers, "agro_pw")
+    eid = (await me(client, eh))["id"]
+    # Agronom (admin emas) boshqalarning parolini tiklay olmaydi
+    assert (await client.post(f"{API}/admin/users/{eid}/reset-password", headers=eh)).status_code == 403
+    r = await client.post(f"{API}/admin/users/{eid}/reset-password", headers=admin_headers)
+    assert r.status_code == 200, r.text
+    tmp = r.json()["password"]
+    assert r.json()["username"] == "agro_pw" and len(tmp) == 14
+    # Eski seans (refresh) tugatildi, vaqtinchalik parol bilan kirish ishlaydi
+    login = await client.post(f"{API}/auth/login", json={"login": "agro_pw", "password": tmp})
+    assert login.status_code == 200, login.text
+    h = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    notes = (await client.get(f"{API}/notifications", headers=h)).json()
+    assert any(n["type"] == "password_reset" for n in notes)
+    # Admin parolini paneldan tiklab bo'lmaydi
+    admin_id = (await me(client, admin_headers))["id"]
+    assert (await client.post(f"{API}/admin/users/{admin_id}/reset-password", headers=admin_headers)).status_code == 400
+
+    # O'zi almashtiradi
+    bad = await client.put(f"{API}/users/me/password", json={"current_password": "xato", "new_password": "YangiParol1"}, headers=h)
+    assert bad.status_code == 400
+    ok = await client.put(f"{API}/users/me/password", json={"current_password": tmp, "new_password": "YangiParol1",
+                                                            "refresh_token": login.json()["refresh_token"]}, headers=h)
+    assert ok.status_code == 204
+    assert (await client.post(f"{API}/auth/login", json={"login": "agro_pw", "password": tmp})).status_code == 401
+    assert (await client.post(f"{API}/auth/login", json={"login": "agro_pw", "password": "YangiParol1"})).status_code == 200
+    # Joriy seans saqlangan
+    assert (await client.post(f"{API}/auth/refresh", json={"refresh_token": login.json()["refresh_token"]})).status_code == 200

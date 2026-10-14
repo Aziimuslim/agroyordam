@@ -190,3 +190,7 @@ img.thumb{object-fit:cover}
 .logo img{width:34px;height:34px;flex:none;display:block}
 .logo em{font-style:normal;color:#a3e553}
 .login .logo em{color:var(--brand)}
+
+.pw-box{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pw-val{font-size:22px;font-weight:800;letter-spacing:.08em;user-select:all;color:var(--ink)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
