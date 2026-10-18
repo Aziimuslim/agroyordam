@@ -105,9 +105,11 @@ class SegmentTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    // Tabiiy Agro: tanlangan segment — zaytun fon (agronom rejimida eski ko'rinish)
+    final (selBg, selFg) = expert ? (c.card, c.expert) : (c.olive, c.onOlive);
     return Container(
       padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(color: c.cream2, borderRadius: BorderRadius.circular(AppRadius.md)),
+      decoration: BoxDecoration(color: c.cream2, borderRadius: BorderRadius.circular(AppRadius.md), border: Border.all(color: c.border)),
       child: Row(children: [
         for (final (id, label) in tabs)
           Expanded(
@@ -119,12 +121,12 @@ class SegmentTabs extends StatelessWidget {
                 child: AnimatedContainer(
                   duration: AppMotion.base,
                   curve: AppMotion.standard,
-                  height: 40,
+                  height: 44,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: selected == id ? c.card : Colors.transparent,
+                    color: selected == id ? selBg : Colors.transparent,
                     borderRadius: BorderRadius.circular(AppRadius.sm),
-                    boxShadow: selected == id ? [BoxShadow(color: c.shadow, blurRadius: 3, offset: const Offset(0, 1))] : null,
+                    boxShadow: selected == id && expert ? [BoxShadow(color: c.shadow, blurRadius: 3, offset: const Offset(0, 1))] : null,
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   // Uzun tarjimalar (ru/kaa) kesilmasin — sig'masa kichrayadi
@@ -133,9 +135,9 @@ class SegmentTabs extends StatelessWidget {
                     child: Text(label,
                         maxLines: 1,
                         style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: selected == id ? (expert ? c.expert : c.text) : c.muted)),
+                            fontSize: 14.5,
+                            fontWeight: selected == id ? FontWeight.w700 : FontWeight.w600,
+                            color: selected == id ? selFg : c.muted)),
                   ),
                 ),
               ),

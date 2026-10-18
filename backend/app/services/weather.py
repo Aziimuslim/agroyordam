@@ -6,6 +6,7 @@ Xavf evristikasi (fitoftoroz, un shudring, alternarioz kabi zamburug' kasallikla
 Natija viloyat bo'yicha 30 daqiqa keshlanadi.
 """
 import time
+from datetime import datetime, timezone
 from dataclasses import asdict, dataclass
 
 import httpx
@@ -61,6 +62,8 @@ class Weather:
     rain_next_48h_mm: float
     risk: str  # low | medium | high
     risk_text: str
+    is_day: bool = True  # header effekti: quyosh/oy (provayder bergan hudud vaqti bo'yicha)
+    updated_at: str = ""  # ma'lumot olingan vaqt (UTC, ISO) — ilova "yangilangan" vaqtini ko'rsatadi
 
 
 def disease_risk(temp: float, humidity: int, rain_mm: float) -> tuple[str, str]:
@@ -82,7 +85,7 @@ async def get_weather(region: str | None, client: httpx.AsyncClient | None = Non
     lat, lon, city = REGIONS[key]
     params = {
         "latitude": lat, "longitude": lon, "timezone": "Asia/Tashkent", "forecast_days": 2,
-        "current": "temperature_2m,relative_humidity_2m,weather_code",
+        "current": "temperature_2m,relative_humidity_2m,weather_code,is_day",
         "daily": "precipitation_sum",
     }
     own = client is None
@@ -101,7 +104,8 @@ async def get_weather(region: str | None, client: httpx.AsyncClient | None = Non
     rain = float(sum(x or 0 for x in data.get("daily", {}).get("precipitation_sum", [])))
     risk, text = disease_risk(temp, hum, rain)
     w = Weather(region=key, city=city, temperature=round(temp, 1), humidity=hum, code=code, condition=condition(code),
-                rain_next_48h_mm=round(rain, 1), risk=risk, risk_text=text)
+                rain_next_48h_mm=round(rain, 1), risk=risk, risk_text=text, is_day=bool(cur.get("is_day", 1)),
+                updated_at=datetime.now(timezone.utc).replace(microsecond=0).isoformat())
     _cache[key] = (time.time(), w)
     return w
 

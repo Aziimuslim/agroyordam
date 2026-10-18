@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'app_motion.dart';
 
-/// Yashil dala 2.0: radius-sm·md·lg·xl·pill.
+/// Tabiiy Agro (TZ 2.2): karta 16, forma 12, katta panel 24.
 class AppRadius {
-  static const xl = 28.0;
-  static const lg = 20.0;
-  static const md = 14.0;
+  static const xl = 24.0;
+  static const lg = 16.0;
+  static const md = 12.0;
   static const sm = 10.0;
   static const pill = 999.0;
 }
@@ -26,7 +26,9 @@ class AppTheme {
       materialTapTargetSize: MaterialTapTargetSize.padded,
       colorScheme: ColorScheme.fromSeed(seedColor: c.primary, brightness: b).copyWith(
         primary: c.primary,
-        onPrimary: c.card,
+        onPrimary: c.onPrimary,
+        secondary: c.olive,
+        onSecondary: c.onOlive,
         surface: c.card,
         onSurface: c.text,
         error: c.danger,
@@ -42,25 +44,26 @@ class AppTheme {
         titleMedium: text.titleMedium?.copyWith(fontSize: 15.5, height: 21 / 15.5, fontWeight: FontWeight.w700),
         titleSmall: text.titleSmall?.copyWith(fontSize: 14, fontWeight: FontWeight.w700),
         bodyLarge: text.bodyLarge?.copyWith(fontSize: 17, height: 26 / 17, fontWeight: FontWeight.w400),
-        bodyMedium: text.bodyMedium?.copyWith(fontSize: 15, height: 22 / 15, fontWeight: FontWeight.w400),
-        bodySmall: text.bodySmall?.copyWith(fontSize: 13, height: 18 / 13, fontWeight: FontWeight.w500, color: c.muted),
+        // TZ 2.1: oddiy matn ≥16, yordamchi 14
+        bodyMedium: text.bodyMedium?.copyWith(fontSize: 16, height: 23 / 16, fontWeight: FontWeight.w400),
+        bodySmall: text.bodySmall?.copyWith(fontSize: 14, height: 19 / 14, fontWeight: FontWeight.w500, color: c.muted),
         labelLarge: text.labelLarge?.copyWith(fontSize: 16, height: 20 / 16, fontWeight: FontWeight.w700),
         labelSmall: text.labelSmall?.copyWith(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.96, color: c.muted),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: c.card,
+        fillColor: c.inputSurface,
         hintStyle: TextStyle(color: c.subtle, fontSize: 16, fontWeight: FontWeight.w400),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md), borderSide: BorderSide(color: c.lineStrong, width: 1.5)),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md), borderSide: BorderSide(color: c.lineStrong, width: 1.5)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md), borderSide: BorderSide(color: c.primary, width: 1.8)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md), borderSide: BorderSide(color: c.focus, width: 2)),
         errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md), borderSide: BorderSide(color: c.danger, width: 1.2)),
         focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md), borderSide: BorderSide(color: c.danger, width: 1.8)),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: c.dark,
-        contentTextStyle: TextStyle(fontFamily: font, fontWeight: FontWeight.w600, color: c.onDark, fontSize: 15),
+        backgroundColor: c.text,
+        contentTextStyle: TextStyle(fontFamily: font, fontWeight: FontWeight.w600, color: c.cream, fontSize: 15),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       ),
@@ -75,7 +78,9 @@ class AppTheme {
         showDragHandle: true,
         dragHandleColor: c.border,
       ),
-      dialogTheme: DialogThemeData(backgroundColor: c.card),
+      dialogTheme: DialogThemeData(backgroundColor: c.card, barrierColor: c.scrim),
+      // TZ 2.4: fokus konturi aniq ko'rinadi
+      focusColor: c.focus.withValues(alpha: 0.24),
       progressIndicatorTheme: ProgressIndicatorThemeData(color: c.primary),
       // Oldinga/orqaga — gorizontal siljish (Motion). iOS'da tizimning orqaga surish imo-ishorasi saqlanadi.
       pageTransitionsTheme: const PageTransitionsTheme(builders: {
@@ -90,4 +95,8 @@ class AppTheme {
 
   static final light = build(AppColors.light, Brightness.light);
   static final dark = build(AppColors.darkTheme, Brightness.dark);
+
+  /// Agronom rejimi (/expert) — eski "Yashil dala" mavzusi, bu bosqichda o'zgarmaydi.
+  static final legacyLight = build(AppColors.legacyLight, Brightness.light);
+  static final legacyDark = build(AppColors.legacyDark, Brightness.dark);
 }

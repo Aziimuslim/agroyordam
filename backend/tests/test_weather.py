@@ -10,8 +10,8 @@ def fake_transport(payload, status=200):
     return httpx.MockTransport(handler)
 
 
-def payload(temp, hum, rain):
-    return {"current": {"temperature_2m": temp, "relative_humidity_2m": hum, "weather_code": 61},
+def payload(temp, hum, rain, **cur):
+    return {"current": {"temperature_2m": temp, "relative_humidity_2m": hum, "weather_code": 61, **cur},
             "daily": {"precipitation_sum": [rain, 0]}}
 
 
@@ -30,9 +30,16 @@ async def test_get_weather_parses_and_caches():
     async with httpx.AsyncClient(transport=fake_transport(payload(17.4, 86, 2.5))) as client:
         w = await W.get_weather("Andijon", client)
     assert (w.city, w.temperature, w.humidity, w.risk, w.condition) == ("Andijon", 17.4, 86, "high", "yomg'ir")
+    assert w.is_day is True and w.code == 61 and w.updated_at.endswith("+00:00")  # is_day berilmasa — kunduz
     # keshdan — tarmoqqa chiqmaydi (xato transport ham ishlatilmaydi)
     async with httpx.AsyncClient(transport=fake_transport({}, 500)) as client:
         assert (await W.get_weather("andijon", client)).temperature == 17.4
+
+
+async def test_weather_night():
+    W._cache.clear()
+    async with httpx.AsyncClient(transport=fake_transport(payload(9.0, 50, 0, is_day=0))) as client:
+        assert (await W.get_weather("Buxoro", client)).is_day is False
 
 
 async def test_weather_endpoint(client, user_headers, monkeypatch):

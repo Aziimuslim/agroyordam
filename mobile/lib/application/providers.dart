@@ -107,13 +107,11 @@ final plantMedicinesProvider =
 final medicineDiseasesProvider =
     FutureProvider.autoDispose.family<List<Disease>, String>((ref, id) => ref.watch(catalogRepoProvider).medicineDiseases(id));
 
-/// Ob-havo ixtiyoriy: xato bo'lsa null (bosh sahifada karta ko'rsatilmaydi).
-final weatherProvider = FutureProvider.autoDispose<Weather?>((ref) async {
-  try {
-    return await ref.watch(gardenRepoProvider).weather();
-  } catch (_) {
-    return null;
-  }
+/// Ob-havo (foydalanuvchi hududi bo'yicha). autoDispose emas: tarmoq uzilsa oxirgi ma'lumot
+/// (AsyncError ichidagi oldingi qiymat) ko'rsatiladi; xato faqat ob-havo blokida chiqadi (TZ S01).
+final weatherProvider = FutureProvider<Weather>((ref) {
+  ref.watch(currentUserProvider.select((u) => (u?.id, u?.region)));
+  return ref.watch(gardenRepoProvider).weather();
 });
 final cropsProvider = FutureProvider.autoDispose<List<Crop>>((ref) => ref.watch(gardenRepoProvider).crops());
 final cropProvider = FutureProvider.autoDispose.family<Crop, String>((ref, id) => ref.watch(gardenRepoProvider).crop(id));

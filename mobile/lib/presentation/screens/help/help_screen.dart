@@ -45,17 +45,17 @@ class _HelpState extends ConsumerState<HelpScreen> {
       floatingActionButton: _tab == 'comm'
           ? FloatingActionButton.extended(
               backgroundColor: c.primary,
-              foregroundColor: c.card,
+              foregroundColor: c.onPrimary,
               onPressed: () => context.push('/community/new'),
               icon: const Icon(AppIcons.edit),
               label: Text(tr('Post yozish'), style: TextStyle(fontWeight: FontWeight.w700)),
             )
           : null,
-      body: SafeArea(
+      body: NavFrame(current: '/help', child: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
+            constraints: const BoxConstraints(maxWidth: 720),
             child: RefreshIndicator(
               onRefresh: () async {
                 ref.invalidate(myQuestionsProvider);
@@ -63,7 +63,7 @@ class _HelpState extends ConsumerState<HelpScreen> {
                 ref.invalidate(questionQuotaProvider);
                 ref.invalidate(feedProvider(_feed));
               },
-              child: ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 100), children: [
+              child: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 96), children: [
                 TopBar(title: tr('Maslahat'), showBack: false, actions: [
                   CircleIconButton(icon: AppIcons.chat, badge: unread, tooltip: tr('Xabarlar'), onTap: () => context.push('/messages')),
                 ]),
@@ -86,7 +86,7 @@ class _HelpState extends ConsumerState<HelpScreen> {
             ),
           ),
         ),
-      ),
+      )),
     );
   }
 }

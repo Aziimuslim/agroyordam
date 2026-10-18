@@ -44,6 +44,7 @@ class CropOut(ORMModel):
     created_at: datetime | None = None
     last_disease: str | None = None
     image_url: str | None = None  # oxirgi tashxis surati (kartada ko'rsatiladi)
+    last_diagnosis_at: datetime | None = None  # yo'q bo'lsa — "Ma'lumot yetarli emas"
 
 
 class CropLogIn(BaseModel):

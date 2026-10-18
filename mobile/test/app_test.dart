@@ -103,8 +103,14 @@ void main() {
       expect(contrast(c.success, c.successBg), greaterThanOrEqualTo(4.5));
       expect(contrast(c.text, c.card), greaterThanOrEqualTo(4.5));
       expect(contrast(c.muted, c.cream), greaterThanOrEqualTo(4.5));
-      // asosiy tugma: c.card yozuvi c.primary ustida
-      expect(contrast(c.primary, c.card), greaterThanOrEqualTo(4.5));
+      // asosiy tugma: c.onPrimary yozuvi c.primary ustida; tanlangan tab — olive
+      expect(contrast(c.primary, c.onPrimary), greaterThanOrEqualTo(4.5));
+      expect(contrast(c.olive, c.onOlive), greaterThanOrEqualTo(4.5));
+      expect(contrast(c.onOliveSoft, c.oliveSoft), greaterThanOrEqualTo(4.5));
+      // terrakota havola/ikonka sahifa fonida
+      expect(contrast(c.primary, c.cream), greaterThanOrEqualTo(4.5));
+      expect(contrast(c.muted, c.cream2), greaterThanOrEqualTo(4.5));
+      expect(contrast(c.focus, c.cream), greaterThanOrEqualTo(3));
       // kiritish maydoni chegarasi sirtda 3:1
       expect(contrast(c.lineStrong, c.card), greaterThanOrEqualTo(3));
     }

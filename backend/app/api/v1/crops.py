@@ -26,11 +26,12 @@ async def crop_out(db: AsyncSession, c: Crop) -> CropOut:
         select(Disease.name).join(Diagnosis, Diagnosis.disease_id == Disease.id)
         .where(Diagnosis.crop_id == c.id).order_by(Diagnosis.diagnosed_at.desc()).limit(1)
     )
-    image = await db.scalar(
-        select(Diagnosis.image_url).where(Diagnosis.crop_id == c.id).order_by(Diagnosis.diagnosed_at.desc()).limit(1)
-    )
+    row = (await db.execute(
+        select(Diagnosis.image_url, Diagnosis.diagnosed_at).where(Diagnosis.crop_id == c.id).order_by(Diagnosis.diagnosed_at.desc()).limit(1)
+    )).first()
     return CropOut.model_validate(c).model_copy(update={"plant_name": plant.name if plant else None, "last_disease": last,
-                                                        "image_url": image})
+                                                        "image_url": row[0] if row else None,
+                                                        "last_diagnosis_at": row[1] if row else None})
 
 
 @router.get("", response_model=list[CropOut])

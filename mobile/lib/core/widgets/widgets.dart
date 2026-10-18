@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../config.dart';
 import '../i18n/i18n.dart';
+import 'bottom_nav.dart';
 import '../network/api_exception.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_icons.dart';
@@ -38,23 +39,30 @@ class PageShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pad = EdgeInsets.fromLTRB(20, 16, 20, padBottom ? 110 : 24);
+    final nav = bottom is AppBottomNav ? (bottom as AppBottomNav).current : null;
+    final desktop = nav != null && Breakpoints.isDesktop(context);
+    // Bo'lim ekranlari: desktopda yon panel, kontent 1200 gacha (TZ 2.3) — tor telefon ustuni emas
+    final width = MediaQuery.sizeOf(context).width;
+    final side = width >= Breakpoints.tablet ? 32.0 : 16.0;
+    final pad = EdgeInsets.fromLTRB(side, 16, side, padBottom && !desktop ? 32 : 24);
     Widget body = scroll
         ? SingleChildScrollView(physics: const AlwaysScrollableScrollPhysics(), padding: pad, child: child)
         : Padding(padding: pad, child: child);
     if (onRefresh != null && scroll) {
       body = RefreshIndicator(color: context.c.primary, onRefresh: onRefresh!, child: body);
     }
+    Widget content = SafeArea(
+      bottom: false,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(constraints: BoxConstraints(maxWidth: maxWidth), child: body),
+      ),
+    );
+    if (nav != null) content = NavFrame(current: nav, child: content);
     return Scaffold(
       backgroundColor: context.c.cream,
-      body: SafeArea(
-        bottom: false,
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(constraints: BoxConstraints(maxWidth: maxWidth), child: body),
-        ),
-      ),
-      bottomNavigationBar: bottom,
+      body: content,
+      bottomNavigationBar: desktop ? null : bottom,
     );
   }
 }
@@ -72,7 +80,15 @@ class TopBar extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Row(children: [
-        if (showBack) ...[CircleIconButton(icon: AppIcons.back, onTap: () => context.canPop() ? context.pop() : context.go('/home'), tooltip: tr('Orqaga')), const SizedBox(width: 12)],
+        if (showBack) ...[
+          IconButton(
+            tooltip: tr('Orqaga'),
+            style: IconButton.styleFrom(minimumSize: const Size(44, 44), padding: EdgeInsets.zero),
+            icon: Icon(Icons.arrow_back_rounded, color: context.c.text, size: 26),
+            onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+          ),
+          const SizedBox(width: 6),
+        ],
         if (leading != null) ...[leading!, const SizedBox(width: 10)],
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -231,7 +247,7 @@ class PillButton extends StatelessWidget {
     final (bg0, color0, border) = switch (style) {
       PillStyle.light => (c.card, c.primaryDark, null),
       PillStyle.dark => (c.dark, c.onDark, null),
-      PillStyle.primary => (c.primary, c.card, null),
+      PillStyle.primary => (c.primary, c.onPrimary, null),
       PillStyle.outline => (Colors.transparent, fg ?? c.text, BorderSide(color: c.border, width: 1.5)),
       PillStyle.soft => (c.primaryLight, c.primaryDark, null),
     };
@@ -395,14 +411,15 @@ class ChipTabs extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Material(
-                color: selected == id ? c.primary : c.card,
+                color: selected == id ? c.olive : c.card,
                 shape: StadiumBorder(side: selected == id ? BorderSide.none : BorderSide(color: c.border)),
                 child: InkWell(
                   customBorder: const StadiumBorder(),
                   onTap: () => onSelect(id),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                    child: Text(label, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: selected == id ? c.card : c.text)),
+                    // Bosiladigan maydon ≥44 px (TZ 2.2)
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Text(label, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: selected == id ? c.onOlive : c.text)),
                   ),
                 ),
               ),

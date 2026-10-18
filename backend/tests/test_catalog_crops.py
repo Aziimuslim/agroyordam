@@ -49,7 +49,8 @@ async def test_crops_crud_logs_and_limit(client, user_headers):
     # bepul rejada 3 tadan ortiq emas
     r = await client.post("/api/v1/crops", json={"name": "Ortiqcha"}, headers=user_headers)
     assert r.status_code == 402
-    assert len((await client.get("/api/v1/crops", headers=user_headers)).json()) == 3
+    lst = (await client.get("/api/v1/crops", headers=user_headers)).json()
+    assert len(lst) == 3 and all(c["last_diagnosis_at"] is None for c in lst)  # tashxissiz — "Ma'lumot yetarli emas"
 
     r = await client.put(f"/api/v1/crops/{ids[0]}", json={"variety": "Qizil", "status": "archived"}, headers=user_headers)
     assert r.json()["status"] == "archived"

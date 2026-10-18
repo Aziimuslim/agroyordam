@@ -41,6 +41,12 @@ String formatDayLong([DateTime? d]) {
   return trf('{0}, {1}-{2}', [day, t.day, month]);
 }
 
+/// "12-oktabr" (yil va hafta kunisiz)
+String formatDayMonth(DateTime d) {
+  final t = d.toLocal();
+  return trf('{0}-{1}', [t.day, tr(_months[t.month - 1])]);
+}
+
 /// "Xayrli tong" (undovsiz, ism bilan ishlatish uchun)
 String greetingShort([DateTime? now]) => greeting(now).replaceAll('!', '');
 

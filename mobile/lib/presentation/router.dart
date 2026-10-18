@@ -32,6 +32,7 @@ import 'screens/help/expert_public_screen.dart';
 import 'screens/help/help_screen.dart';
 import 'screens/help/question_screens.dart';
 import 'screens/home/home_screen.dart';
+import 'screens/home/weather_screen.dart';
 import 'screens/premium/premium_screen.dart';
 import 'screens/profile/change_password_screen.dart';
 import 'screens/profile/diagnoses_history_screen.dart';
@@ -121,6 +122,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/messages', builder: (_, __) => const ConversationsScreen(), routes: [
         GoRoute(path: ':id', builder: (_, s) => ThreadScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
       ]),
+      GoRoute(path: '/weather', builder: (_, __) => const WeatherScreen()),
       GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
 
       GoRoute(path: '/premium', builder: (_, __) => const PremiumScreen(), routes: [

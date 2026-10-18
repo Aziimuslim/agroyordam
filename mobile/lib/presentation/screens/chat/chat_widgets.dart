@@ -92,7 +92,7 @@ class ChatInputBar extends StatelessWidget {
           child: InkWell(
             customBorder: const CircleBorder(),
             onTap: onSend,
-            child: SizedBox(width: 44, height: 44, child: Icon(icon, color: c.card, size: 20)),
+            child: SizedBox(width: 44, height: 44, child: Icon(icon, color: c.onPrimary, size: 20)),
           ),
         ),
       ]),

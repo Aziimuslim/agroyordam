@@ -19,7 +19,7 @@ async def test_diagnosis_full_pipeline(client, user_headers, fake_ai):
     assert d["image_url"].startswith("/media/diagnoses/")
 
     crop = (await client.get(f"/api/v1/crops/{crop['id']}", headers=user_headers)).json()
-    assert crop["health_score"] < 60 and crop["last_disease"]
+    assert crop["health_score"] < 60 and crop["last_disease"] and crop["last_diagnosis_at"]
     hist = (await client.get(f"/api/v1/crops/{crop['id']}/health-history", headers=user_headers)).json()
     assert len(hist) == 2
 
