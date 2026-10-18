@@ -76,7 +76,8 @@ class WelcomeScreen extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const BrandWordmark(size: 46, onDark: true, slogan: true),
+                    // O'ngda til tugmasi turadi — logotip unga tegmasin
+                    const Padding(padding: EdgeInsets.only(right: 76), child: BrandWordmark(size: 46, onDark: true, slogan: true)),
                     const SizedBox(height: 28),
                 const Spacer(),
                     Text(

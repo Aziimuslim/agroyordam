@@ -95,7 +95,7 @@ async def dashboard(days: int = Query(default=30, ge=7, le=180), db: AsyncSessio
             "oldest_application_hours": int((now - oldest_app).total_seconds() // 3600) if oldest_app else None,
             "questions_stale": await _count(db, Question, Question.status == "new", Question.created_at < now - timedelta(hours=4)),
             # shikoyat qilingan post/izohlar soni (bitta postga bir nechta shikoyat — bitta ish)
-            "reports": len(set((await db.execute(select(Report.post_id, Report.comment_id).where(Report.status == "pending"))).all())),
+            "reports": len(await reports(db)),  # moderatsiya ro'yxati bilan bir xil hisob (o'chirilgan post sanalmaydi)
             "queue": await _count(db, Diagnosis, Diagnosis.review_status == "pending", Diagnosis.review_requested.is_(True)),
             "backup": _backup_info(brief=True),
         },

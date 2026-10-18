@@ -84,17 +84,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/home', pageBuilder: (_, s) => _tab(const HomeScreen(), s)),
       GoRoute(path: '/garden', pageBuilder: (_, s) => _tab(const GardenScreen(), s), routes: [
         GoRoute(path: 'add', builder: (_, __) => const AddCropScreen()),
-        GoRoute(path: ':id', builder: (_, s) => CropDetailScreen(id: s.pathParameters['id']!)),
+        GoRoute(path: ':id', builder: (_, s) => CropDetailScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
       ]),
       GoRoute(path: '/help', pageBuilder: (_, s) => _tab(HelpScreen(tab: s.uri.queryParameters['tab'] ?? 'agro'), s), routes: [
         GoRoute(path: 'ask', builder: (_, s) => AskQuestionScreen(diagnosisId: s.uri.queryParameters['diagnosis'], cropId: s.uri.queryParameters['crop'])),
-        GoRoute(path: 'q/:id', builder: (_, s) => QuestionThreadScreen(id: s.pathParameters['id']!)),
-        GoRoute(path: 'agronom/:id', builder: (_, s) => ExpertPublicScreen(id: s.pathParameters['id']!)),
+        GoRoute(path: 'q/:id', builder: (_, s) => QuestionThreadScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
+        GoRoute(path: 'agronom/:id', builder: (_, s) => ExpertPublicScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
       ]),
       // Jamoat endi "Maslahat" ichida; eski havolalar (post sahifalari) shu yerda qoladi
       GoRoute(path: '/community', pageBuilder: (_, s) => _tab(const HelpScreen(tab: 'comm'), s), routes: [
         GoRoute(path: 'new', builder: (_, __) => const CreatePostScreen()),
-        GoRoute(path: ':id', builder: (_, s) => PostDetailScreen(id: s.pathParameters['id']!)),
+        GoRoute(path: ':id', builder: (_, s) => PostDetailScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
       ]),
       GoRoute(path: '/reminders', builder: (_, s) => RemindersScreen(cropId: s.uri.queryParameters['crop']), routes: [
         GoRoute(path: 'add', builder: (_, s) => AddReminderScreen(cropId: s.uri.queryParameters['crop'])),
@@ -106,20 +106,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       ]),
 
       GoRoute(path: '/diagnose', builder: (_, s) => DiagnoseScreen(cropId: s.uri.queryParameters['crop'], source: s.uri.queryParameters['source'])),
-      GoRoute(path: '/diagnosis/:id', builder: (_, s) => DiagnosisDetailScreen(id: s.pathParameters['id']!), routes: [
-        GoRoute(path: 'plan', builder: (_, s) => CarePlanScreen(diagnosisId: s.pathParameters['id']!)),
+      GoRoute(path: '/diagnosis/:id', builder: (_, s) => DiagnosisDetailScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!), routes: [
+        GoRoute(path: 'plan', builder: (_, s) => CarePlanScreen(key: ValueKey(s.matchedLocation), diagnosisId: s.pathParameters['id']!)),
       ]),
       GoRoute(path: '/diagnoses', builder: (_, __) => const DiagnosesHistoryScreen()),
       GoRoute(path: '/assistant', builder: (_, __) => const AssistantScreen()),
       GoRoute(path: '/catalog', builder: (_, s) => CatalogScreen(tab: s.uri.queryParameters['tab'] ?? 'plants'), routes: [
-        GoRoute(path: 'plant/:id', builder: (_, s) => PlantScreen(id: s.pathParameters['id']!)),
-        GoRoute(path: 'disease/:id', builder: (_, s) => DiseaseScreen(id: s.pathParameters['id']!)),
-        GoRoute(path: 'medicine/:id', builder: (_, s) => MedicineScreen(id: s.pathParameters['id']!)),
+        GoRoute(path: 'plant/:id', builder: (_, s) => PlantScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
+        GoRoute(path: 'disease/:id', builder: (_, s) => DiseaseScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
+        GoRoute(path: 'medicine/:id', builder: (_, s) => MedicineScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
       ]),
 
-      GoRoute(path: '/users/:id', builder: (_, s) => UserProfileScreen(id: s.pathParameters['id']!)),
+      GoRoute(path: '/users/:id', builder: (_, s) => UserProfileScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
       GoRoute(path: '/messages', builder: (_, __) => const ConversationsScreen(), routes: [
-        GoRoute(path: ':id', builder: (_, s) => ThreadScreen(id: s.pathParameters['id']!)),
+        GoRoute(path: ':id', builder: (_, s) => ThreadScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
       ]),
       GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
 
@@ -129,7 +129,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // ---------- Agronom rejimi ----------
       GoRoute(path: '/expert', pageBuilder: (_, s) => _tab(const ExpertQueueScreen(), s)),
-      GoRoute(path: '/expert/review/:id', builder: (_, s) => ReviewScreen(id: s.pathParameters['id']!)),
+      GoRoute(path: '/expert/review/:id', builder: (_, s) => ReviewScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
       GoRoute(path: '/expert/questions', pageBuilder: (_, s) => _tab(const ExpertQuestionsScreen(), s)),
       GoRoute(path: '/expert/community', pageBuilder: (_, s) => _tab(const ExpertCommunityScreen(), s)),
       GoRoute(path: '/expert/kb', pageBuilder: (_, s) => _tab(const KnowledgeScreen(), s), routes: [
@@ -137,7 +137,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: ':entity/:id',
           builder: (_, s) {
             final id = s.pathParameters['id']!;
-            return KbEditScreen(entity: s.pathParameters['entity']!, id: id == 'new' ? null : id);
+            return KbEditScreen(key: ValueKey(s.matchedLocation), entity: s.pathParameters['entity']!, id: id == 'new' ? null : id);
           },
         ),
       ]),

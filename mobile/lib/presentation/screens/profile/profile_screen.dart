@@ -176,9 +176,15 @@ class ThemePicker extends ConsumerWidget {
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                     Icon(icon, color: mode == m ? accent : c.text),
                     const SizedBox(height: 4),
-                    Text(label,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: mode == m ? accent : c.text)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(label,
+                            maxLines: 1,
+                            style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: mode == m ? accent : c.text)),
+                      ),
+                    ),
                   ]),
                 ),
               ),

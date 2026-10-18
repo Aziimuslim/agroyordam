@@ -246,7 +246,13 @@ class PillButton extends StatelessWidget {
         else if (icon != null)
           Icon(icon, size: 20, color: fg ?? color),
         if (loading || icon != null) const SizedBox(width: 8),
-        Flexible(child: Text(label, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: fg ?? color), overflow: TextOverflow.ellipsis)),
+        // Tor tugmada (yoki uzun tarjimada) matn kesilmaydi — kichrayadi
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(label, maxLines: 1, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: fg ?? color)),
+          ),
+        ),
       ],
     );
     return SizedBox(
@@ -495,7 +501,14 @@ class ListRow extends StatelessWidget {
       child: Row(children: [
         SizedBox(width: 36, child: Icon(icon, color: danger ? c.danger : c.primaryDark)),
         Expanded(child: Text(label, style: TextStyle(fontWeight: danger ? FontWeight.w800 : FontWeight.w700, fontSize: 14.5, color: danger ? c.danger : c.text))),
-        if (value != null) Text(value!, style: TextStyle(color: c.muted, fontSize: 13)),
+        // Qiymat uzun bo'lsa o'zi qisqaradi — sarlavha ikki qatorga bo'linib ketmasin
+        if (value != null)
+          Flexible(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Text(value!, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.end, style: TextStyle(color: c.muted, fontSize: 13)),
+            ),
+          ),
         if (chevron && !danger) Icon(AppIcons.chevron, color: c.muted),
       ]),
     );

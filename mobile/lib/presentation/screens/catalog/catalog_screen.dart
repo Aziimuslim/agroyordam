@@ -24,6 +24,12 @@ const _riskOrder = {'high': 0, 'medium': 1, 'low': 2};
 
 class _CatalogState extends ConsumerState<CatalogScreen> {
   late String _tab = const {'plants', 'diseases', 'medicines'}.contains(widget.tab) ? widget.tab : 'plants';
+
+  @override
+  void didUpdateWidget(covariant CatalogScreen old) {
+    super.didUpdateWidget(old);
+    if (old.tab != widget.tab && const {'plants', 'diseases', 'medicines'}.contains(widget.tab)) _tab = widget.tab;
+  }
   String _q = '';
   String _plant = 'all';
 

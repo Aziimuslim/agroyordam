@@ -25,6 +25,13 @@ class HelpScreen extends ConsumerStatefulWidget {
 
 class _HelpState extends ConsumerState<HelpScreen> {
   late String _tab = const {'agro', 'ai', 'comm'}.contains(widget.tab) ? widget.tab : 'agro';
+
+  // Sahifa ochiq turganda havola boshqa bo'limga yuborsa (?tab=comm) — o'sha bo'limga o'tadi
+  @override
+  void didUpdateWidget(covariant HelpScreen old) {
+    super.didUpdateWidget(old);
+    if (old.tab != widget.tab && const {'agro', 'ai', 'comm'}.contains(widget.tab)) _tab = widget.tab;
+  }
   String _feed = 'all';
 
   @override
