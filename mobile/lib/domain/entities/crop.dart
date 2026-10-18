@@ -15,11 +15,15 @@ class Crop {
     this.notes,
     this.lastDisease,
     this.imageUrl,
+    this.photoUrl,
     this.createdAt,
     this.lastDiagnosisAt,
   });
   final String id, name, status;
   final String? plantId, plantName, variety, location, notes, lastDisease, imageUrl;
+  /// Foydalanuvchi yuklagan ekin surati (S05); bo'lmasa oxirgi tashxis rasmi ishlatiladi.
+  final String? photoUrl;
+  bool get isArchived => status == 'archived';
   final DateTime? plantingDate, createdAt;
   /// Oxirgi AI tashxis vaqti; null — hali tekshirilmagan ("Ma'lumot yetarli emas").
   final DateTime? lastDiagnosisAt;
@@ -40,6 +44,7 @@ class Crop {
         notes: j['notes'],
         lastDisease: j['last_disease'],
         imageUrl: j['image_url'],
+        photoUrl: j['photo_url'],
         createdAt: parseDate(j['created_at']),
         lastDiagnosisAt: parseDate(j['last_diagnosis_at']),
       );

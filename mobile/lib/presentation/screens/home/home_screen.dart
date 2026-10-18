@@ -4,16 +4,16 @@ import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
 import '../../../core/i18n/i18n.dart';
-import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/widgets/bottom_nav.dart';
+import '../../../core/widgets/blocks.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/crop_status.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
-import '../garden/crop_photo.dart';
-import '../reminders/task_sheet.dart';
+import '../garden/crop_card.dart';
+import '../reminders/task_row.dart';
 import '../reminders/today_tasks.dart' show dueTasks;
 import 'landscape_header.dart';
 import 'weather_screen.dart' show hhmm, weatherIcon;
@@ -335,73 +335,6 @@ class _CheckButton extends StatelessWidget {
 }
 
 // ---------------- Blok sarlavhasi ----------------
-class _BlockTitle extends StatelessWidget {
-  const _BlockTitle(this.title, {this.trailing, this.action, this.onAction});
-  final String title;
-  final Widget? trailing;
-  final String? action;
-  final VoidCallback? onAction;
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(children: [
-        Expanded(
-          child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, children: [
-            Semantics(header: true, child: Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: c.text))),
-            if (trailing != null) trailing!,
-          ]),
-        ),
-        if (action != null)
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: c.text, minimumSize: const Size(44, 44), padding: const EdgeInsets.symmetric(horizontal: 8)),
-            onPressed: onAction,
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Text(action!, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-              const Icon(AppIcons.chevron, size: 20),
-            ]),
-          ),
-      ]),
-    );
-  }
-}
-
-class _BlockError extends StatelessWidget {
-  const _BlockError({required this.error, required this.onRetry, required this.what});
-  final Object error;
-  final VoidCallback onRetry;
-  final String what;
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return AppCard(
-      margin: EdgeInsets.zero,
-      child: Row(children: [
-        Icon(Icons.cloud_off_rounded, color: c.muted),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(trf("{0} yuklanmadi", [what]), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: c.text)),
-            Text(ApiException.from(error).message, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.muted, fontSize: 14)),
-          ]),
-        ),
-        TextButton(onPressed: onRetry, child: Text(tr('Qayta urinish'))),
-      ]),
-    );
-  }
-}
-
-class _Skeleton extends StatelessWidget {
-  const _Skeleton({required this.height});
-  final double height;
-  @override
-  Widget build(BuildContext context) => Container(
-        height: height,
-        decoration: BoxDecoration(color: context.c.cream2, borderRadius: BorderRadius.circular(16)),
-      );
-}
-
 // ---------------- Bugungi vazifalar ----------------
 class _TasksBlock extends ConsumerWidget {
   const _TasksBlock();
@@ -420,9 +353,9 @@ class _TasksBlock extends ConsumerWidget {
 
     Widget body;
     if (all == null && value.hasError) {
-      body = _BlockError(error: value.error!, onRetry: () => ref.invalidate(remindersProvider), what: tr('Vazifalar'));
+      body = BlockError(error: value.error!, onRetry: () => ref.invalidate(remindersProvider), what: tr('Vazifalar'));
     } else if (all == null) {
-      body = const Column(children: [_Skeleton(height: 64), SizedBox(height: 8), _Skeleton(height: 64)]);
+      body = const Column(children: [Skeleton(height: 64), SizedBox(height: 8), Skeleton(height: 64)]);
     } else if (rows.isEmpty) {
       body = AppCard(
         margin: EdgeInsets.zero,
@@ -436,7 +369,7 @@ class _TasksBlock extends ConsumerWidget {
     } else {
       final shown = rows.take(limit).toList();
       body = Column(children: [
-        for (final r in shown) Padding(padding: const EdgeInsets.only(bottom: 8), child: _TaskRow(r: r)),
+        for (final r in shown) Padding(padding: const EdgeInsets.only(bottom: 8), child: TaskRow(r: r)),
         if (rows.length > limit)
           Align(
             alignment: Alignment.centerLeft,
@@ -448,7 +381,7 @@ class _TasksBlock extends ConsumerWidget {
       ]);
     }
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _BlockTitle(
+      BlockTitle(
         tr('Bugungi vazifalar'),
         trailing: todays.isEmpty
             ? null
@@ -469,101 +402,6 @@ class _TasksBlock extends ConsumerWidget {
   }
 }
 
-class _TaskRow extends ConsumerStatefulWidget {
-  const _TaskRow({required this.r});
-  final Reminder r;
-  @override
-  ConsumerState<_TaskRow> createState() => _TaskRowState();
-}
-
-class _TaskRowState extends ConsumerState<_TaskRow> {
-  bool _busy = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final r = widget.r;
-    final now = DateTime.now();
-    final overdue = !r.isCompleted && r.date.isBefore(DateTime(now.year, now.month, now.day));
-    final time = overdue ? tr("Kechikkan") : (r.time != null ? r.time!.substring(0, 5) : tr('Bugun'));
-    final meta = [if (r.cropName != null) r.cropName!, if (overdue) shortDate(r.date)].join(' · ');
-    return Material(
-      color: c.card,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => showTaskSheet(context, r),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 64),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
-          padding: const EdgeInsets.fromLTRB(4, 4, 8, 4),
-          child: Row(children: [
-            // Checkbox — alohida 48 px bosish maydoni; holat server tasdig'idan keyin
-            Semantics(
-              checked: r.isCompleted,
-              button: true,
-              label: r.isCompleted ? trf('{0}: bajarilgan. Qaytarish', [r.title]) : trf('{0}: bajarildi deb belgilash', [r.title]),
-              excludeSemantics: true,
-              child: InkResponse(
-                radius: 24,
-                onTap: _busy
-                    ? null
-                    : () async {
-                        setState(() => _busy = true);
-                        await toggleTask(context, ref, r);
-                        if (mounted) setState(() => _busy = false);
-                      },
-                child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: Center(
-                    child: _busy
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : AnimatedContainer(
-                            duration: const Duration(milliseconds: 160),
-                            width: 26,
-                            height: 26,
-                            decoration: BoxDecoration(
-                              color: r.isCompleted ? c.olive : Colors.transparent,
-                              shape: BoxShape.circle,
-                              border: r.isCompleted ? null : Border.all(color: overdue ? c.danger : c.lineStrong, width: 2),
-                            ),
-                            child: r.isCompleted ? Icon(AppIcons.check, size: 17, color: c.onOlive) : null,
-                          ),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(
-              width: 64,
-              child: Text(time,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: overdue ? c.danger : c.muted, fontFeatures: const [FontFeature.tabularFigures()])),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(r.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                        color: r.isCompleted ? c.muted : c.text,
-                        decoration: r.isCompleted ? TextDecoration.lineThrough : null,
-                      )),
-                  if (meta.isNotEmpty) Text(meta, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, color: overdue ? c.danger : c.muted)),
-                ]),
-              ),
-            ),
-            Icon(AppIcons.chevron, color: c.muted),
-          ]),
-        ),
-      ),
-    );
-  }
-}
-
 // ---------------- Bog'imdagi ekinlar ----------------
 class _CropsBlock extends ConsumerWidget {
   const _CropsBlock();
@@ -574,9 +412,9 @@ class _CropsBlock extends ConsumerWidget {
     final list = value.value;
     Widget body;
     if (list == null && value.hasError) {
-      body = _BlockError(error: value.error!, onRetry: () => ref.invalidate(cropsProvider), what: tr('Ekinlar'));
+      body = BlockError(error: value.error!, onRetry: () => ref.invalidate(cropsProvider), what: tr('Ekinlar'));
     } else if (list == null) {
-      body = const Row(children: [Expanded(child: _Skeleton(height: 220)), SizedBox(width: 12), Expanded(child: _Skeleton(height: 220))]);
+      body = const Row(children: [Expanded(child: Skeleton(height: 220)), SizedBox(width: 12), Expanded(child: Skeleton(height: 220))]);
     } else if (list.isEmpty) {
       body = const _EmptyGarden();
     } else {
@@ -586,80 +424,18 @@ class _CropsBlock extends ConsumerWidget {
         final shown = sorted.take(cols * 2).toList();
         const gap = 12.0;
         final w = (box.maxWidth - gap * (cols - 1)) / cols;
-        return Wrap(spacing: gap, runSpacing: gap, children: [for (final c in shown) SizedBox(width: w, child: _CropCard(crop: c))]);
+        return Wrap(spacing: gap, runSpacing: gap, children: [for (final c in shown) SizedBox(width: w, child: CropCard(crop: c))]);
       });
     }
     final attention = list?.where((c) => cropState(c) == CropState.attention).length ?? 0;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _BlockTitle(
+      BlockTitle(
         attention > 0 ? tr("Bog'imda e'tibor kerak") : tr("Bog'imdagi ekinlar"),
         action: tr("Barchasini ko'rish"),
         onAction: () => context.go('/garden'),
       ),
       body,
     ]);
-  }
-}
-
-class _CropCard extends StatelessWidget {
-  const _CropCard({required this.crop});
-  final Crop crop;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final state = cropState(crop);
-    final s = cropStateStyle(context, crop);
-    final note = switch (state) {
-      CropState.attention || CropState.watch => crop.lastDisease ?? tr("Barglarda o'zgarishlar kuzatilmoqda"),
-      CropState.noData => tr('Hali tekshirilmagan'),
-      CropState.healthy => trf("{0} tekshiruvida muammo ko'rinmadi", [shortDate(crop.lastDiagnosisAt!)]),
-    };
-    return Semantics(
-      button: true,
-      label: '${crop.name}. ${s.label}. $note',
-      excludeSemantics: true,
-      child: Material(
-        color: c.card,
-        borderRadius: BorderRadius.circular(16),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => context.push('/garden/${crop.id}'),
-          child: Container(
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              AspectRatio(
-                aspectRatio: 1.5,
-                child: Stack(fit: StackFit.expand, children: [
-                  CropPhoto(crop: crop),
-                  if (state == CropState.attention || state == CropState.healthy)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(color: c.card, shape: BoxShape.circle),
-                        child: Icon(s.icon, size: 24, color: s.fg),
-                      ),
-                    ),
-                ]),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(crop.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: c.text)),
-                  const SizedBox(height: 6),
-                  CropStatusChip(crop: crop),
-                  const SizedBox(height: 6),
-                  Text(note, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, height: 1.3, color: c.muted)),
-                ]),
-              ),
-            ]),
-          ),
-        ),
-      ),
-    );
   }
 }
 

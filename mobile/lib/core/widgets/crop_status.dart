@@ -27,7 +27,7 @@ int cropStateRank(CropState s) => switch (s) {
 
 String shortDate(DateTime d) => formatDayMonth(d);
 
-({String label, IconData icon, Color bg, Color fg}) cropStateStyle(BuildContext context, Crop crop) {
+({String label, IconData icon, Color bg, Color fg}) cropStateStyle(BuildContext context, Crop crop, {bool withDate = false}) {
   final c = context.c;
   return switch (cropState(crop)) {
     CropState.attention => (label: tr("E'tibor kerak"), icon: Icons.error_rounded, bg: c.dangerBg, fg: c.danger),
@@ -35,7 +35,7 @@ String shortDate(DateTime d) => formatDayMonth(d);
     CropState.noData => (label: tr("Ma'lumot yetarli emas"), icon: Icons.help_outline_rounded, bg: c.cream2, fg: c.muted),
     CropState.healthy => (
         // Sana karta izohida beriladi (tor kartada kesilmasin): "{sana} tekshiruvida…"
-        label: tr("Sog'lom"),
+        label: withDate ? trf("Sog'lom · {0}", [shortDate(crop.lastDiagnosisAt!)]) : tr("Sog'lom"),
         icon: Icons.check_circle_rounded,
         bg: c.successBg,
         fg: c.success
@@ -45,12 +45,15 @@ String shortDate(DateTime d) => formatDayMonth(d);
 
 /// Holat belgisi: ikonka + matn (rang yolg'iz ma'no tashimaydi).
 class CropStatusChip extends StatelessWidget {
-  const CropStatusChip({super.key, required this.crop});
+  const CropStatusChip({super.key, required this.crop, this.withDate = false});
   final Crop crop;
+
+  /// "Sog'lom" yonida oxirgi tekshiruv sanasi (keng joyda — S06 header).
+  final bool withDate;
 
   @override
   Widget build(BuildContext context) {
-    final s = cropStateStyle(context, crop);
+    final s = cropStateStyle(context, crop, withDate: withDate);
     return Container(
       padding: const EdgeInsets.fromLTRB(6, 4, 10, 4),
       decoration: BoxDecoration(color: s.bg, borderRadius: BorderRadius.circular(999)),

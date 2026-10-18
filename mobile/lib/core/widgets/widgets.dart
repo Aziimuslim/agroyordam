@@ -85,7 +85,8 @@ class TopBar extends StatelessWidget {
             tooltip: tr('Orqaga'),
             style: IconButton.styleFrom(minimumSize: const Size(44, 44), padding: EdgeInsets.zero),
             icon: Icon(Icons.arrow_back_rounded, color: context.c.text, size: 26),
-            onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+            // maybePop: forma "saqlanmagan o'zgarish" so'rovi (PopScope) ishlaydi; tarix bo'lmasa — bosh sahifa
+            onPressed: () => Navigator.of(context).canPop() ? Navigator.of(context).maybePop() : context.go('/home'),
           ),
           const SizedBox(width: 6),
         ],

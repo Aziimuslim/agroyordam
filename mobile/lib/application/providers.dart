@@ -114,6 +114,7 @@ final weatherProvider = FutureProvider<Weather>((ref) {
   return ref.watch(gardenRepoProvider).weather();
 });
 final cropsProvider = FutureProvider.autoDispose<List<Crop>>((ref) => ref.watch(gardenRepoProvider).crops());
+final archivedCropsProvider = FutureProvider.autoDispose<List<Crop>>((ref) => ref.watch(gardenRepoProvider).crops(status: 'archived'));
 final cropProvider = FutureProvider.autoDispose.family<Crop, String>((ref, id) => ref.watch(gardenRepoProvider).crop(id));
 final cropHealthProvider =
     FutureProvider.autoDispose.family<List<HealthPoint>, String>((ref, id) => ref.watch(gardenRepoProvider).health(id));
@@ -124,6 +125,9 @@ final diagnosisProvider = FutureProvider.autoDispose.family<Diagnosis, String>((
 final carePlanProvider = FutureProvider.autoDispose.family<CarePlan, String>((ref, id) => ref.watch(gardenRepoProvider).carePlan(id));
 final diagnosesProvider = FutureProvider.autoDispose<List<Diagnosis>>((ref) => ref.watch(gardenRepoProvider).diagnoses());
 final remindersProvider = FutureProvider.autoDispose<List<Reminder>>((ref) => ref.watch(gardenRepoProvider).reminders());
+/// Bitta ekin vazifalari (arxivlangan ekin uchun ham — tarix S06 da ko'rinadi).
+final cropRemindersProvider =
+    FutureProvider.autoDispose.family<List<Reminder>, String>((ref, id) => ref.watch(gardenRepoProvider).reminders(cropId: id));
 
 final feedProvider =
     FutureProvider.autoDispose.family<List<Post>, String>((ref, feed) => ref.watch(communityRepoProvider).posts(feed: feed));

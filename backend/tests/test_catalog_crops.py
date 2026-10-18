@@ -86,3 +86,34 @@ async def test_catalog_relations(client, user_headers):
     pm = {m["name"] for m in (await client.get(f"/api/v1/plants/{plants[0]['id']}/medicines", headers=user_headers)).json()}
     assert {"Mis oksixlorid", "Mankoseb"} <= pm
     assert (await client.get("/api/v1/medicines/00000000-0000-0000-0000-000000000000/diseases", headers=user_headers)).status_code == 404
+
+
+async def test_crop_photo_validation_and_archive(client, user_headers):
+    from datetime import date, timedelta
+
+    from tests.conftest import image_bytes
+
+    # TZ S05 cheklovlari: nom 2–80, sana kelajakda emas, maydon musbat
+    assert (await client.post("/api/v1/crops", json={"name": "A"}, headers=user_headers)).status_code == 422
+    future = (date.today() + timedelta(days=3)).isoformat()
+    assert (await client.post("/api/v1/crops", json={"name": "Olma", "planting_date": future}, headers=user_headers)).status_code == 422
+    assert (await client.post("/api/v1/crops", json={"name": "Olma", "area": "0"}, headers=user_headers)).status_code == 422
+
+    crop = (await client.post("/api/v1/crops", json={"name": "  Olma bog'i  "}, headers=user_headers)).json()
+    assert crop["name"] == "Olma bog'i" and crop["photo_url"] is None
+
+    r = await client.post(f"/api/v1/crops/{crop['id']}/photo", files={"file": ("c.png", image_bytes(), "image/png")}, headers=user_headers)
+    assert r.status_code == 200 and r.json()["photo_url"].startswith("/media/crops/")
+    bad = await client.post(f"/api/v1/crops/{crop['id']}/photo", files={"file": ("c.txt", b"salom", "text/plain")}, headers=user_headers)
+    assert bad.status_code == 415
+    assert (await client.delete(f"/api/v1/crops/{crop['id']}/photo", headers=user_headers)).json()["photo_url"] is None
+
+    # Arxivlangan ekinning vazifalari umumiy ro'yxatdan chiqadi, ekin bo'yicha so'rovda qoladi
+    rem = {"title": "Sug'orish", "reminder_date": date.today().isoformat(), "crop_id": crop["id"]}
+    assert (await client.post("/api/v1/reminders", json=rem, headers=user_headers)).status_code == 201
+    assert len((await client.get("/api/v1/reminders", headers=user_headers)).json()) == 1
+    await client.put(f"/api/v1/crops/{crop['id']}", json={"status": "archived"}, headers=user_headers)
+    assert (await client.get("/api/v1/reminders", headers=user_headers)).json() == []
+    assert len((await client.get(f"/api/v1/reminders?crop_id={crop['id']}", headers=user_headers)).json()) == 1
+    archived = (await client.get("/api/v1/crops?status=archived", headers=user_headers)).json()
+    assert [c["id"] for c in archived] == [crop["id"]]

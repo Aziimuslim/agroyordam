@@ -84,8 +84,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       GoRoute(path: '/home', pageBuilder: (_, s) => _tab(const HomeScreen(), s)),
       GoRoute(path: '/garden', pageBuilder: (_, s) => _tab(const GardenScreen(), s), routes: [
-        GoRoute(path: 'add', builder: (_, __) => const AddCropScreen()),
-        GoRoute(path: ':id', builder: (_, s) => CropDetailScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
+        GoRoute(path: 'add', builder: (_, s) => AddCropScreen(plantId: s.uri.queryParameters['plant'])),
+        GoRoute(
+          path: ':id',
+          builder: (_, s) => CropDetailScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!, tab: s.uri.queryParameters['tab']),
+          routes: [GoRoute(path: 'edit', builder: (_, s) => EditCropRoute(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!))],
+        ),
       ]),
       GoRoute(path: '/help', pageBuilder: (_, s) => _tab(HelpScreen(tab: s.uri.queryParameters['tab'] ?? 'agro'), s), routes: [
         GoRoute(path: 'ask', builder: (_, s) => AskQuestionScreen(diagnosisId: s.uri.queryParameters['diagnosis'], cropId: s.uri.queryParameters['crop'])),

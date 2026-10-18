@@ -13,6 +13,16 @@ class GardenRepository extends BaseRepository {
   Future<Crop> updateCrop(String id, Map<String, dynamic> data) =>
       call(() async => Crop.fromJson((await dio.put('/crops/$id', data: data)).data));
   Future<void> deleteCrop(String id) => call(() => dio.delete('/crops/$id'));
+  Future<Crop> setCropArchived(String id, bool archived) =>
+      call(() async => Crop.fromJson((await dio.put('/crops/$id', data: {'status': archived ? 'archived' : 'active'})).data));
+  Future<Crop> uploadCropPhoto(String id, List<int> bytes, String filename) => call(() async {
+        final ext = filename.toLowerCase().split('.').last;
+        final sub = ext == 'png' ? 'png' : (ext == 'webp' ? 'webp' : 'jpeg');
+        final form = FormData.fromMap({'file': MultipartFile.fromBytes(bytes, filename: filename, contentType: DioMediaType('image', sub))});
+        return Crop.fromJson((await dio.post('/crops/$id/photo', data: form)).data);
+      });
+  Future<Crop> deleteCropPhoto(String id) => call(() async => Crop.fromJson((await dio.delete('/crops/$id/photo')).data));
+
   Future<List<HealthPoint>> health(String id) =>
       call(() async => list((await dio.get('/crops/$id/health-history')).data, HealthPoint.fromJson));
   Future<List<CropLog>> logs(String id) => call(() async => list((await dio.get('/crops/$id/logs')).data, CropLog.fromJson));

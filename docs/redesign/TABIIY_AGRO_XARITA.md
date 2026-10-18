@@ -1,7 +1,7 @@
 # Tabiiy Agro — ekranlar xaritasi va yetishmayotgan imkoniyatlar
 
 Manba: «AgroYordam dizayn va funksional texnik topshiriq» v1.1 (19.10.2026), Tabiiy Agro light/dark maketlari.
-Holat: 0.8.0 (dizayn tizimi + S01 bosh sahifa). Agronom va admin panellari bu bosqichda o'zgarmaydi.
+Holat: 0.8.1 (dizayn tizimi, S01 bosh sahifa; S02, S05, S06 bog' guruhi). Agronom va admin panellari bu bosqichda o'zgarmaydi.
 
 ## Mavjud arxitektura (saqlanadi)
 
@@ -22,11 +22,11 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | ID | TZ ekrani | Mavjud yo'l / ekran | Holat | Yetishmaydi |
 |---|---|---|---|---|
 | S01 | Bosh sahifa | `/home` · `HomeScreen` | ✅ 0.8.0 da yangilandi | A03, A06 (pastda) |
-| S02 | Mening bog'im | `/garden` · `GardenScreen` | 🟡 | Qidiruv; kartadagi ⋮ (tahrir/arxiv). Backend `crops.status` bor (active/archived) — UI kerak |
+| S02 | Mening bog'im | `/garden` · `GardenScreen` | ✅ 0.8.1 | — (qidiruv, Barchasi/E'tibor kerak/Arxiv, ⋮ tahrir/arxiv, bekor qilish) |
 | S03 | AI tashxis | `/diagnose` · `DiagnoseScreen` | 🟡 | Rasm previewi va alohida «Tahlil qilish» tugmasi; tanlangan rasm bilan chiqishda tasdiq |
 | S04 | Parvarish rejasi | `/diagnosis/:id/plan` (yaratish) + ekin sahifasidagi vazifalar | 🟡 | Ekin bo'yicha Bugun/Hafta/Barchasi ekrani (`/garden/:id/care`) |
-| S05 | Ekin qo'shish | `/garden/add` · `AddCropScreen` | 🟡 | Ekinning o'z rasmi — backend'da `crops.photo` yo'q ⛔ |
-| S06 | Ekin tafsiloti | `/garden/:id` · `CropDetailScreen` | 🟡 | Umumiy/Vazifalar/Kundalik tablari; arxivlash/tiklash |
+| S05 | Ekin qo'shish | `/garden/add`, `/garden/:id/edit` · `AddCropScreen` | ✅ 0.8.1 | Ekin turi serverda ixtiyoriy qoldi (eski APK mosligi uchun); ilovada majburiy |
+| S06 | Ekin tafsiloti | `/garden/:id?tab=` · `CropDetailScreen` | ✅ 0.8.1 | A04 da rasmli kuzatuv (UI); "o'chirish" TZ bo'yicha olib tashlandi |
 | S07 | Tashxislar tarixi | `/diagnoses` | 🟡 | Qidiruv, Bog'imdagi/Sana filtri, yozuvni yashirish (`DELETE /diagnoses/:id` bor) |
 | S08 | Tashxis natijasi | `/diagnosis/:id` | 🟡 | Belgilar/Keyingi qadamlar/Oldini olish tablari |
 | S09 | Maslahat (AI) | `/help?tab=ai` | 🟡 | Suhbatlar ro'yxati ⛔ — backend'da bitta AI tarix (`/ai/chat/history`) |
@@ -60,7 +60,7 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | A01 | Tahlil jarayoni | `DiagnoseScreen` ichidagi kutish | 🟡 | Backend tahlilni sinxron bajaradi — job holatlari ⛔ |
 | A02 | Saqlanganlar | — | ⛔ | Bookmark API ⛔ |
 | A03 | Vazifa tafsiloti | — | ✅ 0.8.0 (pastki oyna) | Tahrir (`PUT /reminders/:id` bor) |
-| A04 | Kuzatuv/kundalik | ekin sahifasidagi «Kundalikka yozuv» | ✅ | — |
+| A04 | Kuzatuv/kundalik | S06 «Kundalik» tabi | 🟡 | Matn ✅ (2000 belgi); rasm biriktirish va yozuvni tahrirlash/o'chirish API ⛔ |
 | A05 | Sozlamalar va hujjatlar | qisman | 🟡 | Server manzili productionda yashirilishi kerak |
 | A06 | Hudud va ob-havo | — | ✅ 0.8.0 | Soatlik/kunlik prognoz (provayder qo'llaydi, keyingi bosqich) |
 | A07 | Foydalanuvchi qidiruvi | — | ⛔ | Ommaviy qidiruv API ⛔ |
@@ -70,6 +70,12 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 
 - `GET /weather`: `is_day`, `code`, `updated_at` (keshlangan ma'lumot vaqti) — header effekti va «yangilangan vaqt» uchun.
 - `GET /crops`: `last_diagnosis_at` — «Ma'lumot yetarli emas» holatini sog'lomdan ajratish uchun.
+
+## 0.8.1 da backend'ga qo'shilgan
+
+- `crops.photo_url` (migratsiya 0008), `POST/DELETE /crops/{id}/photo` — ekin surati (jpg/png/webp, ≤10 MB).
+- `CropIn/CropUpdate` tekshiruvi TZ S05 bo'yicha: nom 2–80, nav ≤80, maydon > 0, joylashuv ≤120, izoh ≤1000, sana kelajakda emas.
+- `GET /reminders` (crop_id siz): arxivlangan ekin vazifalari umumiy ro'yxatdan chiqadi; `?crop_id=` bilan tarix qoladi.
 
 ## Ekin holati qoidasi (TZ 1-bo'lim)
 

@@ -49,6 +49,10 @@ async def list_reminders(
         stmt = stmt.where(Reminder.reminder_type == reminder_type)
     if crop_id:
         stmt = stmt.where(Reminder.crop_id == crop_id)
+    else:
+        # TZ S02: arxivlangan ekinning vazifalari umumiy ro'yxatdan chiqadi (tarix ekin sahifasida qoladi)
+        archived = select(Crop.id).where(Crop.user_id == user.id, Crop.status == "archived")
+        stmt = stmt.where((Reminder.crop_id.is_(None)) | (Reminder.crop_id.not_in(archived)))
     if date_from:
         stmt = stmt.where(Reminder.reminder_date >= date_from)
     if date_to:

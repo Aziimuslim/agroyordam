@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,6 +9,7 @@ from app.core.deps import get_current_user
 from app.models import Crop, CropLog, Diagnosis, Disease, Plant, User
 from app.schemas.crop import CropIn, CropLogIn, CropLogOut, CropOut, CropUpdate, HealthPoint
 from app.services.limits import ensure_can_add_crop
+from app.services.storage import get_storage, read_image
 
 router = APIRouter(prefix="/crops", tags=["Crops"])
 
@@ -114,3 +115,24 @@ async def add_log(crop_id: uuid.UUID, body: CropLogIn, user: User = Depends(get_
     await db.commit()
     await db.refresh(log)
     return log
+
+
+@router.post("/{crop_id}/photo", response_model=CropOut)
+async def upload_photo(crop_id: uuid.UUID, file: UploadFile = File(...),
+                       user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """S05: ekin surati (jpg/png/webp, ≤10MB — tashxis rasmi bilan bir xil tekshiruv)."""
+    c = await own_crop(db, crop_id, user)
+    data, ext = await read_image(file)
+    c.photo_url = get_storage().save(data, ext, "crops")
+    await db.commit()
+    await db.refresh(c)
+    return await crop_out(db, c)
+
+
+@router.delete("/{crop_id}/photo", response_model=CropOut)
+async def delete_photo(crop_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    c = await own_crop(db, crop_id, user)
+    c.photo_url = None
+    await db.commit()
+    await db.refresh(c)
+    return await crop_out(db, c)

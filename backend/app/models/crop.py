@@ -23,5 +23,6 @@ class Crop(Base):
     status: Mapped[str] = mapped_column(String(20), default="active", server_default="active")
     health_score: Mapped[int] = mapped_column(Integer, default=100, server_default="100")
     notes: Mapped[str | None] = mapped_column(Text)
+    photo_url: Mapped[str | None] = mapped_column(String(255))  # foydalanuvchi yuklagan ekin surati (S05)
     created_at: Mapped[datetime] = created_at_col()
     updated_at: Mapped[datetime] = updated_at_col()

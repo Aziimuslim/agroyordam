@@ -2,31 +2,62 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.common import ORMModel
 
 
+def _not_future(v: date | None) -> date | None:
+    # TZ S05: ekilgan sana kelajakda bo'lmaydi (kelajak ekish — alohida reja funksiyasi)
+    if v is not None and v > date.today():
+        raise ValueError("Ekilgan sana kelajakda bo'lishi mumkin emas")
+    return v
+
+
+def _strip(v: str | None) -> str | None:
+    return v.strip() if isinstance(v, str) else v
+
+
 class CropIn(BaseModel):
     plant_id: uuid.UUID | None = None
-    name: str = Field(min_length=1, max_length=100)
-    variety: str | None = None
+    name: str = Field(min_length=2, max_length=80)
+    variety: str | None = Field(default=None, max_length=80)
     planting_date: date | None = None
-    area: Decimal | None = Field(default=None, ge=0)
-    location: str | None = None
-    notes: str | None = None
+    area: Decimal | None = Field(default=None, gt=0)
+    location: str | None = Field(default=None, max_length=120)
+    notes: str | None = Field(default=None, max_length=1000)
+
+    @field_validator("name", "variety", "location", "notes", mode="before")
+    @classmethod
+    def strip_text(cls, v):
+        return _strip(v)
+
+    @field_validator("planting_date")
+    @classmethod
+    def date_not_future(cls, v):
+        return _not_future(v)
 
 
 class CropUpdate(BaseModel):
     plant_id: uuid.UUID | None = None
-    name: str | None = Field(default=None, min_length=1, max_length=100)
-    variety: str | None = None
+    name: str | None = Field(default=None, min_length=2, max_length=80)
+    variety: str | None = Field(default=None, max_length=80)
     planting_date: date | None = None
-    area: Decimal | None = Field(default=None, ge=0)
-    location: str | None = None
+    area: Decimal | None = Field(default=None, gt=0)
+    location: str | None = Field(default=None, max_length=120)
     status: str | None = Field(default=None, pattern=r"^(active|archived)$")
     health_score: int | None = Field(default=None, ge=0, le=100)
-    notes: str | None = None
+    notes: str | None = Field(default=None, max_length=1000)
+
+    @field_validator("name", "variety", "location", "notes", mode="before")
+    @classmethod
+    def strip_text(cls, v):
+        return _strip(v)
+
+    @field_validator("planting_date")
+    @classmethod
+    def date_not_future(cls, v):
+        return _not_future(v)
 
 
 class CropOut(ORMModel):
@@ -43,7 +74,8 @@ class CropOut(ORMModel):
     notes: str | None = None
     created_at: datetime | None = None
     last_disease: str | None = None
-    image_url: str | None = None  # oxirgi tashxis surati (kartada ko'rsatiladi)
+    photo_url: str | None = None  # foydalanuvchi yuklagan ekin surati
+    image_url: str | None = None  # oxirgi tashxis surati (ekin surati bo'lmasa kartada ko'rsatiladi)
     last_diagnosis_at: datetime | None = None  # yo'q bo'lsa — "Ma'lumot yetarli emas"
 
 
