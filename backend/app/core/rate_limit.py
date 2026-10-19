@@ -63,4 +63,6 @@ def client_ip(request: Request) -> str:
 
 async def enforce(key: str, limit: int, window_seconds: int = 60) -> None:
     if not await limiter.hit(key, limit, window_seconds):
-        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Juda ko'p urinish. Birozdan so'ng qayta urinib ko'ring.")
+        # Retry-After: ilova tugmani shuncha soniya o'chirib, taymer ko'rsatadi (TZ S33)
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Juda ko'p urinish. Birozdan so'ng qayta urinib ko'ring.",
+                            headers={"Retry-After": str(window_seconds)})

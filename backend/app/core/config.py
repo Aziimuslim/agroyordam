@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     APP_NAME: str = "AgroYordam"
-    APP_VERSION: str = "0.8.6"
+    APP_VERSION: str = "0.8.7"
     ENVIRONMENT: str = "development"  # development | production | test
 
     # Dev'da Docker'siz ishga tushirish uchun SQLite; docker-compose PostgreSQL beradi
@@ -19,6 +19,16 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     BCRYPT_ROUNDS: int = 12
+
+    # Bir martalik kod (TZ S35). Yetkazuvchi (SMS/email) ulanmaguncha productionda kanallar o'chiq;
+    # development/test'da kod javobda qaytariladi (dev_code), haqiqiy yuborish yo'q.
+    OTP_TTL_SECONDS: int = 300
+    OTP_RESEND_SECONDS: int = 60
+    OTP_MAX_ATTEMPTS: int = 5
+    OTP_MAX_RESENDS: int = 5
+    OTP_DEV_CODES: bool | None = None  # None — ENVIRONMENT != production bo'lsa yoqiq
+    RECOVERY_TOKEN_MINUTES: int = 10
+    TERMS_VERSION: str = "qoidalar-2026-10"  # ilovadagi "Ilova haqida" qoidalari versiyasi
 
     CORS_ORIGINS: str = "http://localhost:8080,http://localhost:3000,http://localhost:5173"
 

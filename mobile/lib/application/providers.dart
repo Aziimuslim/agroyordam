@@ -62,8 +62,13 @@ class AuthController extends Notifier<AuthState> {
     state = AuthState(AuthStatus.authenticated, await _repo.me());
   }
 
-  Future<void> register({required String fullName, required String username, String? email, String? phone, required String password, String? region}) async {
-    await _repo.register(fullName: fullName, username: username, email: email, phone: phone, password: password, region: region);
+  Future<void> register({required String fullName, String? email, String? phone, required String password, String? region, String? language, bool acceptTerms = false}) async {
+    await _repo.register(fullName: fullName, email: email, phone: phone, password: password, region: region, language: language, acceptTerms: acceptTerms);
+    state = AuthState(AuthStatus.authenticated, await _repo.me());
+  }
+
+  /// Kod bilan tasdiqlangan sessiya (S35): tokenlar repo'da saqlangan, foydalanuvchini yuklaymiz.
+  Future<void> completeSession() async {
     state = AuthState(AuthStatus.authenticated, await _repo.me());
   }
 
@@ -145,6 +150,8 @@ final commentsProvider = FutureProvider.autoDispose.family<List<Comment>, String
 final profileProvider = FutureProvider.autoDispose.family<UserProfile, String>((ref, id) => ref.watch(communityRepoProvider).profile(id));
 final conversationsProvider = FutureProvider.autoDispose<List<Conversation>>((ref) => ref.watch(communityRepoProvider).conversations());
 final notificationsProvider = FutureProvider.autoDispose<List<AppNotification>>((ref) => ref.watch(communityRepoProvider).notifications());
+
+final authOptionsProvider = FutureProvider.autoDispose<AuthOptions>((ref) => ref.watch(authRepoProvider).options());
 
 final plansProvider = FutureProvider.autoDispose<List<Plan>>((ref) => ref.watch(subscriptionRepoProvider).plans());
 final mySubscriptionProvider = FutureProvider.autoDispose<MySubscription>((ref) => ref.watch(subscriptionRepoProvider).me());

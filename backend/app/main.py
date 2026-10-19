@@ -54,6 +54,8 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    # Ilova taymer va qolgan urinishlarni shu sarlavhalardan o'qiydi (boshqa origin'dan ham)
+    expose_headers=["Retry-After", "X-Attempts-Left"],
 )
 app.include_router(api_router)
 app.include_router(chat_ws.router)

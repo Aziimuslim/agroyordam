@@ -8,9 +8,10 @@ import '../core/widgets/brand.dart';
 import 'screens/settings/about_screen.dart';
 import 'screens/settings/appearance_screen.dart';
 import 'screens/settings/language_screen.dart';
-import 'screens/auth/forgot_screen.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/auth/recovery_screen.dart';
 import 'screens/auth/register_screen.dart';
+import 'screens/auth/verify_screen.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/catalog/catalog_detail_screens.dart';
 import 'screens/catalog/catalog_screen.dart';
@@ -47,7 +48,22 @@ import 'screens/profile/profile_screen.dart';
 import 'screens/reminders/add_reminder_screen.dart';
 import 'screens/reminders/reminders_screen.dart';
 
-const _publicRoutes = {'/welcome', '/login', '/register', '/forgot'};
+/// Faqat sessiyasiz ochiladigan sahifalar (kirgan foydalanuvchi bosh sahifaga o'tkaziladi).
+const _publicRoutes = {'/welcome', '/auth/login', '/auth/register', '/auth/verify', '/auth/recovery', '/login', '/register', '/forgot'};
+
+/// Ikkala holatda ham ochiq: til va ilova haqida (S33 dan til/qoidalar havolasi).
+const _openRoutes = {'/settings/language', '/settings/about'};
+
+/// Sessiya yo'qligi sababli kirishga yuborilganda so'ralgan sahifa (TZ S33 returnTo). Faqat ilova ichidagi
+/// himoyalangan yo'l qabul qilinadi: tashqi URL, '//' va auth sahifalari rad etiladi.
+String? _returnTo;
+
+String? safeReturnTo(String? loc) {
+  if (loc == null || !loc.startsWith('/') || loc.startsWith('//') || loc.contains('://')) return null;
+  final path = Uri.tryParse(loc)?.path ?? '';
+  if (path.isEmpty || path == '/splash' || _publicRoutes.contains(path) || path.startsWith('/auth')) return null;
+  return loc;
+}
 
 /// Tab ekranlari o'rtasida animatsiyasiz o'tish (pastki navigatsiya).
 Page<void> _tab(Widget child, GoRouterState s) => NoTransitionPage(key: s.pageKey, child: child);
@@ -71,9 +87,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         return loc == '/splash' ? null : Uri(path: '/splash', queryParameters: {'from': state.uri.toString()}).toString();
       }
       final loggedIn = status == AuthStatus.authenticated;
-      if (!loggedIn && !_publicRoutes.contains(loc)) return '/welcome';
-      if (loggedIn && loc == '/splash') return (from != null && from.startsWith('/') && !from.startsWith('/splash')) ? from : '/home';
-      if (loggedIn && _publicRoutes.contains(loc)) return '/home';
+      if (!loggedIn && !_publicRoutes.contains(loc) && !_openRoutes.contains(loc)) {
+        // Himoyalangan sahifa so'ralgan — kirgach shu yerga qaytamiz (sessiyasiz ko'rsatilmaydi)
+        _returnTo = safeReturnTo(loc == '/splash' ? from : state.uri.toString()) ?? _returnTo;
+        return '/welcome';
+      }
+      if (loggedIn && loc == '/splash') return safeReturnTo(from) ?? '/home';
+      if (loggedIn && _publicRoutes.contains(loc)) {
+        final back = _returnTo;
+        _returnTo = null;
+        return back ?? '/home';
+      }
       // Agronom rejimi: bosh sahifa o'rniga tekshirish navbati; oddiy foydalanuvchi bu bo'limga kira olmaydi
       if (loc.startsWith('/expert') && !(ref.read(currentUserProvider)?.canReview ?? false)) return '/home';
       if (loc == '/home' && ref.read(expertModeProvider)) return '/expert';
@@ -82,9 +106,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/splash', builder: (_, __) => const _Splash()),
       GoRoute(path: '/welcome', builder: (_, __) => const WelcomeScreen()),
-      GoRoute(path: '/login', builder: (_, s) => LoginScreen(via: s.uri.queryParameters['via'] ?? 'email')),
-      GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
-      GoRoute(path: '/forgot', builder: (_, __) => const ForgotPasswordScreen()),
+      // S33–S36 (TZ yo'llari); eski /login, /register, /forgot havolalari yangisiga yo'naltiriladi
+      GoRoute(path: '/auth/login', builder: (_, s) => LoginScreen(via: s.uri.queryParameters['via'] ?? 'phone')),
+      GoRoute(path: '/auth/register', builder: (_, __) => const RegisterScreen()),
+      GoRoute(path: '/auth/verify', builder: (_, s) => VerifyScreen(args: s.extra is VerifyArgs ? s.extra as VerifyArgs : null)),
+      GoRoute(path: '/auth/recovery', builder: (_, __) => const RecoveryScreen()),
+      GoRoute(path: '/login', redirect: (_, s) => Uri(path: '/auth/login', queryParameters: s.uri.queryParameters.isEmpty ? null : s.uri.queryParameters).toString()),
+      GoRoute(path: '/register', redirect: (_, __) => '/auth/register'),
+      GoRoute(path: '/forgot', redirect: (_, __) => '/auth/recovery'),
 
       GoRoute(path: '/home', pageBuilder: (_, s) => _tab(const HomeScreen(), s)),
       GoRoute(path: '/garden', pageBuilder: (_, s) => _tab(const GardenScreen(), s), routes: [

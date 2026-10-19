@@ -11,6 +11,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/lang_sheet.dart';
 import '../../../core/widgets/widgets.dart';
+import 'auth_widgets.dart';
 import 'server_settings.dart';
 
 class WelcomeScreen extends ConsumerWidget {
@@ -121,7 +122,7 @@ class WelcomeScreen extends ConsumerWidget {
           icon: AppIcons.phone,
           style: PillStyle.primary,
           block: true,
-          onPressed: () => context.push('/login?via=phone'),
+          onPressed: () => context.push('/auth/login?via=phone'),
         ),
         const _OrDivider(),
         PillButton(
@@ -129,21 +130,18 @@ class WelcomeScreen extends ConsumerWidget {
           icon: AppIcons.mail,
           style: PillStyle.outline,
           block: true,
-          onPressed: () => context.push('/login?via=email'),
+          onPressed: () => context.push('/auth/login?via=email'),
         ),
         const SizedBox(height: 14),
         TextButton(
-          onPressed: () => context.push('/register'),
+          onPressed: () => context.push('/auth/register'),
           child: Text(
             tr("Hisobingiz yo'qmi? Ro'yxatdan o'ting"),
             style: TextStyle(color: c.primary, fontWeight: FontWeight.w800),
           ),
         ),
-        Text(
-          tr('Davom etish orqali siz Foydalanish shartlari va Maxfiylik siyosatiga rozilik bildirasiz'),
-          textAlign: TextAlign.center,
-          style: TextStyle(color: c.muted, fontSize: 12.5, height: 1.4),
-        ),
+        // Rozilik ro'yxatdan o'tishda alohida belgi bilan olinadi (TZ S34); bu yerda faqat havola
+        const TermsLink(),
         if (AppConfig.showServerSettings)
         TextButton.icon(
           onPressed: () => showServerSettings(context, ref),

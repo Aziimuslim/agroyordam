@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../application/providers.dart';
 import '../../../core/config.dart';
 import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
@@ -76,6 +77,7 @@ class AboutScreen extends ConsumerWidget {
             ),
           ),
           SettingsSection(tr('Yordam')),
+          if (ref.watch(currentUserProvider) != null)
           ListRow(icon: Icons.support_agent_rounded, label: tr('Agronomga savol berish'), onTap: () => context.push('/help/ask')),
           ListRow(icon: AppIcons.book, label: tr("Ma'lumotnoma"), value: tr("O'simlik, kasallik, dori"), onTap: () => context.push('/catalog')),
           SettingsSection(tr("Ma'lumot manbalari")),

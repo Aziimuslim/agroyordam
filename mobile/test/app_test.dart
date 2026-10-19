@@ -9,6 +9,8 @@ import 'package:agroyordam/core/storage/token_storage.dart';
 import 'package:agroyordam/core/theme/app_colors.dart';
 import 'package:agroyordam/core/utils/format.dart';
 import 'package:agroyordam/domain/entities/entities.dart';
+import 'package:agroyordam/presentation/router.dart';
+import 'package:agroyordam/presentation/screens/auth/auth_widgets.dart';
 import 'package:agroyordam/presentation/screens/expert/expert_shell.dart';
 import 'package:agroyordam/presentation/screens/reminders/today_tasks.dart';
 import 'package:flutter/material.dart';
@@ -80,7 +82,7 @@ void main() {
     expect(find.text('Hisobingizga kiring'), findsOneWidget);
     await tester.tap(find.text('Kirish'));
     await tester.pumpAndSettle();
-    expect(find.text("Maydonni to'ldiring"), findsOneWidget);
+    expect(find.text('Email yoki foydalanuvchi nomini kiriting'), findsOneWidget);
     expect(find.text('Parolni kiriting'), findsOneWidget);
   });
 
@@ -288,5 +290,30 @@ void main() {
     expect(trIn(AppLang.en, 'Saqlash'), 'Save');
     expect(trIn(AppLang.uzCyrl, 'Saqlash'), 'Сақлаш');
     expect(tr('Saqlash'), 'Saqlash'); // global til o'zgarmadi
+  });
+
+  test('Kirish: telefon E.164 va xavfsiz returnTo', () {
+    expect(normalizePhone('90 123 45 67'), '+998901234567');
+    expect(normalizePhone('998901234567'), '+998901234567');
+    expect(normalizePhone('+7 912 345-67-89'), '+79123456789');
+    expect(normalizePhone('12345'), isNull);
+    expect(validEmail('a@b.uz'), isTrue);
+    expect(validEmail('a@b'), isFalse);
+
+    expect(safeReturnTo('/garden/1?tab=care'), '/garden/1?tab=care');
+    expect(safeReturnTo('//evil.com'), isNull);
+    expect(safeReturnTo('https://evil.com'), isNull);
+    expect(safeReturnTo('/auth/login'), isNull);
+    expect(safeReturnTo('/splash'), isNull);
+    expect(safeReturnTo(null), isNull);
+  });
+
+  test('AuthOptions: kanal yo\'q bo\'lsa kodli oqim yopiq', () {
+    final none = AuthOptions.fromJson({'channels': [], 'dev_codes': false, 'terms_version': 'v1'});
+    expect(none.any, isFalse);
+    final dev = AuthOptions.fromJson({'channels': ['sms', 'email'], 'dev_codes': true});
+    expect(dev.sms && dev.email, isTrue);
+    final ch = Challenge.fromJson({'challenge_id': 'x', 'purpose': 'register', 'channel': 'sms', 'destination_masked': '+998 ••• •• 33', 'expires_in': 300, 'resend_in': 60, 'attempts_left': 5});
+    expect(ch.devCode, isNull);
   });
 }

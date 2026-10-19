@@ -19,6 +19,11 @@ EXTRA = ['Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba', 'Y
          "Topilmadi", "Xabar bo'sh", "Xabar topilmadi", "Yozuv o'chirilgan", "Email yoki telefon raqamidan kamida bittasi kerak",
          # Tarif imkoniyatlari (backend payment_service.PREMIUM_FEATURES, premium_screen: tr(f))
          "Joriy parol noto'g'ri", "Yangi parol eskisidan farq qilishi kerak",
+         # 0.8.7 kirish (auth.py)
+         "Kod yuborish xizmati hozircha ulanmagan", "Telefon raqami +998901234567 ko'rinishida bo'lsin",
+         "Ro'yxatdan o'tish ma'lumotlari kerak", "Qoidalarga rozilik kerak", "Kodni qayta yuborish uchun biroz kuting",
+         "Bu foydalanuvchi nomi allaqachon ro'yxatdan o'tgan", "Bu email allaqachon ro'yxatdan o'tgan",
+         "Bu telefon raqami allaqachon ro'yxatdan o'tgan",
          "AI tashxis — cheksiz", "\"Mening bog'im\" — cheksiz ekin", "AI Yordamchi — cheksiz va ustuvor javob", "Batafsil sog'liq tarixi"]
 
 

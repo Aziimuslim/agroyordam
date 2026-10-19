@@ -53,10 +53,10 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S30 | To'lovlar tarixi | `/premium/payments` (`/payments`) | ✅ 0.8.6 | Filtr, tafsilot, kutilayotganini yangilash; to'langan/kutilmoqda/amalga oshmagan/qaytarilgan alohida. Chek ⛔ (provayder integratsiyasida yo'q) |
 | S31 | Mavzu tanlash | `/settings/appearance` | ✅ 0.8.6 | Namuna, matn Oddiy/Katta, harakat Tizimga mos/Kamaytirilgan; saqlamasdan chiqilsa eski qiymat |
 | S32 | Til tanlash | `/settings/language` | ✅ 0.8.6 | Qidiruv, tanlangan tildagi namuna, saqlamasdan chiqish dialogi. Katalog tarjimasi yo'qligi belgisi ⛔ |
-| S33 | Kirish | `/login` | 🟡 | SMS bilan kirish ⛔ (SMS provayder yo'q) |
-| S34 | Ro'yxatdan o'tish | `/register` | 🟡 | Shartlarga rozilik belgisi; OTP ⛔ |
-| S35 | Kodni tasdiqlash | — | ⛔ | SMS/email provayder va challenge API ⛔ |
-| S36 | Parolni tiklash | `/forgot` | 🟡 | Hozir token orqali (dev); SMS ⛔ |
+| S33 | Kirish | `/auth/login` (`/login`) | ✅ 0.8.7 | Telefon (E.164)/Email; umumiy xato; 429 taymer; xavfsiz returnTo; kod bilan kirish faqat kanal bo'lsa. Kanal (SMS/email provayder) ⛔ |
+| S34 | Ro'yxatdan o'tish | `/auth/register` | ✅ 0.8.7 | Ism 2–80, kanal tanlovi, parol+tasdiq, rozilik (belgilanmagan, versiya va vaqt saqlanadi). Kanal bo'lsa hisob kod tasdig'idan keyin; productionda kanal yo'q — darhol yaratiladi va bu ochiq yoziladi |
+| S35 | Kodni tasdiqlash | `/auth/verify` | ✅ 0.8.7 (sinov rejimida) | 6 raqam, TTL 5 daq, qayta yuborish 60 s, 5 urinish, eski kod yaroqsiz, noto'g'ri/eskirgan farqlanadi. Haqiqiy SMS/email yuborish ⛔ (provayder) |
+| S36 | Parolni tiklash | `/auth/recovery` (`/forgot`) | ✅ 0.8.7 | Kod → yangi parol (recovery token 10 daq, bir martalik, login emas, barcha seanslar tugaydi). Kanal yo'q bo'lsa — administrator orqali yo'l ko'rsatiladi |
 | A01 | Tahlil jarayoni | S03 ichida bosqichlar | 🟡 | Yuklash → tahlil bosqichlari, yuklashda bekor qilish, 60 s xabari ✅; server job holatlari (queued/processing) ⛔ — backend sinxron |
 | A02 | Saqlanganlar | — | ⛔ | Bookmark API ⛔ |
 | A03 | Vazifa tafsiloti | pastki oyna | ✅ 0.8.3 | — (tahrir, seriya: faqat shu / shu va keyingilar) |
@@ -104,6 +104,13 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 - `GET /subscriptions/{id}` — buyurtma holati (faqat egasi). Tarixda oxirgi 24 soatdagi kutilayotgan buyurtma ham ko'rinadi.
 - Avtomatik qayta yechish amalga oshirilmaganligi sababli yangi buyurtmalarda `auto_renew = false`; `/cancel` to'langan obunani endi «bekor qilingan» qilmaydi.
 - `PUT /users/me/password`: `logout_others` (ixtiyoriy). Yuborilmasa — eski ilovalar uchun avvalgidek boshqa seanslar tugatiladi.
+
+## 0.8.7 da backend'ga qo'shilgan
+
+- Migratsiya 0013: `auth_challenges` (kod faqat HMAC-hash, maqsad, kanal, urinishlar, muddat, qayta yuborish) va `users.terms_version`, `terms_accepted_at`.
+- `GET /auth/options` (kanallar, sinov rejimi, qoidalar versiyasi), `POST /auth/challenges`, `/challenges/{id}/resend`, `/challenges/{id}/verify`, `POST /auth/recovery/reset`.
+- Kod yuborish provayderi yo'q: productionda kanallar e'lon qilinmaydi (`OTP_DEV_CODES`), development/test'da kod javobda qaytadi. Provayder ulanganda faqat `otp_service.deliver()` o'zgaradi.
+- `/auth/register`: username ixtiyoriy (server yaratadi), `accept_terms`. 429 javoblarida `Retry-After`; CORS `Retry-After`, `X-Attempts-Left` ni ochadi.
 
 ## Ekin holati qoidasi (TZ 1-bo'lim)
 
