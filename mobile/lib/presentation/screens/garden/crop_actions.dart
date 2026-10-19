@@ -67,3 +67,33 @@ Future<bool> restoreCrop(BuildContext context, WidgetRef ref, Crop crop) async {
   if (context.mounted) showToast(context, trf('{0} tiklandi', [crop.name]));
   return true;
 }
+
+/// A04 Kuzatuv yozish (1–2000 belgi). Saqlash ekin kundaligiga yozadi; tashxisga aylanmaydi.
+Future<void> addObservation(BuildContext context, WidgetRef ref, String cropId) async {
+  final ctrl = TextEditingController();
+  final text = await showSheet<String>(context, title: tr('Kuzatuv yozish'), builder: (ctx) {
+    return StatefulBuilder(builder: (ctx, set) {
+      final len = ctrl.text.trim().length;
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        TextField(
+          controller: ctrl,
+          maxLines: 5,
+          maxLength: 2000,
+          autofocus: true,
+          onChanged: (_) => set(() {}),
+          decoration: InputDecoration(hintText: tr("Bugun nimani kuzatdingiz? (barglar, sug'orish, o'g'itlash...)")),
+        ),
+        const SizedBox(height: 12),
+        PillButton(label: tr('Saqlash'), block: true, onPressed: len == 0 ? null : () => Navigator.pop(ctx, ctrl.text.trim())),
+      ]);
+    });
+  });
+  if (text == null || text.isEmpty) return;
+  try {
+    await ref.read(gardenRepoProvider).addLog(cropId, text);
+    ref.invalidate(cropLogsProvider(cropId));
+    if (context.mounted) showToast(context, tr('Kuzatuv saqlandi'));
+  } catch (e) {
+    if (context.mounted) showError(context, e);
+  }
+}

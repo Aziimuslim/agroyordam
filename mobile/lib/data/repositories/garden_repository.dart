@@ -31,7 +31,11 @@ class GardenRepository extends BaseRepository {
   Future<Weather> weather() => call(() async => Weather.fromJson((await dio.get('/weather')).data));
 
   // Tashxis
-  Future<Diagnosis> diagnose(List<int> bytes, String filename, {String? cropId, String? plantId}) => call(() async {
+  /// [onUploaded] — rasm serverga to'liq yetib borganda (A01: "yuklanmoqda" → "tahlil qilinmoqda").
+  /// [cancel] — faqat yuklash bosqichida bekor qilish uchun.
+  Future<Diagnosis> diagnose(List<int> bytes, String filename,
+          {String? cropId, String? plantId, void Function()? onUploaded, CancelToken? cancel}) =>
+      call(() async {
         final ext = filename.split('.').last.toLowerCase();
         final mime = ext == 'png' ? 'png' : (ext == 'webp' ? 'webp' : 'jpeg');
         final form = FormData.fromMap({
@@ -39,8 +43,21 @@ class GardenRepository extends BaseRepository {
           if (cropId != null) 'crop_id': cropId,
           if (cropId == null && plantId != null) 'plant_id': plantId,
         });
-        return Diagnosis.fromJson((await dio.post('/diagnoses', data: form)).data);
+        var notified = false;
+        return Diagnosis.fromJson((await dio.post('/diagnoses',
+                data: form,
+                cancelToken: cancel,
+                onSendProgress: (sent, total) {
+                  if (!notified && total > 0 && sent >= total) {
+                    notified = true;
+                    onUploaded?.call();
+                  }
+                }))
+            .data);
       });
+  /// Tarixdan yashirish (yozuv serverda saqlanadi) va qaytarish — TZ S07.
+  Future<void> hideDiagnosis(String id) => call(() => dio.delete('/diagnoses/$id'));
+  Future<Diagnosis> restoreDiagnosis(String id) => call(() async => Diagnosis.fromJson((await dio.post('/diagnoses/$id/restore')).data));
   Future<List<Diagnosis>> diagnoses({String? cropId}) => call(() async =>
       list((await dio.get('/diagnoses', queryParameters: {if (cropId != null) 'crop_id': cropId})).data, Diagnosis.fromJson));
   Future<Diagnosis> diagnosis(String id) => call(() async => Diagnosis.fromJson((await dio.get('/diagnoses/$id')).data));

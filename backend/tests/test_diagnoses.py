@@ -30,7 +30,13 @@ async def test_diagnosis_full_pipeline(client, user_headers, fake_ai):
 
     post = await client.post(f"/api/v1/diagnoses/{d['id']}/share", headers=user_headers)
     assert post.status_code == 201 and post.json()["diagnosis_id"] == d["id"]
+    # Yashirish: ro'yxatdan chiqadi, lekin yozuv saqlanadi va qaytariladi (TZ S07)
     assert (await client.delete(f"/api/v1/diagnoses/{d['id']}", headers=user_headers)).status_code == 204
+    assert (await client.get("/api/v1/diagnoses", headers=user_headers)).json() == []
+    assert (await client.get(f"/api/v1/diagnoses/{d['id']}", headers=user_headers)).status_code == 200
+    r = await client.post(f"/api/v1/diagnoses/{d['id']}/restore", headers=user_headers)
+    assert r.status_code == 200 and r.json()["id"] == d["id"]
+    assert len((await client.get("/api/v1/diagnoses", headers=user_headers)).json()) == 1
 
 
 async def test_healthy_and_low_confidence(client, user_headers, fake_ai):

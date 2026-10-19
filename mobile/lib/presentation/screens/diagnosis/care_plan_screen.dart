@@ -51,9 +51,10 @@ class _CarePlanState extends ConsumerState<CarePlanScreen> {
       ref.invalidate(cropLogsProvider(cropId));
       ref.invalidate(cropDiagnosesProvider(cropId));
       ref.invalidate(cropHealthProvider(cropId));
+      ref.invalidate(cropRemindersProvider(cropId));
       if (!mounted) return;
       showToast(context, trf('Reja boshlandi: {0} ta vazifa eslatmalarga qo\'shildi', [plan.tasks.length]));
-      context.go('/garden/$cropId');
+      context.go('/garden/$cropId/care');
     } catch (e) {
       if (mounted) showError(context, e);
     } finally {
@@ -73,7 +74,7 @@ class _CarePlanState extends ConsumerState<CarePlanScreen> {
         data: (p) {
           if (!_nameTouched && _name.text.isEmpty) _name.text = p.plantName ?? '';
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            TopBar(title: tr('Parvarish rejasi'), subtitle: tr('AI tashxis va bilimlar bazasi asosida')),
+            TopBar(title: tr('Reja yaratish'), subtitle: tr('AI tashxis asosida — agronom tavsiyasi emas')),
             _Summary(plan: p, diagnosis: diag.value),
             if (diag.value != null) _About(d: diag.value!),
             _PlanView(plan: p, allDays: _allDays, onToggle: () => setState(() => _allDays = !_allDays)),

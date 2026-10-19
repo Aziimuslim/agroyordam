@@ -43,7 +43,9 @@ class TaskRowState extends ConsumerState<TaskRow> {
           padding: const EdgeInsets.fromLTRB(4, 4, 8, 4),
           child: Row(children: [
             // Checkbox — alohida 48 px bosish maydoni; holat server tasdig'idan keyin
+            // container: alohida semantik tugun — aks holda butun qator "checkbox" bo'lib, bosish A03 ni ochadi
             Semantics(
+              container: true,
               checked: r.isCompleted,
               button: true,
               label: r.isCompleted ? trf('{0}: bajarilgan. Qaytarish', [r.title]) : trf('{0}: bajarildi deb belgilash', [r.title]),

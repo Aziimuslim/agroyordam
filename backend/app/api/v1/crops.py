@@ -25,10 +25,10 @@ async def crop_out(db: AsyncSession, c: Crop) -> CropOut:
     plant = await db.get(Plant, c.plant_id) if c.plant_id else None
     last = await db.scalar(
         select(Disease.name).join(Diagnosis, Diagnosis.disease_id == Disease.id)
-        .where(Diagnosis.crop_id == c.id).order_by(Diagnosis.diagnosed_at.desc()).limit(1)
+        .where(Diagnosis.crop_id == c.id, Diagnosis.hidden_at.is_(None)).order_by(Diagnosis.diagnosed_at.desc()).limit(1)
     )
     row = (await db.execute(
-        select(Diagnosis.image_url, Diagnosis.diagnosed_at).where(Diagnosis.crop_id == c.id).order_by(Diagnosis.diagnosed_at.desc()).limit(1)
+        select(Diagnosis.image_url, Diagnosis.diagnosed_at).where(Diagnosis.crop_id == c.id, Diagnosis.hidden_at.is_(None)).order_by(Diagnosis.diagnosed_at.desc()).limit(1)
     )).first()
     return CropOut.model_validate(c).model_copy(update={"plant_name": plant.name if plant else None, "last_disease": last,
                                                         "image_url": row[0] if row else None,
@@ -88,7 +88,7 @@ async def health_history(crop_id: uuid.UUID, user: User = Depends(get_current_us
     c = await own_crop(db, crop_id, user)
     rows = (await db.execute(
         select(Diagnosis, Disease).outerjoin(Disease, Disease.id == Diagnosis.disease_id)
-        .where(Diagnosis.crop_id == c.id).order_by(Diagnosis.diagnosed_at)
+        .where(Diagnosis.crop_id == c.id, Diagnosis.hidden_at.is_(None)).order_by(Diagnosis.diagnosed_at)
     )).all()
     points = [HealthPoint(date=c.created_at, health_score=100)]
     for diag, disease in rows:

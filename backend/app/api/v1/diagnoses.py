@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.security import utcnow
 from app.models import Crop, CropLog, Diagnosis, Disease, Plant, Post, Reminder, User
 from app.repositories.catalog_repo import DiseaseRepository
 from app.schemas.community import PostOut
@@ -42,7 +43,8 @@ async def create_diagnosis(
 @router.get("", response_model=list[DiagnosisOut])
 async def list_diagnoses(crop_id: uuid.UUID | None = None, limit: int = 50,
                          user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    stmt = select(Diagnosis).where(Diagnosis.user_id == user.id).order_by(Diagnosis.diagnosed_at.desc()).limit(min(limit, 200))
+    stmt = (select(Diagnosis).where(Diagnosis.user_id == user.id, Diagnosis.hidden_at.is_(None))
+            .order_by(Diagnosis.diagnosed_at.desc()).limit(min(limit, 200)))
     if crop_id:
         stmt = stmt.where(Diagnosis.crop_id == crop_id)
     return [await to_out(db, d) for d in (await db.scalars(stmt)).all()]
@@ -54,9 +56,20 @@ async def get_diagnosis(diag_id: uuid.UUID, user: User = Depends(get_current_use
 
 
 @router.delete("/{diag_id}", status_code=204)
-async def delete_diagnosis(diag_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    await db.delete(await own(db, diag_id, user))
+async def hide_diagnosis(diag_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Tarixdan yashirish (TZ S07). Yozuv o'chirilmaydi: agronom javobi va dataset saqlanadi, /restore bilan qaytadi."""
+    d = await own(db, diag_id, user)
+    d.hidden_at = utcnow()
     await db.commit()
+
+
+@router.post("/{diag_id}/restore", response_model=DiagnosisOut)
+async def restore_diagnosis(diag_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    d = await own(db, diag_id, user)
+    d.hidden_at = None
+    await db.commit()
+    await db.refresh(d)
+    return await to_out(db, d)
 
 
 @router.post("/{diag_id}/feedback", response_model=DiagnosisOut)

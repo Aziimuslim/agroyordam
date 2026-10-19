@@ -327,7 +327,7 @@ class _OverviewTab extends ConsumerWidget {
             label: Text(tr('Qayta tekshirish'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           ),
         ),
-        if (last != null && !last.isHealthy) ...[
+        ...[
           const SizedBox(height: 10),
           SizedBox(
             height: 52,
@@ -337,7 +337,7 @@ class _OverviewTab extends ConsumerWidget {
                 side: BorderSide(color: c.primary, width: 1.5),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              onPressed: () => context.push('/diagnosis/${last.id}/plan'),
+              onPressed: () => context.push('/garden/${crop.id}/care'),
               icon: const Icon(Icons.event_note_outlined),
               label: Text(tr('Parvarish rejasini ochish'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             ),
@@ -515,35 +515,6 @@ class _DiaryTab extends ConsumerWidget {
   const _DiaryTab({required this.crop});
   final Crop crop;
 
-  Future<void> _add(BuildContext context, WidgetRef ref) async {
-    final ctrl = TextEditingController();
-    final text = await showSheet<String>(context, title: tr('Kuzatuv yozish'), builder: (ctx) {
-      return StatefulBuilder(builder: (ctx, set) {
-        final len = ctrl.text.trim().length;
-        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          TextField(
-            controller: ctrl,
-            maxLines: 5,
-            maxLength: 2000,
-            autofocus: true,
-            onChanged: (_) => set(() {}),
-            decoration: InputDecoration(hintText: tr("Bugun nimani kuzatdingiz? (barglar, sug'orish, o'g'itlash...)")),
-          ),
-          const SizedBox(height: 12),
-          PillButton(label: tr('Saqlash'), block: true, onPressed: len == 0 ? null : () => Navigator.pop(ctx, ctrl.text.trim())),
-        ]);
-      });
-    });
-    if (text == null || text.isEmpty) return;
-    try {
-      await ref.read(gardenRepoProvider).addLog(crop.id, text);
-      ref.invalidate(cropLogsProvider(crop.id));
-      if (context.mounted) showToast(context, tr('Kuzatuv saqlandi'));
-    } catch (e) {
-      if (context.mounted) showError(context, e);
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
@@ -555,7 +526,7 @@ class _DiaryTab extends ConsumerWidget {
           height: 52,
           child: FilledButton.icon(
             style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-            onPressed: () => _add(context, ref),
+            onPressed: () => addObservation(context, ref, crop.id),
             icon: const Icon(Icons.add_circle_outline_rounded),
             label: Text(tr("Kuzatuv qo'shish"), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           ),

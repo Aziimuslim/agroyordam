@@ -26,6 +26,7 @@ import 'screens/expert/kb_screens.dart';
 import 'screens/expert/queue_screen.dart';
 import 'screens/expert/review_screen.dart';
 import 'screens/garden/add_crop_screen.dart';
+import 'screens/garden/care_screen.dart';
 import 'screens/garden/crop_detail_screen.dart';
 import 'screens/garden/garden_screen.dart';
 import 'screens/help/expert_public_screen.dart';
@@ -88,7 +89,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         GoRoute(
           path: ':id',
           builder: (_, s) => CropDetailScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!, tab: s.uri.queryParameters['tab']),
-          routes: [GoRoute(path: 'edit', builder: (_, s) => EditCropRoute(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!))],
+          routes: [
+            GoRoute(path: 'edit', builder: (_, s) => EditCropRoute(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
+            GoRoute(path: 'care', builder: (_, s) => CareScreen(key: ValueKey(s.matchedLocation), cropId: s.pathParameters['id']!)),
+          ],
         ),
       ]),
       GoRoute(path: '/help', pageBuilder: (_, s) => _tab(HelpScreen(tab: s.uri.queryParameters['tab'] ?? 'agro'), s), routes: [

@@ -13,11 +13,12 @@ import '../../../core/utils/format.dart';
 import '../../../core/widgets/ds.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
+import '../profile/diagnoses_history_screen.dart' show diagnosisHeadline, diagnosisStatus;
 import 'diagnosis_actions.dart';
 
-/// Tashxis natijasi — Figma "B · Yashil dala / Tashxis natijasi":
-/// tepada rasm, ustida natija paneli (ekin/xavf chiplari, kasallik, AI ishonchi, Davolash/Belgilar/Oldini olish,
-/// dori, "AI to'g'ri topdimi?") va pastda doimiy "Bog'imga qo'shish · N kunlik reja" tugmasi.
+/// S08 Tashxis natijasi: rasm (bosilsa — kattalashtirish), "{kasallik} ehtimoli", AI ishonchi (model
+/// ma'lumoti, sog'lik emas), Belgilar / Keyingi qadamlar / Oldini olish, agronomga yuborish, fikr.
+/// Ishonch past bo'lsa kasallik tasdiqlanmagan: dori va reja avtomatik taklif qilinmaydi.
 class DiagnosisDetailScreen extends ConsumerWidget {
   const DiagnosisDetailScreen({super.key, required this.id});
   final String id;
@@ -26,22 +27,23 @@ class DiagnosisDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final value = ref.watch(diagnosisProvider(id));
+    final d = value.value;
+    if (d == null) {
+      return PageShell(
+        padBottom: false,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          TopBar(title: tr('Tashxis natijasi')),
+          if (!value.hasError)
+            const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()))
+          else
+            AsyncView(value: value, onRetry: () => ref.invalidate(diagnosisProvider(id)), data: (_) => const SizedBox()),
+        ]),
+      );
+    }
     return Scaffold(
       backgroundColor: c.cream,
-      body: value.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(children: [
-              TopBar(title: tr('Tashxis natijasi')),
-              AsyncView(value: value, onRetry: () => ref.invalidate(diagnosisProvider(id)), data: (_) => const SizedBox()),
-            ]),
-          ),
-        ),
-        data: (d) => _Body(d: d),
-      ),
-      bottomNavigationBar: value.maybeWhen(data: (d) => _PlanBar(d: d), orElse: () => null),
+      body: _Body(d: d),
+      bottomNavigationBar: _ActionBar(d: d),
     );
   }
 }
@@ -54,7 +56,38 @@ class _Body extends ConsumerStatefulWidget {
 }
 
 class _BodyState extends ConsumerState<_Body> {
-  int _tab = 0;
+  String _tab = 'symptoms';
+
+  Future<void> _share() async {
+    // Ulashish — foydalanuvchi tasdig'idan keyin: rasm va natija jamoatda ommaviy ko'rinadi
+    final ok = await confirm(context, tr('Jamoatda ulashish'),
+        tr("Rasm va AI natijasi jamoat lentasida hammaga ko'rinadi. Joylashuv va shaxsiy ma'lumotlar qo'shilmaydi."), ok: tr('Ulashish'));
+    if (ok && mounted) await shareDiagnosis(context, ref, widget.d);
+  }
+
+  void _zoom(String url) => showDialog<void>(
+        context: context,
+        barrierColor: Colors.black,
+        builder: (ctx) => Stack(children: [
+          Positioned.fill(
+            child: InteractiveViewer(
+              minScale: 1,
+              maxScale: 5,
+              child: Center(child: Image.network(url, fit: BoxFit.contain, semanticLabel: tr('Barg rasmi'))),
+            ),
+          ),
+          Positioned(
+            top: MediaQuery.paddingOf(ctx).top + 8,
+            right: 8,
+            child: IconButton(
+              tooltip: tr('Yopish'),
+              style: IconButton.styleFrom(backgroundColor: const Color(0x66000000), minimumSize: const Size(48, 48)),
+              onPressed: () => Navigator.pop(ctx),
+              icon: const Icon(Icons.close_rounded, color: Colors.white),
+            ),
+          ),
+        ]),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -62,88 +95,138 @@ class _BodyState extends ConsumerState<_Body> {
     final d = widget.d;
     final url = AppConfig.mediaUrl(d.imageUrl);
     final top = MediaQuery.paddingOf(context).top;
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 520),
-        child: CustomScrollView(slivers: [
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 340 + top,
+    final status = diagnosisStatus(context, d);
+    final unsure = d.lowConfidence && !d.isHealthy;
+    const ink = Color(0xFF20251B);
+    Widget glass(IconData icon, String tooltip, VoidCallback onTap) => Tooltip(
+          message: tooltip,
+          child: Material(
+            color: const Color(0xE6FFFFFF),
+            shape: const CircleBorder(),
+            child: InkWell(customBorder: const CircleBorder(), onTap: onTap, child: SizedBox(width: 44, height: 44, child: Icon(icon, color: ink))),
+          ),
+        );
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            SizedBox(
+              height: 300 + top,
               child: Stack(fit: StackFit.expand, children: [
-                if (url != null)
-                  Image.network(url, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const _PhotoFallback())
-                else
-                  const _PhotoFallback(),
-                const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.center, colors: [Color(0x66000000), Color(0x00000000)]),
+                Semantics(
+                  button: url != null,
+                  label: tr('Rasmni kattalashtirish'),
+                  child: GestureDetector(
+                    onTap: url == null ? null : () => _zoom(url),
+                    child: url != null
+                        ? Image.network(url, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const _PhotoFallback())
+                        : const _PhotoFallback(),
+                  ),
+                ),
+                const IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.center, colors: [Color(0x66000000), Color(0x00000000)]),
+                    ),
                   ),
                 ),
                 Positioned(
-                  top: top + 10,
-                  left: 16,
-                  right: 16,
+                  top: top + 8,
+                  left: 12,
+                  right: 12,
                   child: Row(children: [
-                    _GlassButton(icon: AppIcons.back, tooltip: tr('Orqaga'), onTap: () => context.canPop() ? context.pop() : context.go('/home')),
+                    glass(Icons.arrow_back_rounded, tr('Orqaga'), () => context.canPop() ? context.pop() : context.go('/diagnoses')),
                     const Spacer(),
-                    _GlassButton(icon: AppIcons.share, tooltip: tr('Jamoatda ulashish'), onTap: () => shareDiagnosis(context, ref, d)),
+                    glass(AppIcons.share, tr('Jamoatda ulashish'), _share),
                   ]),
                 ),
+                if (d.plantName != null)
+                  Positioned(
+                    left: 16,
+                    bottom: 16,
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(10, 6, 14, 6),
+                      decoration: BoxDecoration(color: const Color(0xF2FFFFFF), borderRadius: BorderRadius.circular(999)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.eco_outlined, size: 18, color: ink),
+                        const SizedBox(width: 6),
+                        Text(d.plantName!, style: const TextStyle(color: ink, fontWeight: FontWeight.w700, fontSize: 15)),
+                      ]),
+                    ),
+                  ),
               ]),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: Transform.translate(
-              offset: const Offset(0, -28),
-              child: Container(
-                decoration: BoxDecoration(color: c.cream, borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xl))),
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Center(child: Container(width: 40, height: 5, decoration: BoxDecoration(color: c.border, borderRadius: BorderRadius.circular(3)))),
-                  const SizedBox(height: 16),
-                  Wrap(spacing: 8, runSpacing: 8, children: [
-                    if (d.plantName != null) _IconChip(icon: AppIcons.leaf, label: d.plantName!, bg: c.successBg, fg: c.success),
-                    if (d.isHealthy)
-                      _IconChip(icon: AppIcons.check, label: tr("Sog'lom"), bg: c.successBg, fg: c.success)
-                    else if (d.riskLevel != null)
-                      _IconChip(
-                        icon: AppIcons.alert,
-                        label: riskLabels[d.riskLevel] ?? d.riskLevel!,
-                        bg: d.riskLevel == 'high' ? c.dangerBg : c.warningBg,
-                        fg: d.riskLevel == 'high' ? c.danger : c.warning,
-                      ),
-                    if (d.lowConfidence && !d.isHealthy) _IconChip(icon: Icons.help_outline_rounded, label: tr('Taxminiy'), bg: c.accentSoft, fg: c.warning),
-                    if (d.expertChecked)
-                      _IconChip(icon: Icons.verified_user_outlined, label: tr('Agronom tasdiqladi'), bg: c.expertBg, fg: c.expert),
-                  ]),
-                  const SizedBox(height: 10),
-                  Text(d.title, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 25, height: 30 / 25)),
-                  const SizedBox(height: 4),
-                  Text(formatDate(d.diagnosedAt), style: TextStyle(color: c.muted, fontSize: 13.5, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 16),
-                  _ConfidenceCard(d: d),
-                  _ExpertBlock(d: d),
-                  if (d.diseaseId != null) _CatalogLink(d: d),
-                  if (d.isHealthy)
-                    AppCard(
-                      child: Text(d.recommendations ?? tr("Parvarishni davom ettiring: muntazam sug'orish va haftalik ko'rik."),
-                          style: const TextStyle(fontSize: 14.5, height: 1.5, fontWeight: FontWeight.w500)),
-                    )
-                  else ...[
-                    _Segmented(labels: [tr('Davolash'), tr('Belgilar'), tr('Oldini olish')], index: _tab, onChanged: (i) => setState(() => _tab = i)),
-                    const SizedBox(height: 14),
-                    _Steps(text: switch (_tab) { 0 => d.treatment ?? d.recommendations, 1 => [d.symptoms, d.causes].whereType<String>().join('. '), _ => d.prevention }),
-                    const SizedBox(height: 8),
-                    for (final (i, m) in d.medicines.indexed) _MedicineCard(m: m, primary: i == 0),
-                  ],
-                  const SizedBox(height: 8),
-                  DiagnosisFeedback(d: d),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                Semantics(header: true, child: Text(diagnosisHeadline(d), style: TextStyle(fontSize: 28, height: 1.2, fontWeight: FontWeight.w800, color: c.text))),
+                const SizedBox(height: 8),
+                Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                  _Chip(icon: status.icon, label: status.label, bg: status.bg, fg: status.fg),
+                  if (d.expertChecked) _Chip(icon: Icons.verified_user_outlined, label: tr('Agronom tekshirgan'), bg: c.oliveSoft, fg: c.onOliveSoft),
+                  if (d.diagnosedAt != null) Text(formatDate(d.diagnosedAt), style: TextStyle(color: c.muted, fontSize: 14)),
                 ]),
-              ),
+                const SizedBox(height: 16),
+                _ConfidenceCard(d: d),
+                if (unsure) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 52,
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      onPressed: () => context.push('/diagnose${d.cropId != null ? '?crop=${d.cropId}' : ''}'),
+                      icon: const Icon(AppIcons.camera),
+                      label: Text(tr('Qayta suratga olish'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                _ExpertBlock(d: d),
+                if (d.isHealthy)
+                  AppCard(
+                    child: Text(d.recommendations ?? tr("Parvarishni davom ettiring: muntazam sug'orish va haftalik ko'rik."),
+                        style: TextStyle(fontSize: 16, height: 1.5, color: c.text)),
+                  )
+                else ...[
+                  // ChipTabs: tor ekranda yozuv kichraymaydi, gorizontal suriladi
+                  ChipTabs(
+                    tabs: [('symptoms', tr('Belgilar')), ('next', tr('Keyingi qadamlar')), ('prevent', tr('Oldini olish'))],
+                    selected: _tab,
+                    onSelect: (v) => setState(() => _tab = v),
+                  ),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: KeyedSubtree(
+                      key: ValueKey(_tab),
+                      child: switch (_tab) {
+                        'next' => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                            _Steps(text: d.treatment ?? d.recommendations),
+                            if (unsure)
+                              NoteBox(
+                                kind: NoteKind.risk,
+                                title: tr("Dori tavsiyasi ko'rsatilmaydi"),
+                                text: tr("AI ishonchi past, kasallik tasdiqlanmagan. Dori va me'yorni agronom bilan maslahatlashib tanlang."),
+                              )
+                            else
+                              for (final (i, m) in d.medicines.indexed) _MedicineCard(m: m, primary: i == 0),
+                          ]),
+                        'prevent' => _Steps(text: d.prevention),
+                        _ => _Steps(text: [d.symptoms, d.causes].whereType<String>().join('. ')),
+                      },
+                    ),
+                  ),
+                ],
+                if (d.diseaseId != null) ...[const SizedBox(height: 8), _CatalogLink(d: d)],
+                const SizedBox(height: 12),
+                DiagnosisFeedback(d: d),
+              ]),
             ),
-          ),
-        ]),
+          ]),
+        ),
       ),
     );
   }
@@ -152,105 +235,58 @@ class _BodyState extends ConsumerState<_Body> {
 class _PhotoFallback extends StatelessWidget {
   const _PhotoFallback();
   @override
-  Widget build(BuildContext context) => Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(colors: [Color(0xFF2F4A1C), Color(0xFF5E7A2E), Color(0xFF7A5A2C)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-        ),
-        child: Icon(AppIcons.leaf, size: 120, color: Colors.white.withValues(alpha: 0.2)),
+  Widget build(BuildContext context) => ColoredBox(
+        color: context.c.oliveSoft,
+        child: Center(child: Icon(Icons.eco_outlined, size: 96, color: context.c.onOliveSoft)),
       );
 }
 
-class _GlassButton extends StatelessWidget {
-  const _GlassButton({required this.icon, required this.onTap, required this.tooltip});
-  final IconData icon;
-  final VoidCallback onTap;
-  final String tooltip;
-  @override
-  Widget build(BuildContext context) => Tooltip(
-        message: tooltip,
-        child: Material(
-          color: Colors.black.withValues(alpha: 0.28),
-          shape: const CircleBorder(),
-          child: InkWell(customBorder: const CircleBorder(), onTap: onTap, child: SizedBox(width: 44, height: 44, child: Icon(icon, color: Colors.white, size: 22))),
-        ),
-      );
-}
-
-class _IconChip extends StatelessWidget {
-  const _IconChip({required this.icon, required this.label, required this.bg, required this.fg});
+class _Chip extends StatelessWidget {
+  const _Chip({required this.icon, required this.label, required this.bg, required this.fg});
   final IconData icon;
   final String label;
   final Color bg, fg;
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.fromLTRB(8, 5, 12, 5),
         decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 14, color: fg),
+          Icon(icon, size: 16, color: fg),
           const SizedBox(width: 5),
-          Text(label, style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w700)),
+          Text(label, style: TextStyle(color: fg, fontSize: 14, fontWeight: FontWeight.w700)),
         ]),
       );
 }
 
+/// AI ishonchi — model ma'lumoti, o'simlik sog'lig'i emas (TZ 1, S08). Qiymat serverdan, hardcode yo'q.
 class _ConfidenceCard extends StatelessWidget {
   const _ConfidenceCard({required this.d});
   final Diagnosis d;
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final pct = d.confidence.clamp(0, 100).toDouble();
-    final color = d.lowConfidence ? c.warning : c.primary;
-    return AppCard(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Expanded(child: Text(tr('AI ishonchi'), style: TextStyle(color: c.muted, fontSize: 13.5, fontWeight: FontWeight.w700))),
-          Text('${pct.toStringAsFixed(0)}%', style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.w800)),
-        ]),
-        const SizedBox(height: 10),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(value: pct / 100, minHeight: 8, backgroundColor: c.cream2, color: color),
-        ),
-        if (d.lowConfidence && !d.isHealthy) ...[
-          const SizedBox(height: 10),
-          Text(tr("AI to'liq ishonch hosil qilmadi — belgilarni quyidagi tavsif bilan solishtiring. Ekin turini tanlab qayta tekshirsangiz, natija aniqroq bo'ladi."),
-              style: TextStyle(color: c.muted, fontSize: 12.5, height: 1.4)),
-        ],
-      ]),
-    );
-  }
-}
-
-class _Segmented extends StatelessWidget {
-  const _Segmented({required this.labels, required this.index, required this.onChanged});
-  final List<String> labels;
-  final int index;
-  final ValueChanged<int> onChanged;
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
+    final pct = d.confidence.clamp(0, 100).round();
+    final unsure = d.lowConfidence && !d.isHealthy;
+    final bg = unsure ? c.warningBg : c.cream2;
+    final fg = unsure ? c.warning : c.text;
     return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(color: c.cream2, borderRadius: BorderRadius.circular(AppRadius.md)),
-      child: Row(children: [
-        for (final (i, l) in labels.indexed)
-          Expanded(
-            child: GestureDetector(
-              onTap: () => onChanged(i),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: i == index ? c.card : Colors.transparent,
-                  borderRadius: BorderRadius.circular(11),
-                  boxShadow: i == index ? [BoxShadow(color: c.shadow, blurRadius: 4, offset: const Offset(0, 1))] : null,
-                ),
-                alignment: Alignment.center,
-                child: Text(l, style: TextStyle(fontSize: 13.5, fontWeight: i == index ? FontWeight.w800 : FontWeight.w600, color: i == index ? c.text : c.muted)),
-              ),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(16)),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(unsure ? Icons.error_rounded : Icons.auto_awesome_outlined, color: unsure ? c.warning : c.olive),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(trf('AI ishonch darajasi: {0}%', [pct]), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: fg)),
+            const SizedBox(height: 4),
+            Text(
+              unsure
+                  ? tr("Natija taxminiy. Aniqroq surat bilan qayta tekshiring yoki agronomga yuboring.")
+                  : tr("Bu modelning javobiga ishonchi — o'simlik sog'lig'i foizi emas."),
+              style: TextStyle(fontSize: 15, height: 1.4, color: unsure ? c.warning : c.muted),
             ),
-          ),
+          ]),
+        ),
       ]),
     );
   }
@@ -264,21 +300,21 @@ class _Steps extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final parts = (text ?? '').split(RegExp(r'(?<=[.;!])\s+')).map((s) => s.trim().replaceAll(RegExp(r'[.;]$'), '')).where((s) => s.length > 2).toList();
-    if (parts.isEmpty) return Text(tr("Ma'lumot mavjud emas"), style: TextStyle(color: c.muted));
+    if (parts.isEmpty) return Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(tr("Ma'lumot mavjud emas"), style: TextStyle(color: c.muted, fontSize: 15)));
     return Column(children: [
       for (final (i, p) in parts.indexed)
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Container(
-              width: 26,
-              height: 26,
+              width: 28,
+              height: 28,
               alignment: Alignment.center,
-              decoration: BoxDecoration(color: c.primaryLight, shape: BoxShape.circle),
-              child: Text('${i + 1}', style: TextStyle(color: c.primaryDark, fontWeight: FontWeight.w800, fontSize: 13)),
+              decoration: BoxDecoration(color: c.oliveSoft, shape: BoxShape.circle),
+              child: Text('${i + 1}', style: TextStyle(color: c.onOliveSoft, fontWeight: FontWeight.w800, fontSize: 14)),
             ),
             const SizedBox(width: 12),
-            Expanded(child: Text(p, style: const TextStyle(fontSize: 14.5, height: 1.45, fontWeight: FontWeight.w500))),
+            Expanded(child: Text(p, style: TextStyle(fontSize: 16, height: 1.45, color: c.text))),
           ]),
         ),
     ]);
@@ -298,15 +334,15 @@ class _MedicineCard extends StatelessWidget {
         Container(
           width: 48,
           height: 48,
-          decoration: BoxDecoration(color: c.dangerBg, borderRadius: BorderRadius.circular(14)),
-          child: Icon(AppIcons.pill, color: c.danger, size: 22),
+          decoration: BoxDecoration(color: c.oliveSoft, borderRadius: BorderRadius.circular(12)),
+          child: Icon(AppIcons.pill, color: c.onOliveSoft, size: 22),
         ),
         const SizedBox(width: 14),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(m.name, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800)),
+            Text(m.name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: c.text)),
             const SizedBox(height: 2),
-            Text(m.recommendation ?? m.activeIngredient ?? '', style: TextStyle(color: c.muted, fontSize: 12.5, height: 1.35, fontWeight: FontWeight.w500)),
+            Text(m.recommendation ?? m.activeIngredient ?? '', style: TextStyle(color: c.muted, fontSize: 14, height: 1.35)),
           ]),
         ),
         if (primary) ...[const SizedBox(width: 8), Tag(tr('Asosiy'), bg: c.primaryLight, fg: c.primaryDark)],
@@ -315,16 +351,17 @@ class _MedicineCard extends StatelessWidget {
   }
 }
 
-class _PlanBar extends StatelessWidget {
-  const _PlanBar({required this.d});
+/// Pastki amallar: kasallik aniq bo'lsa — reja (bog'ga bog'lash shu oqim ichida); ishonch past bo'lsa
+/// reja taklif qilinmaydi (kasallik tasdiqlanmagan), faqat "Agronomga yuborish" blokdagi tugma.
+class _ActionBar extends StatelessWidget {
+  const _ActionBar({required this.d});
   final Diagnosis d;
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    if (!d.isHealthy && d.diseaseName == null) {
-      return const SizedBox.shrink();
-    }
-    final label = d.cropId != null ? trf('Davolash rejasi · {0} kun', [planDays(d)]) : trf("Bog'imga qo'shish · {0} kunlik reja", [planDays(d)]);
+    final unsure = d.lowConfidence && !d.isHealthy;
+    if (unsure || (!d.isHealthy && d.diseaseName == null)) return const SizedBox.shrink();
+    final label = d.cropId != null ? trf('Parvarish rejasi · {0} kun', [planDays(d)]) : trf("Bog'imga qo'shish · {0} kunlik reja", [planDays(d)]);
     return Container(
       decoration: BoxDecoration(color: c.card, border: Border(top: BorderSide(color: c.border))),
       child: SafeArea(
@@ -332,10 +369,19 @@ class _PlanBar extends StatelessWidget {
         child: Align(
           heightFactor: 1,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: const BoxConstraints(maxWidth: 760),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-              child: PillButton(label: label, icon: AppIcons.calendar, style: PillStyle.primary, block: true, onPressed: () => context.push('/diagnosis/${d.id}/plan')),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+              child: SizedBox(
+                height: 52,
+                width: double.infinity,
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  onPressed: () => context.push('/diagnosis/${d.id}/plan'),
+                  icon: const Icon(Icons.event_note_outlined),
+                  label: Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
+              ),
             ),
           ),
         ),
@@ -343,7 +389,6 @@ class _PlanBar extends StatelessWidget {
     );
   }
 }
-
 
 /// Agronom bilan bog'liq holat: javob, kutilmoqda yoki "Agronomga yuborish" taklifi (ishonch past bo'lsa ustuvor).
 class _ExpertBlock extends ConsumerStatefulWidget {

@@ -42,3 +42,6 @@ class Diagnosis(Base):
     review_requested: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", index=True)
     review_note: Mapped[str | None] = mapped_column(Text)  # dehqon izohi
     expert_comment: Mapped[str | None] = mapped_column(Text)  # agronomning dehqonga izohi
+    # Dehqon tarixdan yashirgan vaqt (TZ S07: yashirish va qaytarish). Yozuv o'chmaydi —
+    # agronom tekshiruvi va AI dataseti saqlanadi.
+    hidden_at: Mapped[datetime | None] = mapped_column(DateTime)
