@@ -1,14 +1,16 @@
 import json
 import uuid
+from datetime import timedelta
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import ValidationError
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.security import utcnow
 from app.models import Subscription, User
 from app.schemas.subscription import (
     CheckoutIn, CheckoutOut, MySubscription, PlanOut, SubscriptionOut, WebhookIn,
@@ -87,13 +89,12 @@ async def my_subscription(user: User = Depends(get_current_user), db: AsyncSessi
 
 @router.post("/cancel", response_model=SubscriptionOut)
 async def cancel(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    """Avto-yangilanishni o'chiradi; Premium joriy muddat oxirigacha saqlanadi."""
+    """Eski ilovalar uchun: avto-yangilanishni o'chiradi. To'langan obuna holati o'zgarmaydi — Premium muddat oxirigacha."""
     active = await db.scalar(select(Subscription).where(Subscription.user_id == user.id, Subscription.status == "active")
                              .order_by(Subscription.created_at.desc()).limit(1))
     if active is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Faol obuna yo'q")
     active.auto_renew = False
-    active.status = "cancelled"
     await db.commit()
     await db.refresh(active)
     return active
@@ -101,5 +102,19 @@ async def cancel(user: User = Depends(get_current_user), db: AsyncSession = Depe
 
 @router.get("/history", response_model=list[SubscriptionOut])
 async def history(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    stmt = select(Subscription).where(Subscription.user_id == user.id, Subscription.status != "pending").order_by(Subscription.created_at.desc())
+    """To'lovlar tarixi. Kutilayotgan buyurtma faqat oxirgi 24 soatdagisi ko'rinadi (tashlab ketilgan checkout'lar yig'ilmaydi)."""
+    recent = utcnow() - timedelta(days=1)
+    stmt = (select(Subscription)
+            .where(Subscription.user_id == user.id,
+                   or_(Subscription.status != "pending", Subscription.created_at >= recent))
+            .order_by(Subscription.created_at.desc()))
     return list((await db.scalars(stmt)).all())
+
+
+@router.get("/{sub_id}", response_model=SubscriptionOut)
+async def get_order(sub_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Buyurtma holati (to'lovdan qaytgach tekshirish). Boshqa foydalanuvchi buyurtmasi — 404."""
+    sub = await db.get(Subscription, sub_id)
+    if sub is None or sub.user_id != user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Buyurtma topilmadi")
+    return sub

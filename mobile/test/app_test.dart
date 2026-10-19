@@ -273,4 +273,20 @@ void main() {
     expect(AppLang.fromCode('uz-Cyrl'), AppLang.uzCyrl);
     expect(AppLang.fromCode('xx'), AppLang.uz);
   });
+
+  test("To'lov holati va tilni oldindan ko'rish", () {
+    final paid = Subscription.fromJson({'id': 'a', 'plan': 'monthly', 'status': 'cancelled', 'paid_at': '2026-10-01T10:00:00', 'payment_status': 'paid'});
+    expect(paid.paymentStatus, 'paid'); // avto-yangilanish o'chirilgan, lekin to'langan
+    final failed = Subscription.fromJson({'id': 'b', 'plan': 'monthly', 'status': 'cancelled'});
+    expect(failed.paymentStatus, 'failed'); // eski server: to'lov vaqti yo'q
+    final pending = Subscription.fromJson({'id': 'c', 'plan': 'yearly', 'status': 'pending'});
+    expect(pending.paymentStatus, 'pending');
+    expect(pending.autoRenew, false);
+
+    expect(I18n.lang, AppLang.uz);
+    expect(trIn(AppLang.ru, 'Saqlash'), 'Сохранить');
+    expect(trIn(AppLang.en, 'Saqlash'), 'Save');
+    expect(trIn(AppLang.uzCyrl, 'Saqlash'), 'Сақлаш');
+    expect(tr('Saqlash'), 'Saqlash'); // global til o'zgarmadi
+  });
 }

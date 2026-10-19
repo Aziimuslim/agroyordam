@@ -44,10 +44,11 @@ class AuthRepository extends BaseRepository {
   Future<AppUser> updateMe(Map<String, dynamic> data) =>
       call(() async => AppUser.fromJson((await dio.put('/users/me', data: data)).data));
 
-  Future<void> changePassword(String current, String next) => call(() async => dio.put('/users/me/password', data: {
+  Future<void> changePassword(String current, String next, {bool logoutOthers = false}) => call(() async => dio.put('/users/me/password', data: {
         'current_password': current,
         'new_password': next,
         'refresh_token': await api.storage.readRefresh(), // shu qurilmadagi seans saqlanadi
+        'logout_others': logoutOthers,
       }));
 
   Future<AppUser> uploadAvatar(List<int> bytes, String filename) => call(() async {

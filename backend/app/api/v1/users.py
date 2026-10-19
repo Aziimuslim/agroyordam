@@ -52,7 +52,9 @@ async def update_me(body: UserUpdate, user: User = Depends(get_current_user), db
 class PasswordChangeIn(BaseModel):
     current_password: str = Field(min_length=1, max_length=128)
     new_password: str = Field(min_length=8, max_length=128)
-    refresh_token: str | None = None  # joriy seans saqlanadi, qolganlari tugatiladi
+    refresh_token: str | None = None  # joriy seans saqlanadi
+    # TZ S28: boshqa seanslardan chiqish — ixtiyoriy. Maydon yuborilmasa (eski ilova) avvalgidek chiqariladi.
+    logout_others: bool | None = None
 
 
 @router.put("/me/password", status_code=204)
@@ -62,10 +64,11 @@ async def change_password(body: PasswordChangeIn, user: User = Depends(get_curre
     if body.new_password == body.current_password:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Yangi parol eskisidan farq qilishi kerak")
     user.password_hash = hash_password(body.new_password)
-    stmt = update(RefreshToken).where(RefreshToken.user_id == user.id)
-    if body.refresh_token:
-        stmt = stmt.where(RefreshToken.token_hash != hash_refresh_token(body.refresh_token))
-    await db.execute(stmt.values(revoked=True))
+    if body.logout_others is not False:
+        stmt = update(RefreshToken).where(RefreshToken.user_id == user.id)
+        if body.refresh_token:
+            stmt = stmt.where(RefreshToken.token_hash != hash_refresh_token(body.refresh_token))
+        await db.execute(stmt.values(revoked=True))
     await db.commit()
 
 

@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 class AppConfig {
   static const appName = 'AgroYordam';
-  static const version = '0.8.5';
+  static const version = '0.8.6';
 
   static const _apiOverride = String.fromEnvironment('API_URL');
   static const prefsKey = 'agro_server_url';
@@ -21,6 +21,10 @@ class AppConfig {
     if (defaultTargetPlatform == TargetPlatform.android) return 'http://10.0.2.2:8000';
     return 'http://localhost:8000';
   }
+
+  /// Server manzili sozlamasi (A05): production foydalanuvchisiga ko'rsatilmaydi. Faqat debug'da yoki manzil
+  /// ichiga yozilmagan mobil build'da (aks holda ilova serverni topa olmaydi) chiqadi.
+  static bool get showServerSettings => !kReleaseMode || (!kIsWeb && _apiOverride.isEmpty);
 
   static String get wsUrl => apiUrl.replaceFirst(RegExp('^http'), 'ws');
 

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 from app.schemas.common import ORMModel
 
@@ -41,6 +41,18 @@ class SubscriptionOut(ORMModel):
     expires_at: datetime | None = None
     auto_renew: bool
     created_at: datetime | None = None
+    paid_at: datetime | None = None
+    refunded_at: datetime | None = None
+
+    @computed_field
+    @property
+    def payment_status(self) -> str:
+        """To'lov natijasi obuna holatidan alohida (TZ S30): paid | pending | failed | refunded."""
+        if self.refunded_at:
+            return "refunded"
+        if self.paid_at:
+            return "paid"
+        return "pending" if self.status == "pending" else "failed"
 
 
 class MySubscription(BaseModel):

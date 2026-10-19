@@ -10,5 +10,6 @@ class SubscriptionRepository extends BaseRepository {
   Future<Checkout> checkout(String plan, String provider) =>
       call(() async => Checkout.fromJson((await dio.post('/subscriptions/checkout', data: {'plan': plan, 'provider': provider})).data));
   Future<void> sandboxConfirm(String subId) => call(() => dio.post('/subscriptions/sandbox/confirm/$subId'));
+  Future<Subscription> order(String id) => call(() async => Subscription.fromJson((await dio.get('/subscriptions/$id')).data));
   Future<void> cancel() => call(() => dio.post('/subscriptions/cancel'));
 }

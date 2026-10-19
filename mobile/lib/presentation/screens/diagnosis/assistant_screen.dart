@@ -14,8 +14,9 @@ import '../chat/chat_widgets.dart';
 
 final _aiHistoryProvider = FutureProvider.autoDispose<List<AIMessage>>((ref) => ref.watch(communityRepoProvider).aiHistory());
 
-/// Yuborilmagan matn ekrandan chiqib qaytganda saqlanadi (TZ S10: draft).
+/// Yuborilmagan matn ekrandan chiqib qaytganda saqlanadi (TZ S10: draft). Boshqa hisobga o'tmaydi (TZ S23).
 String _draft = '';
+String? _draftOwner;
 
 class _Local {
   _Local(this.text) : at = DateTime.now();
@@ -37,7 +38,7 @@ class AssistantScreen extends ConsumerStatefulWidget {
 }
 
 class _AssistantState extends ConsumerState<AssistantScreen> {
-  late final _ctrl = TextEditingController(text: widget.prefill ?? _draft);
+  late final _ctrl = TextEditingController(text: widget.prefill ?? (_draftOwner == ref.read(currentUserProvider)?.id ? _draft : ''));
   final _scroll = ScrollController();
   final List<_Local> _local = [];
 
@@ -53,7 +54,10 @@ class _AssistantState extends ConsumerState<AssistantScreen> {
   @override
   void initState() {
     super.initState();
-    _ctrl.addListener(() => _draft = _ctrl.text);
+    _ctrl.addListener(() {
+      _draft = _ctrl.text;
+      _draftOwner = ref.read(currentUserProvider)?.id;
+    });
   }
 
   @override

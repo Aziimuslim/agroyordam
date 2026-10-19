@@ -100,3 +100,21 @@ async def test_admin_password_reset_and_change(client, user_headers, admin_heade
     assert (await client.post(f"{API}/auth/login", json={"login": "agro_pw", "password": "YangiParol1"})).status_code == 200
     # Joriy seans saqlangan
     assert (await client.post(f"{API}/auth/refresh", json={"refresh_token": login.json()["refresh_token"]})).status_code == 200
+
+
+async def test_change_password_logout_others_optional(client, user_headers):
+    a = (await client.post(f"{API}/auth/login", json={"login": "farmer", "password": "Secret123!"})).json()
+    b = (await client.post(f"{API}/auth/login", json={"login": "farmer", "password": "Secret123!"})).json()
+    h = {"Authorization": f"Bearer {a['access_token']}"}
+    # TZ S28: belgilanmasa boshqa seanslar saqlanadi
+    r = await client.put(f"{API}/users/me/password", json={"current_password": "Secret123!", "new_password": "Yangi12345",
+                                                           "refresh_token": a["refresh_token"], "logout_others": False}, headers=h)
+    assert r.status_code == 204
+    b2 = await client.post(f"{API}/auth/refresh", json={"refresh_token": b["refresh_token"]})
+    assert b2.status_code == 200
+    # belgilansa — boshqa seans tugatiladi, joriysi qoladi
+    r = await client.put(f"{API}/users/me/password", json={"current_password": "Yangi12345", "new_password": "Yangi123456",
+                                                           "refresh_token": a["refresh_token"], "logout_others": True}, headers=h)
+    assert r.status_code == 204
+    assert (await client.post(f"{API}/auth/refresh", json={"refresh_token": b2.json()["refresh_token"]})).status_code == 401
+    assert (await client.post(f"{API}/auth/refresh", json={"refresh_token": a["refresh_token"]})).status_code == 200

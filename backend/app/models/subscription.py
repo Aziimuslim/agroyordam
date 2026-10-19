@@ -24,5 +24,7 @@ class Subscription(Base):
     started_at: Mapped[datetime | None] = created_at_col()
     expires_at: Mapped[datetime | None] = mapped_column(DateTime)
     auto_renew: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime)  # provayder to'lovni tasdiqlagan vaqt
+    refunded_at: Mapped[datetime | None] = mapped_column(DateTime)  # to'lov qaytarilgan vaqt
     created_at: Mapped[datetime] = created_at_col()
     updated_at: Mapped[datetime] = updated_at_col()

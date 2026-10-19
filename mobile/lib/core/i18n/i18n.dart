@@ -42,6 +42,15 @@ String tr(String s) {
   }
 }
 
+/// Matnni berilgan tilda qaytaradi (global tilni o'zgartirmasdan) — til tanlashda oldindan ko'rish uchun (TZ S32).
+String trIn(AppLang l, String s) => switch (l) {
+      AppLang.uz => s,
+      AppLang.uzCyrl => toCyrillic(s),
+      AppLang.ru => stringsRu[s] ?? s,
+      AppLang.en => stringsEn[s] ?? s,
+      AppLang.kaa => stringsKaa[s] ?? s,
+    };
+
 /// O'rinbosarli matn: trf('{0} kun oldin', [3]).
 String trf(String s, List<Object?> args) {
   var r = tr(s);

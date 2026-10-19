@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../application/app_mode.dart';
 import '../application/providers.dart';
 import '../core/widgets/brand.dart';
+import 'screens/settings/about_screen.dart';
+import 'screens/settings/appearance_screen.dart';
+import 'screens/settings/language_screen.dart';
 import 'screens/auth/forgot_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
@@ -136,6 +139,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/messages', builder: (_, __) => const ConversationsScreen(), routes: [
         GoRoute(path: ':id', builder: (_, s) => ThreadScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
       ]),
+      // S31/S32/A05 sozlamalar; /subscription va /payments — TZ yo'llari (mavjud /premium ga yo'naltiriladi)
+      GoRoute(path: '/settings/appearance', builder: (_, __) => const AppearanceScreen()),
+      GoRoute(path: '/settings/language', builder: (_, __) => const LanguageScreen()),
+      GoRoute(path: '/settings/about', builder: (_, __) => const AboutScreen()),
+      GoRoute(path: '/subscription', redirect: (_, __) => '/premium'),
+      GoRoute(path: '/payments', redirect: (_, __) => '/premium/payments'),
       GoRoute(path: '/weather', builder: (_, __) => const WeatherScreen()),
       GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
 

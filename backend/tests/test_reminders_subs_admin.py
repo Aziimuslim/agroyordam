@@ -66,13 +66,15 @@ async def test_subscription_webhook_flow(client, user_headers):
 
     me = (await client.get("/api/v1/subscriptions/me", headers=user_headers)).json()
     assert me["is_premium"] and me["ai_daily_limit"] is None and me["crop_limit"] is None
-    assert len((await client.get("/api/v1/subscriptions/history", headers=user_headers)).json()) == 1
+    hist = (await client.get("/api/v1/subscriptions/history", headers=user_headers)).json()
+    assert len(hist) == 1 and hist[0]["payment_status"] == "paid" and hist[0]["paid_at"] and hist[0]["auto_renew"] is False
+    order = (await client.get(f"/api/v1/subscriptions/{co['subscription_id']}", headers=user_headers)).json()
+    assert order["payment_status"] == "paid"
     # premium: ekin limiti yo'q
     for i in range(5):
         assert (await client.post("/api/v1/crops", json={"name": f"E{i}"}, headers=user_headers)).status_code == 201
     cancelled = (await client.post("/api/v1/subscriptions/cancel", headers=user_headers)).json()
-    assert cancelled["auto_renew"] is False
-    assert (await client.post("/api/v1/subscriptions/cancel", headers=user_headers)).status_code == 404
+    assert cancelled["auto_renew"] is False and cancelled["status"] == "active"  # to'langan muddat saqlanadi
 
 
 async def test_sandbox_confirm_and_expiry(client, user_headers):
@@ -98,6 +100,8 @@ async def test_failed_payment(client, user_headers):
     co = (await client.post("/api/v1/subscriptions/checkout", json={"plan": "monthly", "provider": "uzum"}, headers=user_headers)).json()
     raw, headers = signed("uzum", {"subscription_id": co["subscription_id"], "transaction_id": "U-9", "status": "failed", "amount": "25000"})
     assert (await client.post("/api/v1/subscriptions/webhook/uzum", content=raw, headers=headers)).json()["status"] == "cancelled"
+    order = (await client.get(f"/api/v1/subscriptions/{co['subscription_id']}", headers=user_headers)).json()
+    assert order["payment_status"] == "failed"
     raw, headers = signed("uzum", {"bad": 1})
     assert (await client.post("/api/v1/subscriptions/webhook/uzum", content=raw, headers=headers)).status_code == 400
     assert (await client.post("/api/v1/subscriptions/webhook/paypal", content=raw, headers=headers)).status_code == 404
@@ -170,3 +174,13 @@ async def test_reminder_series_scope_and_validation(client, user_headers):
     # 06:00 da faqat avvalgi oylik seriya (3 ta) yuboriladi; 06:31 da — kunlik vazifa (bitta)
     assert await send_due_reminders(datetime(2027, 5, 1, 6, 0)) == 3
     assert await send_due_reminders(datetime(2027, 5, 1, 6, 31)) == 1
+
+
+async def test_order_status_pending_and_owner_only(client, user_headers, admin_headers):
+    co = (await client.post("/api/v1/subscriptions/checkout", json={"plan": "monthly", "provider": "click"}, headers=user_headers)).json()
+    order = (await client.get(f"/api/v1/subscriptions/{co['subscription_id']}", headers=user_headers)).json()
+    assert order["payment_status"] == "pending" and order["status"] == "pending"
+    # yangi kutilayotgan buyurtma tarixda ko'rinadi
+    assert [h["payment_status"] for h in (await client.get("/api/v1/subscriptions/history", headers=user_headers)).json()] == ["pending"]
+    # boshqa foydalanuvchi buyurtmasini ID bilan ko'ra olmaydi
+    assert (await client.get(f"/api/v1/subscriptions/{co['subscription_id']}", headers=admin_headers)).status_code == 404

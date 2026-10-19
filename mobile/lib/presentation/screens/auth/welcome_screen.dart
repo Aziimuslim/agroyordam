@@ -144,6 +144,7 @@ class WelcomeScreen extends ConsumerWidget {
           textAlign: TextAlign.center,
           style: TextStyle(color: c.muted, fontSize: 12.5, height: 1.4),
         ),
+        if (AppConfig.showServerSettings)
         TextButton.icon(
           onPressed: () => showServerSettings(context, ref),
           icon: Icon(Icons.dns_outlined, size: 16, color: c.muted),

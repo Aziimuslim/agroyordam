@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'application/display_prefs.dart';
 import 'application/lang.dart';
 import 'application/theme_mode.dart';
 import 'core/config.dart';
@@ -48,6 +49,7 @@ class _AgroYordamAppState extends ConsumerState<AgroYordamApp> {
   }
 
   Widget _app(AppLang lang, WidgetRef ref, GoRouter router, bool expert) {
+    final prefs = ref.watch(displayPrefsProvider);
     return MaterialApp.router(
       title: AppConfig.appName,
       debugShowCheckedModeBanner: false,
@@ -55,8 +57,9 @@ class _AgroYordamAppState extends ConsumerState<AgroYordamApp> {
       darkTheme: expert ? AppTheme.legacyDark : AppTheme.dark,
       themeMode: ref.watch(themeModeProvider),
       // TZ 13.3: mavzu almashishi 150–200 ms rang o'tishi
-      themeAnimationDuration: const Duration(milliseconds: 180),
+      themeAnimationDuration: Duration(milliseconds: prefs.reduceMotion ? 0 : 180),
       routerConfig: router,
+      builder: (context, child) => applyDisplayPrefs(context, prefs, child),
       // Qoraqalpoq va kirill uchun Material o'zbekcha matnlaridan foydalanadi
       locale: Locale(switch (lang) { AppLang.ru => 'ru', AppLang.en => 'en', _ => 'uz' }),
       supportedLocales: const [Locale('uz'), Locale('ru'), Locale('en')],

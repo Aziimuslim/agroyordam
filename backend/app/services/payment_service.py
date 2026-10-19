@@ -88,7 +88,7 @@ async def create_checkout(db: AsyncSession, user: User, plan_code: str, provider
     plan = PLANS[plan_code]
     sub = Subscription(
         user_id=user.id, plan=plan.code, status="pending", price=await plan_price(db, plan.code, plan.price), currency="UZS",
-        payment_provider=provider, auto_renew=plan.code != "lifetime",
+        payment_provider=provider, auto_renew=False,  # avtomatik qayta yechish yo'q — UI va'da qilmaydi (TZ S29)
     )
     db.add(sub)
     await db.flush()
@@ -99,6 +99,7 @@ async def revoke_payment(db: AsyncSession, sub: Subscription) -> None:
     """To'lov qaytarilganda (refund) obunani bekor qiladi va Premium'ni olib tashlaydi."""
     sub.status = "cancelled"
     sub.auto_renew = False
+    sub.refunded_at = utcnow()
     user = await db.get(User, sub.user_id)
     other = await db.scalar(select(Subscription).where(
         Subscription.user_id == user.id, Subscription.status == "active", Subscription.id != sub.id).limit(1))
@@ -127,6 +128,7 @@ async def apply_payment(db: AsyncSession, sub: Subscription, txn_id: str, pay_st
     sub.status = "active"
     sub.external_txn_id = txn_id
     sub.started_at = now
+    sub.paid_at = now
     sub.expires_at = base + timedelta(days=plan.duration_days) if plan.duration_days else None
     user.is_premium = True
     user.premium_until = sub.expires_at or (now + timedelta(days=365 * 100))

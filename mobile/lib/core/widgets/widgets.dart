@@ -522,10 +522,11 @@ class ListRow extends StatelessWidget {
       radius: AppRadius.md,
       child: Row(children: [
         SizedBox(width: 36, child: Icon(icon, color: danger ? c.danger : c.primaryDark)),
-        Expanded(child: Text(label, style: TextStyle(fontWeight: danger ? FontWeight.w800 : FontWeight.w700, fontSize: 14.5, color: danger ? c.danger : c.text))),
+        Expanded(flex: 3, child: Text(label, style: TextStyle(fontWeight: danger ? FontWeight.w800 : FontWeight.w700, fontSize: 14.5, color: danger ? c.danger : c.text))),
         // Qiymat uzun bo'lsa o'zi qisqaradi — sarlavha ikki qatorga bo'linib ketmasin
         if (value != null)
           Flexible(
+            flex: 2,
             child: Padding(
               padding: const EdgeInsets.only(left: 8),
               child: Text(value!, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.end, style: TextStyle(color: c.muted, fontSize: 13)),

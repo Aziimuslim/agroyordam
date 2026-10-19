@@ -43,16 +43,16 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S20 | O'simlik tafsiloti | `/catalog/plant/:id` | ✅ 0.8.4 | Bookmark (A02) ⛔ |
 | S21 | Kasallik tafsiloti | `/catalog/disease/:id` | ✅ 0.8.4 | Manba matni hali to'ldirilmagan (agronom KB tahririda kiritiladi); bookmark ⛔ |
 | S22 | Dori tafsiloti | `/catalog/medicine/:id` | ✅ 0.8.4 | Yorliq hujjati (PDF) ⛔; `label_verified`ni belgilash UI agronom/admin panelida yo'q |
-| S23 | Profil | `/profile` | 🟡 | Saqlanganlar (A02) ⛔ |
+| S23 | Profil | `/profile` | ✅ 0.8.6 | Hisob/Faoliyat/Sozlamalar guruhlari; Ekin/Post serverdan. Saqlanganlar (A02) ⛔; agronom/admin bandlari faqat shu rolga ega foydalanuvchiga |
 | S24 | Shaxsiy ma'lumotlar | `/profile/edit` | ✅ (0.7.0) | Username tahriri; aloqa tasdiqlash (S35) ⛔ |
 | S25 | Eslatmalar | `/reminders?crop=` | ✅ 0.8.3 | — |
 | S26 | Yangi eslatma | `/reminders/add`, `/reminders/:id/edit` | ✅ 0.8.3 | Qurilma push'i ⛔ (ilovada FCM yo'q — eslatma ilova ichidagi Bildirishnomalarda); takrorlash turini tahrirda o'zgartirish yo'q |
 | S27 | Bildirishnomalar | `/notifications` | ✅ 0.8.3 | Bildirishnoma sozlamalari (A05) ⛔ |
-| S28 | Parolni o'zgartirish | `/profile/password` | 🟡 | Parol kuchi; «boshqa seanslardan chiqish» ixtiyoriy (hozir doim chiqaradi) |
-| S29 | Obunam | `/premium` | 🟡 | Oylik/Yillik serverdan ✅; A08 buyurtma xulosasi |
-| S30 | To'lovlar tarixi | `/premium/payments` | 🟡 | Chek ⛔ |
-| S31 | Mavzu tanlash | profil ichidagi tanlagich | ⛔ ekran | Preview, matn o'lchami, kamaytirilgan harakat |
-| S32 | Til tanlash | `showLanguageSheet` | 🟡 | Alohida ekran + qidiruv |
+| S28 | Parolni o'zgartirish | `/profile/password` | ✅ 0.8.6 | Har maydonda ko'z, 8–128, yangi ≠ joriy, kuch yordamchisi, «boshqa qurilmalardan chiqish» ixtiyoriy (standart o'chiq), chiqish tasdig'i |
+| S29 | Obunam | `/premium` (`/subscription`) | ✅ 0.8.6 | Narx faqat serverdan; A08 buyurtma xulosasi; qaytishda buyurtma holati tekshiriladi; avto-yangilanish va'dasi olib tashlandi (yechish amalga oshirilmagan) |
+| S30 | To'lovlar tarixi | `/premium/payments` (`/payments`) | ✅ 0.8.6 | Filtr, tafsilot, kutilayotganini yangilash; to'langan/kutilmoqda/amalga oshmagan/qaytarilgan alohida. Chek ⛔ (provayder integratsiyasida yo'q) |
+| S31 | Mavzu tanlash | `/settings/appearance` | ✅ 0.8.6 | Namuna, matn Oddiy/Katta, harakat Tizimga mos/Kamaytirilgan; saqlamasdan chiqilsa eski qiymat |
+| S32 | Til tanlash | `/settings/language` | ✅ 0.8.6 | Qidiruv, tanlangan tildagi namuna, saqlamasdan chiqish dialogi. Katalog tarjimasi yo'qligi belgisi ⛔ |
 | S33 | Kirish | `/login` | 🟡 | SMS bilan kirish ⛔ (SMS provayder yo'q) |
 | S34 | Ro'yxatdan o'tish | `/register` | 🟡 | Shartlarga rozilik belgisi; OTP ⛔ |
 | S35 | Kodni tasdiqlash | — | ⛔ | SMS/email provayder va challenge API ⛔ |
@@ -61,7 +61,7 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | A02 | Saqlanganlar | — | ⛔ | Bookmark API ⛔ |
 | A03 | Vazifa tafsiloti | pastki oyna | ✅ 0.8.3 | — (tahrir, seriya: faqat shu / shu va keyingilar) |
 | A04 | Kuzatuv/kundalik | S06 «Kundalik» tabi | 🟡 | Matn ✅ (2000 belgi); rasm biriktirish va yozuvni tahrirlash/o'chirish API ⛔ |
-| A05 | Sozlamalar va hujjatlar | qisman | 🟡 | Server manzili productionda yashirilishi kerak |
+| A05 | Sozlamalar va hujjatlar | `/settings/about` | 🟡 0.8.6 | Versiya, yordam, manbalar, maxfiylik qoidalari; server manzili productionda yashirildi. Rasmiy shartlar/maxfiylik hujjati ⛔ (matn tasdiqlanmagan); bildirishnoma turlari sozlamasi ⛔ |
 | A06 | Hudud va ob-havo | — | ✅ 0.8.0 | Soatlik/kunlik prognoz (provayder qo'llaydi, keyingi bosqich) |
 | A07 | Foydalanuvchi qidiruvi | — | ⛔ | Ommaviy qidiruv API ⛔ |
 | A08 | Modal oqimlar | shikoyat ✅, agronomga yuborish ✅ | 🟡 | Bloklash ⛔, buyurtma xulosasi |
@@ -97,6 +97,13 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 - Post: sarlavha 3–100, matn ≤ 3000; izoh 1–1000 belgi; bo'sh joylar kesiladi (avval 1 belgili sarlavha va cheksiz matn o'tardi).
 - AI savol ≤ 4000 belgi; chat xabari bo'sh joylardan tozalanadi.
 - `GET /users/{id}`: `about` va `district` qaytadi (telefon, email, manzil — yo'q).
+
+## 0.8.6 da backend'ga qo'shilgan
+
+- Migratsiya 0012: `subscriptions.paid_at`, `refunded_at`. API `payment_status` (paid/pending/failed/refunded) beradi — avval avto-yangilanishni o'chirish ham, muvaffaqiyatsiz to'lov ham bir xil `cancelled` edi.
+- `GET /subscriptions/{id}` — buyurtma holati (faqat egasi). Tarixda oxirgi 24 soatdagi kutilayotgan buyurtma ham ko'rinadi.
+- Avtomatik qayta yechish amalga oshirilmaganligi sababli yangi buyurtmalarda `auto_renew = false`; `/cancel` to'langan obunani endi «bekor qilingan» qilmaydi.
+- `PUT /users/me/password`: `logout_others` (ixtiyoriy). Yuborilmasa — eski ilovalar uchun avvalgidek boshqa seanslar tugatiladi.
 
 ## Ekin holati qoidasi (TZ 1-bo'lim)
 

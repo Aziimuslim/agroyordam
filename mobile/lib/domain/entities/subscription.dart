@@ -17,22 +17,46 @@ class Plan {
 }
 
 class Subscription {
-  Subscription({required this.id, required this.plan, required this.status, this.price, this.provider, this.startedAt, this.expiresAt, this.autoRenew = true});
-  final String id, plan, status;
+  Subscription({
+    required this.id,
+    required this.plan,
+    required this.status,
+    this.price,
+    this.currency = 'UZS',
+    this.provider,
+    this.txnId,
+    this.startedAt,
+    this.expiresAt,
+    this.createdAt,
+    this.paidAt,
+    this.refundedAt,
+    this.autoRenew = false,
+    String? paymentStatus,
+  }) : paymentStatus = paymentStatus ?? (refundedAt != null ? 'refunded' : paidAt != null ? 'paid' : status == 'pending' ? 'pending' : status == 'cancelled' ? 'failed' : 'paid');
+  final String id, plan, status, currency;
   final double? price;
-  final String? provider;
-  final DateTime? startedAt, expiresAt;
+  final String? provider, txnId;
+  final DateTime? startedAt, expiresAt, createdAt, paidAt, refundedAt;
   final bool autoRenew;
+
+  /// To'lov natijasi (server): paid | pending | failed | refunded.
+  final String paymentStatus;
 
   factory Subscription.fromJson(Map<String, dynamic> j) => Subscription(
         id: j['id'],
         plan: j['plan'],
         status: j['status'],
         price: j['price'] == null ? null : double.parse('${j['price']}'),
+        currency: j['currency'] ?? 'UZS',
         provider: j['payment_provider'],
+        txnId: j['external_txn_id'],
         startedAt: parseDate(j['started_at']),
         expiresAt: parseDate(j['expires_at']),
-        autoRenew: j['auto_renew'] ?? true,
+        createdAt: parseDate(j['created_at']),
+        paidAt: parseDate(j['paid_at']),
+        refundedAt: parseDate(j['refunded_at']),
+        autoRenew: j['auto_renew'] ?? false,
+        paymentStatus: j['payment_status'],
       );
 }
 
