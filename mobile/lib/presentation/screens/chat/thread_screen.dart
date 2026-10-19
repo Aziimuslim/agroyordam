@@ -3,17 +3,29 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../../../application/providers.dart';
 import '../../../core/config.dart';
 import '../../../core/i18n/i18n.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/blocks.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 import 'chat_widgets.dart';
 
-/// Real-time chat: WebSocket /ws/chat/{id}; ulanish bo'lmasa REST'ga qaytadi.
+class _Out {
+  _Out(this.text) : at = DateTime.now();
+  final String text;
+  final DateTime at;
+  bool failed = false;
+}
+
+/// S16 Shaxsiy suhbat. Yuborish doim REST orqali — natija aniq: yuborilmoqda → yuborildi / xato + qayta yuborish.
+/// WebSocket faqat yangi xabar, "yozmoqda" va "o'qildi" hodisalarini oladi; ulanmasa ekran REST bilan ishlayveradi.
+/// Suhbatdoshning onlayn holati backend'da yo'q — shuning uchun ko'rsatilmaydi.
 class ThreadScreen extends ConsumerStatefulWidget {
   const ThreadScreen({super.key, required this.id});
   final String id;
@@ -25,11 +37,15 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();
   final List<ChatMessage> _messages = [];
+  final List<_Out> _out = [];
   WebSocketChannel? _ws;
   StreamSubscription? _sub;
-  bool _loading = true, _online = false, _typing = false;
+  bool _loading = true, _live = false, _typing = false;
+  Object? _error;
   Timer? _typingTimer;
   AppUser? _other;
+
+  String? get _myId => ref.read(currentUserProvider)?.id;
 
   @override
   void initState() {
@@ -38,26 +54,33 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
   }
 
   Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     final repo = ref.read(communityRepoProvider);
     try {
       final convs = await repo.conversations();
-      _other = convs.where((c) => c.id == widget.id).firstOrNull?.other;
       final msgs = await repo.messages(widget.id);
+      if (!mounted) return;
       setState(() {
+        _other = convs.where((c) => c.id == widget.id).firstOrNull?.other;
         _messages
           ..clear()
           ..addAll(msgs);
         _loading = false;
       });
-      _toBottom();
-      await _connect();
-      final lastIncoming = msgs.lastWhere((m) => m.senderId != ref.read(currentUserProvider)?.id, orElse: () => ChatMessage(id: '', senderId: ''));
-      if (lastIncoming.id.isNotEmpty) await repo.markRead(lastIncoming.id);
+      _toBottom(force: true);
+      if (!_live) unawaited(_connect());
+      final incoming = msgs.where((m) => m.senderId != _myId);
+      if (incoming.isNotEmpty && !incoming.last.isRead) await repo.markRead(incoming.last.id);
       ref.invalidate(conversationsProvider);
     } catch (e) {
       if (mounted) {
-        setState(() => _loading = false);
-        showError(context, e);
+        setState(() {
+          _loading = false;
+          _error = e;
+        });
       }
     }
   }
@@ -67,72 +90,111 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
     try {
       final ws = WebSocketChannel.connect(Uri.parse('${AppConfig.wsUrl}/ws/chat/${widget.id}?token=$token'));
       await ws.ready;
+      if (!mounted) {
+        ws.sink.close();
+        return;
+      }
       _ws = ws;
-      setState(() => _online = true);
-      _sub = ws.stream.listen((raw) {
-        final data = jsonDecode(raw as String) as Map<String, dynamic>;
-        switch (data['event']) {
-          case 'message':
-            final m = ChatMessage.fromJson(Map<String, dynamic>.from(data['data']));
-            if (!_messages.any((x) => x.id == m.id)) setState(() => _messages.add(m));
-            if (m.senderId != ref.read(currentUserProvider)?.id) ws.sink.add(jsonEncode({'type': 'read'}));
-            _toBottom();
-          case 'typing':
-            if (data['user_id'] != ref.read(currentUserProvider)?.id) {
-              setState(() => _typing = true);
-              _typingTimer?.cancel();
-              _typingTimer = Timer(const Duration(seconds: 2), () => mounted ? setState(() => _typing = false) : null);
-            }
-          case 'read':
-            if (data['user_id'] != ref.read(currentUserProvider)?.id) {
-              setState(() {
-                for (var i = 0; i < _messages.length; i++) {
-                  final m = _messages[i];
-                  if (!m.isRead) _messages[i] = ChatMessage(id: m.id, senderId: m.senderId, content: m.content, imageUrl: m.imageUrl, isRead: true, createdAt: m.createdAt);
-                }
-              });
-            }
-        }
-      }, onDone: () => mounted ? setState(() => _online = false) : null, onError: (_) => mounted ? setState(() => _online = false) : null);
+      setState(() => _live = true);
+      await _sub?.cancel();
+      _sub = ws.stream.listen(_onEvent, onDone: _dropped, onError: (_) => _dropped());
     } catch (_) {
-      setState(() => _online = false);
+      if (mounted) setState(() => _live = false);
     }
   }
 
-  Future<void> _send() async {
+  void _dropped() {
+    _ws = null;
+    if (mounted) setState(() => _live = false);
+  }
+
+  void _onEvent(dynamic raw) {
+    final data = jsonDecode(raw as String) as Map<String, dynamic>;
+    switch (data['event']) {
+      case 'message':
+        final m = ChatMessage.fromJson(Map<String, dynamic>.from(data['data']));
+        _add(m);
+        if (m.senderId != _myId) _ws?.sink.add(jsonEncode({'type': 'read'}));
+        _toBottom();
+      case 'typing':
+        if (data['user_id'] != _myId) {
+          setState(() => _typing = true);
+          _typingTimer?.cancel();
+          _typingTimer = Timer(const Duration(seconds: 3), () => mounted ? setState(() => _typing = false) : null);
+        }
+      case 'read':
+        if (data['user_id'] != _myId) {
+          setState(() {
+            for (var i = 0; i < _messages.length; i++) {
+              final m = _messages[i];
+              if (!m.isRead && m.senderId == _myId) {
+                _messages[i] = ChatMessage(id: m.id, senderId: m.senderId, content: m.content, imageUrl: m.imageUrl, isRead: true, createdAt: m.createdAt);
+              }
+            }
+          });
+        }
+    }
+  }
+
+  void _add(ChatMessage m) {
+    if (_messages.any((x) => x.id == m.id)) return;
+    setState(() {
+      _messages.add(m);
+      if (m.senderId != _myId) _typing = false;
+    });
+  }
+
+  Future<void> _deliver(_Out o) async {
+    setState(() => o.failed = false);
+    try {
+      final m = await ref.read(communityRepoProvider).send(widget.id, o.text);
+      if (!mounted) return;
+      setState(() => _out.remove(o));
+      _add(m); // WS orqali avvalroq kelgan bo'lsa takrorlanmaydi
+      ref.invalidate(conversationsProvider);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => o.failed = true);
+      final err = ApiException.from(e);
+      if (err.isPaymentRequired) showError(context, e);
+    }
+  }
+
+  void _send() {
     final t = _ctrl.text.trim();
     if (t.isEmpty) return;
     _ctrl.clear();
-    if (_online && _ws != null) {
-      _ws!.sink.add(jsonEncode({'type': 'message', 'content': t}));
-    } else {
-      try {
-        final m = await ref.read(communityRepoProvider).send(widget.id, t);
-        setState(() => _messages.add(m));
-        _toBottom();
-      } catch (e) {
-        if (mounted) showError(context, e);
-      }
-    }
+    final o = _Out(t);
+    setState(() => _out.add(o));
+    _toBottom(force: true);
+    _deliver(o);
   }
 
   DateTime _lastTyping = DateTime(2000);
   void _onChanged(String _) {
-    if (_online && DateTime.now().difference(_lastTyping).inMilliseconds > 1200) {
+    if (_live && DateTime.now().difference(_lastTyping).inMilliseconds > 1500) {
       _lastTyping = DateTime.now();
       _ws?.sink.add(jsonEncode({'type': 'typing'}));
     }
   }
 
-  void _toBottom() => WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
-      });
+  bool get _nearBottom => !_scroll.hasClients || _scroll.position.maxScrollExtent - _scroll.offset < 160;
+
+  /// Foydalanuvchi eski xabarlarni o'qiyotgan bo'lsa, yangi xabar uni pastga tortib ketmaydi.
+  void _toBottom({bool force = false}) {
+    if (!force && !_nearBottom) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
+    });
+  }
 
   @override
   void dispose() {
     _sub?.cancel();
     _ws?.sink.close();
     _typingTimer?.cancel();
+    _ctrl.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -140,36 +202,100 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
   Widget build(BuildContext context) {
     final c = context.c;
     final me = ref.watch(currentUserProvider);
+    final other = _other;
+    final notFound = _error != null && ApiException.from(_error!).statusCode == 404;
+
+    Widget body;
+    if (_loading) {
+      body = const Center(child: CircularProgressIndicator());
+    } else if (notFound) {
+      body = Padding(padding: const EdgeInsets.all(16), child: EmptyNote(tr('Suhbat topilmadi'), icon: Icons.search_off_rounded));
+    } else if (_error != null) {
+      body = Padding(padding: const EdgeInsets.all(16), child: BlockError(error: _error!, what: tr('Xabarlar'), onRetry: _load));
+    } else {
+      body = ListView(
+        controller: _scroll,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        children: [
+          if (_messages.isEmpty && _out.isEmpty)
+            EmptyNote(trf('{0} bilan suhbatni boshlang', [other?.fullName ?? tr('Suhbatdosh')]), icon: Icons.waving_hand_outlined),
+          for (final m in _messages)
+            MessageBubble(
+              text: (m.content ?? '').isNotEmpty ? m.content! : tr('Rasm'),
+              me: m.senderId == me?.id,
+              time: m.createdAt,
+              state: m.senderId == me?.id ? (m.isRead ? MsgState.read : MsgState.sent) : null,
+            ),
+          for (final o in _out)
+            MessageBubble(text: o.text, me: true, time: o.at, state: o.failed ? MsgState.failed : MsgState.pending, onRetry: () => _deliver(o)),
+        ],
+      );
+    }
+
+    final header = Semantics(
+      button: other != null,
+      label: other == null ? null : trf('{0} profili', [other.fullName]),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: other == null ? null : () => context.push('/users/${other.id}'),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(children: [
+            if (other != null) ...[Avatar(name: other.fullName, url: other.avatarUrl, size: 40, color: c.olive, textColor: c.onOlive), const SizedBox(width: 10)],
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                Text(other?.fullName ?? tr('Suhbat'),
+                    maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: c.text)),
+                if (_typing)
+                  Text(tr('yozmoqda...'), style: TextStyle(fontSize: 13.5, color: c.primary, fontWeight: FontWeight.w700))
+                else if (other != null)
+                  Text('@${other.username}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13.5, color: c.muted)),
+              ]),
+            ),
+          ]),
+        ),
+      ),
+    );
+
     return Scaffold(
       backgroundColor: c.cream,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
+            constraints: const BoxConstraints(maxWidth: 760),
             child: Column(children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: TopBar(
-                  title: _other?.fullName ?? tr('Suhbat'),
-                  subtitle: _typing ? 'yozmoqda...' : (_online ? tr('Onlayn') : tr('Oflayn')),
-                  leading: _other == null ? null : Avatar(name: _other!.fullName, url: _other!.avatarUrl, size: 34),
+                padding: const EdgeInsets.fromLTRB(8, 8, 16, 4),
+                child: Row(children: [
+                  IconButton(
+                    tooltip: tr('Orqaga'),
+                    onPressed: () async {
+                      if (!await Navigator.of(context).maybePop() && context.mounted) context.go('/messages');
+                    },
+                    icon: Icon(Icons.arrow_back_rounded, color: c.text),
+                  ),
+                  Expanded(child: header),
+                ]),
+              ),
+              if (!_loading && _error == null && !_live)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  color: c.cream2,
+                  child: Text(tr("Jonli yangilanish o'chiq — yangi xabarlar uchun pastga torting yoki qayta oching"),
+                      style: TextStyle(fontSize: 13, color: c.muted)),
                 ),
+              Expanded(child: _loading || _error != null ? body : RefreshIndicator(onRefresh: _load, child: body)),
+              ChatInputBar(
+                controller: _ctrl,
+                onSend: _send,
+                onChanged: _onChanged,
+                maxLength: 4000,
+                enabled: !_loading && _error == null,
+                disabledText: notFound ? tr("Suhbat mavjud emas — xabar yozib bo'lmaydi") : null,
               ),
-              Expanded(
-                child: _loading
-                    ? const Center(child: CircularProgressIndicator())
-                    : ListView(
-                        controller: _scroll,
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                        children: [
-                          if (_messages.isEmpty) EmptyNote(tr('Suhbatni boshlang')),
-                          for (final m in _messages)
-                            MessageBubble(text: m.content ?? '', me: m.senderId == me?.id, time: m.createdAt, read: m.senderId == me?.id ? m.isRead : null),
-                        ],
-                      ),
-              ),
-              ChatInputBar(controller: _ctrl, onSend: _send, onChanged: _onChanged),
             ]),
           ),
         ),

@@ -41,6 +41,9 @@ class UserMe(UserPublic):
 
 
 class UserProfile(UserPublic):
+    # TZ S14: ommaviy profil — telefon, email va aniq manzil berilmaydi
+    about: str | None = None
+    district: str | None = None
     followers_count: int = 0
     following_count: int = 0
     posts_count: int = 0

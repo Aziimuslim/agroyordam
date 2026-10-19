@@ -29,14 +29,14 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S06 | Ekin tafsiloti | `/garden/:id?tab=` · `CropDetailScreen` | ✅ 0.8.1 | A04 da rasmli kuzatuv (UI); "o'chirish" TZ bo'yicha olib tashlandi |
 | S07 | Tashxislar tarixi | `/diagnoses` | ✅ 0.8.2 | Server pagination (hozir 200 tagacha bitta so'rov) |
 | S08 | Tashxis natijasi | `/diagnosis/:id` | ✅ 0.8.2 | Fikrga ixtiyoriy sabab yozish ⛔ (API faqat ha/yo'q) |
-| S09 | Maslahat (AI) | `/help?tab=ai` | 🟡 | Suhbatlar ro'yxati ⛔ — backend'da bitta AI tarix (`/ai/chat/history`) |
-| S10 | AI suhbat | `/assistant` | 🟡 | Streaming, to'xtatish, bir nechta suhbat ⛔ (backend) |
-| S11 | Jamoat | `/help?tab=comm` | 🟡 | Tajriba/Savollar filtri (`?category=` backend'da bor); bookmark ⛔ |
-| S12 | Yangi post | `/community/new` | 🟡 | 5 tagacha rasm ⛔ (backend bitta `image_url`); ekin belgilash |
-| S13 | Post tafsiloti | `/community/:id` | 🟡 | Izohga javob (`parent_comment_id` ⛔), bookmark ⛔ |
-| S14 | Fermer profili | `/users/:id` | 🟡 | «Haqida» tabi; bloklash ⛔ |
-| S15 | Xabarlar | `/messages` | 🟡 | Suhbat qidiruvi; A07 foydalanuvchi qidiruvi ⛔ |
-| S16 | Shaxsiy chat | `/messages/:id` | 🟡 | Rasm yuborish UI (backend `messages.image_url` bor) |
+| S09 | Maslahat (AI) | `/help?tab=ai` | ✅ 0.8.5 | Bugungi bepul limit ko'rsatiladi; tayyor savol faqat yozish maydoniga qo'yiladi. Suhbatlar ro'yxati ⛔ — backend'da bitta AI tarix |
+| S10 | AI suhbat | `/assistant?q=` | ✅ 0.8.5 | Yuborilmoqda/xato + qayta urinish, qoralama saqlanadi, avto-scroll faqat pastda bo'lsa. Streaming, to'xtatish, bir nechta suhbat ⛔ (backend) |
+| S11 | Jamoat | `/help?tab=comm` | ✅ 0.8.5 | Barchasi/Obunalar/Tajriba/Savollar; like optimistik (xatoda qaytadi). Bookmark ⛔ |
+| S12 | Yangi post | `/community/new`, `?edit=` | ✅ 0.8.5 | Tur majburiy, sarlavha 3–100, matn 10–3000 (server ham tekshiradi); tahrirlash. 5 tagacha rasm ⛔ (backend bitta `image_url`) |
+| S13 | Post tafsiloti | `/community/:id?comment=1` | ✅ 0.8.5 | Agronom javoblari tepada; izoh o'chirish/shikoyat (sabab majburiy); o'chirilgan post holati. Izohga javob ⛔, bookmark ⛔ |
+| S14 | Fermer profili | `/users/:id` | ✅ 0.8.5 | Postlar/Haqida, obuna, xabar yozish, o'z profilida tahrirlash; telefon/manzil ko'rsatilmaydi. Bloklash ⛔ |
+| S15 | Xabarlar | `/messages` | ✅ 0.8.5 | Ism bo'yicha qidiruv, o'qilmaganlar, «Rasm» preview. A07 foydalanuvchi qidiruvi ⛔, suhbatni o'chirish/ovozsiz ⛔ |
+| S16 | Shaxsiy chat | `/messages/:id` | ✅ 0.8.5 | Yuborish REST orqali: yuborilmoqda → yuborildi/o'qildi yoki xato + qayta yuborish; «yozmoqda...»; soxta «Onlayn» olib tashlandi (backend'da presence yo'q). Rasm yuborish UI ⛔ |
 | S17 | O'simliklar | `/catalog?tab=plants` | ✅ 0.8.4 | — |
 | S18 | Kasalliklar | `/catalog?tab=diseases` | ✅ 0.8.4 | «Belgilarni solishtirish» alohida oqimi yo'q (solishtirish S21 ichida) |
 | S19 | Dorilar | `/catalog?tab=medicines` | ✅ 0.8.4 | Mintaqaviy ro'yxatdan o'tish ma'lumoti ⛔ |
@@ -91,6 +91,12 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 
 - Migratsiya 0011: `plants.category` (vegetable/fruit/vine/grain/berry/melon; uzum — `vine`), `medicines.category`, `medicines.kind` (active/product/mixture), `medicines.label_verified`, `diseases/medicines.source` va `updated_at`. Seed yozuvlari nom bo'yicha tasniflandi.
 - Doza siyosati (TZ S22): `label_verified = false` bo'lsa me'yor dehqonga ko'rsatilmaydi (katalog, S08, reja yaratish); parvarish rejasi vazifalariga ham tasdiqlanmagan doza yozilmaydi — purkash jadvali saqlanadi.
+
+## 0.8.5 da backend'ga qo'shilgan
+
+- Post: sarlavha 3–100, matn ≤ 3000; izoh 1–1000 belgi; bo'sh joylar kesiladi (avval 1 belgili sarlavha va cheksiz matn o'tardi).
+- AI savol ≤ 4000 belgi; chat xabari bo'sh joylardan tozalanadi.
+- `GET /users/{id}`: `about` va `district` qaytadi (telefon, email, manzil — yo'q).
 
 ## Ekin holati qoidasi (TZ 1-bo'lim)
 

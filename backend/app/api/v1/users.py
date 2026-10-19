@@ -91,6 +91,8 @@ async def get_user(user_id: uuid.UUID, me_: User = Depends(get_current_user), db
     cnt = lambda *w: db.scalar(select(func.count()).where(*w))  # noqa: E731
     return UserProfile(
         **UserPublic.model_validate(u).model_dump(),
+        about=u.about,
+        district=u.district,
         followers_count=await cnt(Follower.following_id == u.id),
         following_count=await cnt(Follower.follower_id == u.id),
         posts_count=await cnt(Post.user_id == u.id),

@@ -102,8 +102,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       ]),
       // Jamoat endi "Maslahat" ichida; eski havolalar (post sahifalari) shu yerda qoladi
       GoRoute(path: '/community', pageBuilder: (_, s) => _tab(const HelpScreen(tab: 'comm'), s), routes: [
-        GoRoute(path: 'new', builder: (_, __) => const CreatePostScreen()),
-        GoRoute(path: ':id', builder: (_, s) => PostDetailScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
+        GoRoute(
+          path: 'new',
+          builder: (_, s) => s.uri.queryParameters['edit'] != null
+              ? EditPostRoute(key: ValueKey(s.uri.toString()), id: s.uri.queryParameters['edit']!)
+              : const CreatePostScreen(),
+        ),
+        GoRoute(path: ':id', builder: (_, s) => PostDetailScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!, focusComment: s.uri.queryParameters['comment'] == '1')),
       ]),
       GoRoute(path: '/reminders', builder: (_, s) => RemindersScreen(cropId: s.uri.queryParameters['crop']), routes: [
         GoRoute(path: 'add', builder: (_, s) => AddReminderScreen(cropId: s.uri.queryParameters['crop'])),
@@ -120,7 +125,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         GoRoute(path: 'plan', builder: (_, s) => CarePlanScreen(key: ValueKey(s.matchedLocation), diagnosisId: s.pathParameters['id']!)),
       ]),
       GoRoute(path: '/diagnoses', builder: (_, __) => const DiagnosesHistoryScreen()),
-      GoRoute(path: '/assistant', builder: (_, __) => const AssistantScreen()),
+      GoRoute(path: '/assistant', builder: (_, s) => AssistantScreen(prefill: s.uri.queryParameters['q'])),
       GoRoute(path: '/catalog', builder: (_, s) => CatalogScreen(tab: s.uri.queryParameters['tab'] ?? 'plants'), routes: [
         GoRoute(path: 'plant/:id', builder: (_, s) => PlantScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
         GoRoute(path: 'disease/:id', builder: (_, s) => DiseaseScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),

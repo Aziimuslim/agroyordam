@@ -35,6 +35,20 @@ class Post {
         likedByMe: j['liked_by_me'] ?? false,
         createdAt: parseDate(j['created_at']),
       );
+
+  Post copyWith({bool? likedByMe, int? likes, int? comments}) => Post(
+        id: id,
+        author: author,
+        title: title,
+        content: content,
+        imageUrl: imageUrl,
+        category: category,
+        diagnosisId: diagnosisId,
+        likes: likes ?? this.likes,
+        comments: comments ?? this.comments,
+        likedByMe: likedByMe ?? this.likedByMe,
+        createdAt: createdAt,
+      );
 }
 
 class Comment {

@@ -9,6 +9,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_motion.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/widgets/blocks.dart';
 import '../../../core/widgets/bottom_nav.dart';
 import '../../../core/widgets/ds.dart';
 import '../../../core/widgets/widgets.dart';
@@ -220,49 +221,110 @@ class ExpertAvatar extends StatelessWidget {
   }
 }
 
-class _AiTab extends StatelessWidget {
+/// S09 AI yordamchi tabi: tayyor savol S10 yozish maydoniga qo'yiladi (avtomatik yuborilmaydi, limit sarflanmaydi).
+class _AiTab extends ConsumerWidget {
   const _AiTab();
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
+    final sub = ref.watch(mySubscriptionProvider).value;
     final examples = [tr('Pomidorni qachon purkash kerak?'), tr('Uzumni qachon kesish kerak?'), tr("Olma qo'turiga qarshi nima qilay?")];
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      AppCard(
-        shadow: false,
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: c.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Container(width: 44, height: 44, decoration: BoxDecoration(color: c.primaryLight, shape: BoxShape.circle), child: Icon(AppIcons.bot, color: c.primary)),
+            Container(width: 48, height: 48, decoration: BoxDecoration(color: c.oliveSoft, shape: BoxShape.circle), child: Icon(AppIcons.bot, color: c.onOliveSoft)),
             const SizedBox(width: 12),
-            Expanded(child: Text(tr('AI yordamchi'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700))),
+            Expanded(child: Text(tr('AI yordamchi'), style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: c.text))),
           ]),
           const SizedBox(height: 8),
-          Text(tr("Ekinlar, kasalliklar va dorilar haqida istalgan savolga darhol javob beradi. Murakkab holatda agronomga yo'naltiradi."),
-              style: Theme.of(context).textTheme.bodyMedium),
+          Text(tr("Ekinlar, kasalliklar va dorilar haqida savol bering. Javob agronom tavsiyasi emas; murakkab holatda agronomga murojaat qiling."),
+              style: TextStyle(fontSize: 15, height: 1.45, color: c.text)),
+          if (sub != null && sub.aiDailyLimit != null) ...[
+            const SizedBox(height: 8),
+            Text(trf('Bugun: {0}/{1} bepul so\'rov', [sub.aiUsedToday, sub.aiDailyLimit]), style: TextStyle(fontSize: 14, color: c.muted)),
+          ],
           const SizedBox(height: 14),
-          PillButton(label: tr('Suhbatni ochish'), style: PillStyle.primary, block: true, onPressed: () => context.push('/assistant')),
+          SizedBox(
+            height: 52,
+            width: double.infinity,
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              onPressed: () => context.push('/assistant'),
+              icon: const Icon(Icons.chat_bubble_outline_rounded),
+              label: Text(tr('Suhbatni ochish'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            ),
+          ),
         ]),
       ),
-      Text(tr('MASALAN'), style: Theme.of(context).textTheme.labelSmall),
+      const SizedBox(height: 16),
+      Text(tr('Tayyor savollar'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: c.text)),
+      const SizedBox(height: 4),
+      Text(tr("Bosilganda savol yozish maydoniga qo'yiladi — yuborishni o'zingiz tasdiqlaysiz."), style: TextStyle(fontSize: 14, color: c.muted)),
       const SizedBox(height: 8),
       for (final e in examples)
-        ListRow(icon: Icons.chat_bubble_outline_rounded, label: e, onTap: () => context.push('/assistant')),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Material(
+            color: c.card,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: c.border)),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => context.push(Uri(path: '/assistant', queryParameters: {'q': e}).toString()),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(children: [
+                  Icon(Icons.edit_note_rounded, color: c.olive),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(e, style: TextStyle(fontSize: 15, color: c.text))),
+                  Icon(Icons.chevron_right_rounded, color: c.muted),
+                ]),
+              ),
+            ),
+          ),
+        ),
     ]);
   }
 }
 
+/// S11 Jamoat: Barchasi / Obunalarim / Tajriba / Savollar. Holat (skeleton, xato, bo'sh) faqat lenta blokida.
 class _CommunityTab extends ConsumerWidget {
   const _CommunityTab({required this.feed, required this.onFeed});
   final String feed;
   final ValueChanged<String> onFeed;
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Column(children: [
-        ChipTabs(tabs: [('all', tr('Barchasi')), ('following', tr('Obunalarim'))], selected: feed, onSelect: onFeed),
-        AsyncView(
-          value: ref.watch(feedProvider(feed)),
-          onRetry: () => ref.invalidate(feedProvider(feed)),
-          data: (posts) => posts.isEmpty
-              ? EmptyNote(feed == 'following' ? tr("Obuna bo'lgan fermerlaringiz hali post yozmagan") : tr("Hali post yo'q. Birinchi bo'ling!"), icon: AppIcons.chat)
-              : Column(children: [for (final p in posts) PostCard(post: p, feed: feed)]),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final v = ref.watch(feedProvider(feed));
+    final posts = v.value;
+    Widget body;
+    if (posts == null && v.hasError) {
+      body = BlockError(error: v.error!, what: tr('Postlar'), onRetry: () => ref.invalidate(feedProvider(feed)));
+    } else if (posts == null) {
+      body = const Column(children: [Skeleton(height: 180), SizedBox(height: 12), Skeleton(height: 180)]);
+    } else if (posts.isEmpty) {
+      body = Column(children: [
+        EmptyNote(
+          switch (feed) {
+            'following' => tr("Obuna bo'lgan fermerlaringiz hali post yozmagan"),
+            'question' => tr("Hali savol yo'q"),
+            _ => tr("Hali post yo'q. Birinchi bo'ling!"),
+          },
+          icon: AppIcons.chat,
         ),
+        TextButton.icon(onPressed: () => context.push('/community/new'), icon: const Icon(AppIcons.edit), label: Text(tr('Post yozish'))),
       ]);
+    } else {
+      body = Column(children: [for (final p in posts) PostCard(key: ValueKey(p.id), post: p, feed: feed)]);
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      ChipTabs(
+        tabs: [('all', tr('Barchasi')), ('following', tr('Obunalarim')), ('experience', tr('Tajriba')), ('question', tr('Savollar'))],
+        selected: feed,
+        onSelect: onFeed,
+      ),
+      body,
+    ]);
+  }
 }

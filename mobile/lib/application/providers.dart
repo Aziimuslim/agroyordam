@@ -130,8 +130,14 @@ final reminderProvider = FutureProvider.autoDispose.family<Reminder, String>((re
 final cropRemindersProvider =
     FutureProvider.autoDispose.family<List<Reminder>, String>((ref, id) => ref.watch(gardenRepoProvider).reminders(cropId: id));
 
-final feedProvider =
-    FutureProvider.autoDispose.family<List<Post>, String>((ref, feed) => ref.watch(communityRepoProvider).posts(feed: feed));
+/// Jamoat lentasi (S11): 'all' | 'following' | turkum ('experience', 'question', 'disease', 'advice').
+final feedProvider = FutureProvider.autoDispose.family<List<Post>, String>((ref, feed) {
+  final repo = ref.watch(communityRepoProvider);
+  return switch (feed) {
+    'all' || 'following' => repo.posts(feed: feed),
+    _ => repo.posts(category: feed),
+  };
+});
 final userPostsProvider =
     FutureProvider.autoDispose.family<List<Post>, String>((ref, uid) => ref.watch(communityRepoProvider).posts(userId: uid));
 final postProvider = FutureProvider.autoDispose.family<Post, String>((ref, id) => ref.watch(communityRepoProvider).post(id));

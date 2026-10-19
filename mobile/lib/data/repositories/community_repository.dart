@@ -16,6 +16,7 @@ class CommunityRepository extends BaseRepository {
   Future<Post> post(String id) => call(() async => Post.fromJson((await dio.get('/posts/$id')).data));
   Future<Post> createPost(Map<String, dynamic> data) => call(() async => Post.fromJson((await dio.post('/posts', data: data)).data));
   Future<void> deletePost(String id) => call(() => dio.delete('/posts/$id'));
+  Future<Post> updatePost(String id, Map<String, dynamic> data) => call(() async => Post.fromJson((await dio.put('/posts/$id', data: data)).data));
   Future<Post> like(String id, bool like) =>
       call(() async => Post.fromJson((like ? await dio.post('/posts/$id/like') : await dio.delete('/posts/$id/like')).data));
   Future<List<Comment>> comments(String id) => call(() async => list((await dio.get('/posts/$id/comments')).data, Comment.fromJson));

@@ -7,7 +7,7 @@ from app.schemas.common import ORMModel
 
 
 class AIChatIn(BaseModel):
-    message: str = Field(min_length=1, max_length=2000)
+    message: str = Field(min_length=1, max_length=4000)  # TZ S10
 
 
 class AIChatMessageOut(ORMModel):

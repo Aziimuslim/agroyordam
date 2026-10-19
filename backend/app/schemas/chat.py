@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.common import ORMModel
 from app.schemas.user import UserPublic
@@ -14,6 +14,12 @@ class ConversationIn(BaseModel):
 class MessageIn(BaseModel):
     content: str | None = Field(default=None, max_length=4000)
     image_url: str | None = None
+
+    @field_validator("content", mode="before")
+    @classmethod
+    def strip_content(cls, v):
+        v = v.strip() if isinstance(v, str) else v
+        return v or None
 
 
 class MessageOut(ORMModel):

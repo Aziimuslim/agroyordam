@@ -33,7 +33,7 @@ async def test_posts_likes_comments(client, user_headers):
 async def test_following_feed(client, user_headers):
     other = auth(await register(client, "author"))
     oid = (await client.get("/api/v1/users/me", headers=other)).json()["id"]
-    await client.post("/api/v1/posts", json={"title": "A"}, headers=other)
+    await client.post("/api/v1/posts", json={"title": "Aaa"}, headers=other)
     assert (await client.get("/api/v1/posts", params={"feed": "following"}, headers=user_headers)).json() == []
     await client.post(f"/api/v1/users/{oid}/follow", headers=user_headers)
     assert len((await client.get("/api/v1/posts", params={"feed": "following"}, headers=user_headers)).json()) == 1
@@ -100,3 +100,14 @@ def test_websocket_rejects_bad_token():
         with pytest.raises(WebSocketDisconnect):
             with tc.websocket_connect("/ws/chat/00000000-0000-0000-0000-000000000000?token=bad") as ws:
                 ws.receive_json()
+
+
+async def test_community_limits(client, user_headers):
+    # TZ S12/S13/S16: sarlavha 3–100, izoh 1–1000 (bo'sh joy emas), xabar bo'sh emas
+    assert (await client.post("/api/v1/posts", json={"title": "ab"}, headers=user_headers)).status_code == 422
+    assert (await client.post("/api/v1/posts", json={"title": "x" * 101}, headers=user_headers)).status_code == 422
+    p = (await client.post("/api/v1/posts", json={"title": "  Tajriba  ", "content": "Bodringni to'r ostida o'stirdim"}, headers=user_headers)).json()
+    assert p["title"] == "Tajriba"
+    assert (await client.post(f"/api/v1/posts/{p['id']}/comments", json={"content": "   "}, headers=user_headers)).status_code == 422
+    assert (await client.post(f"/api/v1/posts/{p['id']}/comments", json={"content": "x" * 1001}, headers=user_headers)).status_code == 422
+    assert (await client.post(f"/api/v1/posts/{p['id']}/comments", json={"content": " Rahmat! "}, headers=user_headers)).json()["content"] == "Rahmat!"

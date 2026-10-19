@@ -80,6 +80,8 @@ async def test_follow_flow(client, user_headers):
     other_id = (await client.get("/api/v1/users/me", headers=auth(other))).json()["id"]
     assert (await client.post(f"/api/v1/users/{other_id}/follow", headers=user_headers)).status_code == 204
     prof = (await client.get(f"/api/v1/users/{other_id}", headers=user_headers)).json()
+    # TZ S14: ommaviy profilda telefon, email, manzil yo'q
+    assert "phone" not in prof and "email" not in prof and "address" not in prof and "about" in prof
     assert prof["followers_count"] == 1 and prof["is_following"] is True
     assert len((await client.get(f"/api/v1/users/{other_id}/followers", headers=user_headers)).json()) == 1
     me_id = (await client.get("/api/v1/users/me", headers=user_headers)).json()["id"]

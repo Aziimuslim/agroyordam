@@ -7,10 +7,10 @@ import '../../../core/config.dart';
 import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
+import 'report_sheet.dart';
 
 class PostCard extends ConsumerStatefulWidget {
   const PostCard({super.key, required this.post, this.feed, this.detail = false});
@@ -30,13 +30,27 @@ class _PostCardState extends ConsumerState<PostCard> {
     if (old.post != widget.post) _p = widget.post;
   }
 
+  bool _liking = false;
+
+  /// Optimistik like (TZ S11): darhol ko'rinadi, xatoda avvalgi holat tiklanadi.
   Future<void> _like() async {
+    if (_liking) return;
+    final before = _p;
     final liked = !_p.likedByMe;
+    setState(() {
+      _liking = true;
+      _p = _p.copyWith(likedByMe: liked, likes: (_p.likes + (liked ? 1 : -1)).clamp(0, 1 << 30));
+    });
     try {
-      final updated = await ref.read(communityRepoProvider).like(_p.id, liked);
-      setState(() => _p = updated);
+      final updated = await ref.read(communityRepoProvider).like(before.id, liked);
+      if (mounted) setState(() => _p = updated);
     } catch (e) {
-      if (mounted) showError(context, e);
+      if (mounted) {
+        setState(() => _p = before);
+        showError(context, e);
+      }
+    } finally {
+      if (mounted) setState(() => _liking = false);
     }
   }
 
@@ -44,29 +58,33 @@ class _PostCardState extends ConsumerState<PostCard> {
     final me = ref.read(currentUserProvider);
     final mine = me?.id == _p.author.id;
     final action = await showSheet<String>(context, title: tr('Post'), builder: (ctx) => Column(children: [
+          if (mine) ListRow(icon: AppIcons.edit, label: tr('Tahrirlash'), onTap: () => Navigator.pop(ctx, 'edit')),
           if (mine || (me?.isAdmin ?? false)) ListRow(icon: AppIcons.trash, label: tr("O'chirish"), danger: true, onTap: () => Navigator.pop(ctx, 'delete')),
           if (!mine) ListRow(icon: AppIcons.flag, label: tr('Shikoyat qilish'), onTap: () => Navigator.pop(ctx, 'report')),
           if (!mine) ListRow(icon: AppIcons.user, label: tr('Muallif profili'), onTap: () => Navigator.pop(ctx, 'profile')),
         ]));
     if (!mounted || action == null) return;
-    final repo = ref.read(communityRepoProvider);
-    try {
-      if (action == 'delete') {
-        await repo.deletePost(_p.id);
-        ref.invalidate(feedProvider('all'));
-        ref.invalidate(feedProvider('following'));
-        if (mounted) {
-          showToast(context, tr("Post o'chirildi"));
-          if (widget.detail) context.pop();
-        }
-      } else if (action == 'report') {
-        await repo.report(postId: _p.id, reason: tr("Nomaqbul kontent"));
-        if (mounted) showToast(context, tr('Shikoyat yuborildi. Moderator ko\'rib chiqadi.'));
-      } else if (action == 'profile') {
+    switch (action) {
+      case 'edit':
+        context.push('/community/new?edit=${_p.id}');
+      case 'profile':
         context.push('/users/${_p.author.id}');
-      }
-    } catch (e) {
-      if (mounted) showError(context, e);
+      case 'report':
+        await showReportSheet(context, ref, postId: _p.id);
+      case 'delete':
+        final ok = await confirm(context, tr("Postni o'chirasizmi?"), _p.title, ok: tr("O'chirish"), danger: true);
+        if (!ok || !mounted) return;
+        try {
+          await ref.read(communityRepoProvider).deletePost(_p.id);
+          ref.invalidate(feedProvider);
+          ref.invalidate(userPostsProvider);
+          if (mounted) {
+            showToast(context, tr("Post o'chirildi"));
+            if (widget.detail) context.pop();
+          }
+        } catch (e) {
+          if (mounted) showError(context, e);
+        }
     }
   }
 
@@ -75,65 +93,98 @@ class _PostCardState extends ConsumerState<PostCard> {
     final c = context.c;
     final p = _p;
     final img = AppConfig.mediaUrl(p.imageUrl);
-    final healthy = p.category != 'disease' && p.category != 'question';
-    void open() => widget.detail ? null : context.push('/community/${p.id}');
+    void open({bool comment = false}) => widget.detail ? null : context.push('/community/${p.id}${comment ? '?comment=1' : ''}');
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(color: c.card, borderRadius: BorderRadius.circular(AppRadius.md), boxShadow: softShadow(context)),
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(color: c.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
       clipBehavior: Clip.antiAlias,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 8, 10),
+          padding: const EdgeInsets.fromLTRB(12, 10, 4, 6),
           child: Row(children: [
-            InkWell(onTap: () => context.push('/users/${p.author.id}'), child: Avatar(name: p.author.fullName, url: p.author.avatarUrl, size: 34)),
-            const SizedBox(width: 10),
             Expanded(
-              child: InkWell(
-                onTap: () => context.push('/users/${p.author.id}'),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(p.author.fullName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
-                  Text(timeAgo(p.createdAt), style: TextStyle(fontSize: 11.5, color: c.muted)),
-                ]),
+              child: Semantics(
+                button: true,
+                label: trf('{0} profili', [p.author.fullName]),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => context.push('/users/${p.author.id}'),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Row(children: [
+                      Avatar(name: p.author.fullName, url: p.author.avatarUrl, size: 40, color: c.olive, textColor: c.onOlive),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(p.author.fullName, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: c.text)),
+                          Text(timeAgo(p.createdAt), style: TextStyle(fontSize: 13, color: c.muted)),
+                        ]),
+                      ),
+                    ]),
+                  ),
+                ),
               ),
             ),
-            if (p.category != null) Tag(postCategoryLabels[p.category] ?? p.category!, bg: healthy ? c.tagCare : c.primaryLight, fg: healthy ? c.onTagCare : c.primaryDark),
+            if (p.category != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: p.category == 'question' ? c.warningBg : c.oliveSoft, borderRadius: BorderRadius.circular(999)),
+                child: Text(postCategoryLabels[p.category] ?? p.category!,
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: p.category == 'question' ? c.warning : c.onOliveSoft)),
+              ),
             IconButton(icon: Icon(Icons.more_vert_rounded, color: c.muted), onPressed: _menu, tooltip: tr('Amallar')),
           ]),
         ),
         if (img != null)
-          InkWell(
-            onTap: open,
-            child: SizedBox(
-              height: 190,
-              width: double.infinity,
-              child: Image.network(img, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: c.tan, child: Icon(AppIcons.leaf, color: c.primaryDark, size: 40))),
+          Semantics(
+            button: !widget.detail,
+            label: p.title,
+            child: GestureDetector(
+              onTap: widget.detail ? null : open,
+              child: AspectRatio(
+                aspectRatio: 16 / 10,
+                child: Image.network(img, fit: BoxFit.cover, errorBuilder: (_, __, ___) => ColoredBox(color: c.cream2, child: Icon(AppIcons.image, color: c.muted, size: 40))),
+              ),
             ),
           ),
         InkWell(
-          onTap: open,
+          onTap: widget.detail ? null : open,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(p.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+              Text(p.title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: c.text, height: 1.3)),
               if (p.content != null && p.content!.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                Text(p.content!, style: const TextStyle(fontSize: 13.5, height: 1.5), maxLines: widget.detail ? null : 4, overflow: widget.detail ? null : TextOverflow.ellipsis),
+                Text(p.content!, style: TextStyle(fontSize: 15, height: 1.5, color: c.text), maxLines: widget.detail ? null : 4, overflow: widget.detail ? null : TextOverflow.ellipsis),
               ],
             ]),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(8, 0, 16, 10),
+          padding: const EdgeInsets.fromLTRB(6, 0, 12, 6),
           child: Row(children: [
-            TextButton.icon(
-              onPressed: _like,
-              icon: Icon(p.likedByMe ? AppIcons.heartFill : AppIcons.heart, size: 18, color: p.likedByMe ? c.danger : c.muted),
-              label: Text(trf('{0} layk', [p.likes]), style: TextStyle(color: p.likedByMe ? c.danger : c.muted, fontWeight: FontWeight.w700, fontSize: 12.5)),
+            Semantics(
+              button: true,
+              toggled: p.likedByMe,
+              label: trf('{0} layk', [p.likes]),
+              excludeSemantics: true,
+              child: TextButton.icon(
+                style: TextButton.styleFrom(minimumSize: const Size(48, 44)),
+                onPressed: _like,
+                icon: Icon(p.likedByMe ? AppIcons.heartFill : AppIcons.heart, size: 20, color: p.likedByMe ? c.danger : c.muted),
+                label: Text('${p.likes}', style: TextStyle(color: p.likedByMe ? c.danger : c.muted, fontWeight: FontWeight.w700, fontSize: 14)),
+              ),
             ),
-            TextButton.icon(
-              onPressed: open,
-              icon: Icon(AppIcons.chat, size: 17, color: c.muted),
-              label: Text(trf('{0} izoh', [p.comments]), style: TextStyle(color: c.muted, fontWeight: FontWeight.w700, fontSize: 12.5)),
+            Semantics(
+              button: true,
+              label: trf('{0} izoh', [p.comments]),
+              excludeSemantics: true,
+              child: TextButton.icon(
+                style: TextButton.styleFrom(minimumSize: const Size(48, 44)),
+                onPressed: () => open(comment: true),
+                icon: Icon(AppIcons.chat, size: 19, color: c.muted),
+                label: Text('${p.comments}', style: TextStyle(color: c.muted, fontWeight: FontWeight.w700, fontSize: 14)),
+              ),
             ),
           ]),
         ),
