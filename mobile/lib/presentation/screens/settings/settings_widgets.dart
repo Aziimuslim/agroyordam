@@ -100,8 +100,9 @@ class SaveBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     return SizedBox(
-      height: 52,
       width: double.infinity,
+      child: ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 52),
       child: FilledButton(
         style: FilledButton.styleFrom(
           backgroundColor: c.primary,
@@ -110,6 +111,7 @@ class SaveBar extends StatelessWidget {
         ),
         onPressed: enabled ? onSave : null,
         child: Text(label ?? tr('Saqlash'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+      ),
       ),
     );
   }

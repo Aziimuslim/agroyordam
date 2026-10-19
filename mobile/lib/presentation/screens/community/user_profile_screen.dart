@@ -179,8 +179,8 @@ class _UserProfileState extends ConsumerState<UserProfileScreen> {
         ),
         const SizedBox(height: 14),
         if (mine)
-          SizedBox(
-            height: 52,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 52),
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(foregroundColor: c.primaryDark, side: BorderSide(color: c.primary, width: 1.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               onPressed: () => context.push('/profile/edit'),
@@ -203,8 +203,8 @@ class _UserProfileState extends ConsumerState<UserProfileScreen> {
         else
           Row(children: [
             Expanded(
-              child: SizedBox(
-                height: 52,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 52),
                 child: p.isFollowing
                     ? OutlinedButton(
                         style: OutlinedButton.styleFrom(foregroundColor: c.text, side: BorderSide(color: c.lineStrong), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
@@ -220,8 +220,8 @@ class _UserProfileState extends ConsumerState<UserProfileScreen> {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: SizedBox(
-                height: 52,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 52),
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(foregroundColor: c.primaryDark, side: BorderSide(color: c.primary, width: 1.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                   onPressed: _busy ? null : _message,

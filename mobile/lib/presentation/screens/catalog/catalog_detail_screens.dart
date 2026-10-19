@@ -215,13 +215,15 @@ Widget _notFound(BuildContext context, WidgetRef ref, AsyncValue v, String title
 Widget _primary(BuildContext context, String label, IconData icon, VoidCallback onTap) {
   final c = context.c;
   return SizedBox(
-    height: 52,
     width: double.infinity,
+    child: ConstrainedBox(
+    constraints: const BoxConstraints(minHeight: 52),
     child: FilledButton.icon(
       style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
       onPressed: onTap,
       icon: Icon(icon),
       label: Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+    ),
     ),
   );
 }

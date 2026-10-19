@@ -117,7 +117,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text(p.author.fullName, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: c.text)),
-                          Text(timeAgo(p.createdAt), style: TextStyle(fontSize: 13, color: c.muted)),
+                          Text(timeAgo(p.createdAt), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, color: c.muted)),
                         ]),
                       ),
                     ]),

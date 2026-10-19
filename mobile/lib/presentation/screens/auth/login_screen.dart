@@ -151,8 +151,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
         if (codeAvailable) ...[
           const SizedBox(height: 10),
-          SizedBox(
-            height: 52,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 52),
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(foregroundColor: c.primaryDark, side: BorderSide(color: c.primary, width: 1.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               onPressed: _loading || _wait.running ? null : _codeLogin,

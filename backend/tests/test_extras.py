@@ -129,3 +129,18 @@ async def test_notification_settings(client, user_headers):
     conv = (await client.post(f"{API}/conversations", json={"user_id": me_id}, headers=other)).json()
     await client.post(f"{API}/conversations/{conv['id']}/messages", json={"content": "salom"}, headers=other)
     assert "message" in [n["type"] for n in (await client.get(f"{API}/notifications", headers=user_headers)).json()]
+
+
+async def test_message_pagination(client, user_headers):
+    other = auth(await register(client, "suhbatdosh"))
+    other_id = (await me(client, other))["id"]
+    conv = (await client.post(f"{API}/conversations", json={"user_id": other_id}, headers=user_headers)).json()
+    import asyncio
+
+    for i in range(7):
+        await client.post(f"{API}/conversations/{conv['id']}/messages", json={"content": f"m{i}"}, headers=user_headers)
+        await asyncio.sleep(0.01)
+    last = (await client.get(f"{API}/conversations/{conv['id']}/messages?limit=3", headers=user_headers)).json()
+    assert [m["content"] for m in last] == ["m4", "m5", "m6"]
+    older = (await client.get(f"{API}/conversations/{conv['id']}/messages?limit=3&before={last[0]['id']}", headers=user_headers)).json()
+    assert [m["content"] for m in older] == ["m1", "m2", "m3"]

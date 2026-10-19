@@ -44,8 +44,10 @@ class CommunityRepository extends BaseRepository {
   Future<List<Conversation>> conversations() => call(() async => list((await dio.get('/conversations')).data, Conversation.fromJson));
   Future<Conversation> startConversation(String userId) =>
       call(() async => Conversation.fromJson((await dio.post('/conversations', data: {'user_id': userId})).data));
-  Future<List<ChatMessage>> messages(String convId) =>
-      call(() async => list((await dio.get('/conversations/$convId/messages')).data, ChatMessage.fromJson));
+  /// Oxirgi [limit] ta xabar; [before] — shu xabardan oldingilari (eski xabarlar sahifasi).
+  Future<List<ChatMessage>> messages(String convId, {int limit = 50, String? before}) => call(() async => list(
+      (await dio.get('/conversations/$convId/messages', queryParameters: {'limit': limit, if (before != null) 'before': before})).data,
+      ChatMessage.fromJson));
   Future<ChatMessage> send(String convId, String text) =>
       call(() async => ChatMessage.fromJson((await dio.post('/conversations/$convId/messages', data: {'content': text})).data));
   Future<void> markRead(String messageId) => call(() => dio.put('/messages/$messageId/read'));

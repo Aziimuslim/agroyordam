@@ -387,12 +387,15 @@ class SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(top: 4, bottom: 12),
-        child: Row(children: [
-          Expanded(child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.2))),
+        child: Wrap(alignment: WrapAlignment.spaceBetween, crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, children: [
+          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
           if (action != null)
             InkWell(
               onTap: onAction,
-              child: Text(action!, style: TextStyle(fontSize: 14, color: context.c.primary, fontWeight: FontWeight.w700)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Text(action!, style: TextStyle(fontSize: 14, color: context.c.primary, fontWeight: FontWeight.w700)),
+              ),
             ),
         ]),
       );

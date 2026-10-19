@@ -80,9 +80,16 @@ async def start_conversation(body: ConversationIn, user: User = Depends(get_curr
 
 
 @router.get("/conversations/{conv_id}/messages", response_model=list[MessageOut])
-async def list_messages(conv_id: uuid.UUID, limit: int = 100, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def list_messages(conv_id: uuid.UUID, limit: int = 100, before: uuid.UUID | None = None,
+                        user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Oxirgi `limit` ta xabar (eskidan yangiga). `before` — shu xabardan oldingilari (QA09: eski xabarlar sahifasi)."""
     await ensure_member(db, conv_id, user)
-    stmt = select(Message).where(Message.conversation_id == conv_id).order_by(Message.created_at.desc()).limit(min(limit, 500))
+    stmt = select(Message).where(Message.conversation_id == conv_id).order_by(Message.created_at.desc(), Message.id.desc()).limit(min(limit, 500))
+    if before is not None:
+        pivot = await db.get(Message, before)
+        if pivot is None or pivot.conversation_id != conv_id:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Xabar topilmadi")
+        stmt = stmt.where(Message.created_at < pivot.created_at)
     return list(reversed((await db.scalars(stmt)).all()))
 
 

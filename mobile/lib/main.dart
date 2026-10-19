@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 
 import 'app.dart';
+import 'application/display_prefs.dart';
+import 'application/theme_mode.dart';
 import 'core/config.dart';
 import 'core/i18n/i18n.dart';
 
@@ -14,6 +16,9 @@ Future<void> main() async {
     final prefs = await SharedPreferences.getInstance();
     AppConfig.runtimeOverride = prefs.getString(AppConfig.prefsKey);
     I18n.lang = AppLang.fromCode(prefs.getString('agro_lang')); // birinchi kadrdanoq tanlangan tilda
+    // Mavzu va ko'rinish ham birinchi kadrdan (TZ DM01: noto'g'ri mavzu chaqnashi yo'q)
+    ThemeModeController.initial = ThemeModeController.parse(prefs.getString(ThemeModeController.key));
+    DisplayPrefsController.initial = DisplayPrefsController.read(prefs);
   } catch (_) {}
   usePathUrlStrategy();
   // Web: push() bilan ochilgan sahifalar ham manzil satrida ko'rinadi (yangilanganda saqlanadi)

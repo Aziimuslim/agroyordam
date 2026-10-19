@@ -90,15 +90,22 @@ class TaskRowState extends ConsumerState<TaskRow> {
                     ),
                   ),
                 ),
-                SizedBox(
-                  width: 64,
-                  child: Text(
-                    time,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: overdue ? c.danger : c.muted,
-                      fontFeatures: const [FontFeature.tabularFigures()],
+                // Tor ekranda va uzun tarjimada so'z bo'linmasin — bir qatorda, kerak bo'lsa kichrayadi (QA14)
+                Container(
+                  width: 74,
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      time,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: overdue ? c.danger : c.muted,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                     ),
                   ),
                 ),

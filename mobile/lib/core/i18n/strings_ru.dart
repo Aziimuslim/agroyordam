@@ -730,6 +730,7 @@ const stringsRu = <String, String>{
   "Oflayn: dehqonlar sizni band deb ko'radi": "Офлайн: фермеры видят, что вы заняты",
   "Oldindan eslatish": "Напомнить заранее",
   "Oldingi ariza rad etildi": "Предыдущая заявка отклонена",
+  "Oldingi xabarlar": "Предыдущие сообщения",
   "Oldini olish": "Профилактика",
   "Olib tashlash": "Удалить",
   "Olma qo'turiga qarshi nima qilay?": "Что делать против парши яблони?",

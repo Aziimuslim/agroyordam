@@ -31,12 +31,15 @@ class HomeScreen extends ConsumerWidget {
     final side = width >= Breakpoints.tablet ? 32.0 : 16.0;
 
     Widget constrained(Widget child) => Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200),
-            child: Padding(padding: EdgeInsets.symmetric(horizontal: side), child: child),
-          ),
-        );
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1200),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: side),
+          child: child,
+        ),
+      ),
+    );
 
     final tasks = const _TasksBlock();
     final crops = const _CropsBlock();
@@ -56,26 +59,37 @@ class HomeScreen extends ConsumerWidget {
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.only(bottom: 32),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              _Header(constrained: constrained),
-              constrained(Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                const _CheckButton(),
-                const SizedBox(height: 24),
-                if (width >= Breakpoints.desktop)
-                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Expanded(flex: 5, child: tasks),
-                    const SizedBox(width: 32),
-                    Expanded(flex: 7, child: crops),
-                  ])
-                else ...[
-                  tasks,
-                  const SizedBox(height: 24),
-                  crops,
-                ],
-                const SizedBox(height: 24),
-                const _CatalogLink(),
-              ])),
-            ]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _Header(constrained: constrained),
+                constrained(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const _CheckButton(),
+                      const SizedBox(height: 24),
+                      if (width >= Breakpoints.desktop)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 5, child: tasks),
+                            const SizedBox(width: 32),
+                            Expanded(flex: 7, child: crops),
+                          ],
+                        )
+                      else ...[
+                        tasks,
+                        const SizedBox(height: 24),
+                        crops,
+                      ],
+                      const SizedBox(height: 24),
+                      const _CatalogLink(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -102,81 +116,129 @@ class _Header extends ConsumerWidget {
     return SizedBox(
       // matn qismi + ko'rinadigan manzara
       height: topPad + 196 + landscapeH,
-      child: Stack(fit: StackFit.expand, children: [
-        LandscapeBackdrop(weather: weather.value),
-        // Matn ostida krem/qorong'i gradient: kontrast manzara va animatsiyaga bog'liq emas
-        DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [c.cream, c.cream, c.cream.withValues(alpha: 0.85), c.cream.withValues(alpha: 0)],
-              stops: [0, (topPad + 150) / (topPad + 196 + landscapeH), (topPad + 190) / (topPad + 196 + landscapeH), (topPad + 250) / (topPad + 196 + landscapeH)],
-            ),
-          ),
-        ),
-        // Pastki egilgan qirra — kontent "varag'i" manzara ustiga chiqadi
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: -1,
-          height: 25,
-          child: DecoratedBox(
-            decoration: BoxDecoration(color: c.cream, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.only(top: topPad),
-          child: constrained(Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            SizedBox(
-              height: 60,
-              child: Row(children: [
-                if (!desktop) ...[
-                  const BrandLogo(size: 32),
-                  const SizedBox(width: 8),
-                  Text('AgroYordam', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: c.text, letterSpacing: -0.2)),
-                ],
-                const Spacer(),
-                _HeaderIcon(
-                  tooltip: unread > 0 ? trf('Bildirishnomalar: {0} ta yangi', [unread]) : tr('Bildirishnomalar'),
-                  onTap: () => context.push('/notifications'),
-                  child: Badge(
-                    isLabelVisible: unread > 0,
-                    backgroundColor: c.primary,
-                    smallSize: 9,
-                    child: Icon(Icons.notifications_none_rounded, color: c.text, size: 26),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                _HeaderIcon(
-                  tooltip: tr('Profil'),
-                  onTap: () => context.go('/profile'),
-                  child: Avatar(name: user?.fullName ?? '?', url: user?.avatarUrl, size: 36, color: c.olive, textColor: c.onOlive),
-                ),
-              ]),
-            ),
-            const SizedBox(height: 8),
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Semantics(
-                    header: true,
-                    child: Text(firstName.isEmpty ? tr('Salom!') : trf('Salom, {0}!', [firstName]),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 30, height: 36 / 30, fontWeight: FontWeight.w800, color: c.text, letterSpacing: -0.4)),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(tr("Bugun ham bog'ingizda unumli kun bo'lsin!"),
-                      maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 15, height: 1.35, color: c.muted)),
-                ]),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          LandscapeBackdrop(weather: weather.value),
+          // Matn ostida krem/qorong'i gradient: kontrast manzara va animatsiyaga bog'liq emas
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [c.cream, c.cream, c.cream.withValues(alpha: 0.85), c.cream.withValues(alpha: 0)],
+                stops: [0, (topPad + 150) / (topPad + 196 + landscapeH), (topPad + 190) / (topPad + 196 + landscapeH), (topPad + 250) / (topPad + 196 + landscapeH)],
               ),
-              const SizedBox(width: 12),
-              _WeatherChip(value: weather, onRetry: () => ref.invalidate(weatherProvider)),
-            ]),
-          ])),
-        ),
-      ]),
+            ),
+          ),
+          // Pastki egilgan qirra — kontent "varag'i" manzara ustiga chiqadi
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: -1,
+            height: 25,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: c.cream,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(top: topPad),
+            child: constrained(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    height: 60,
+                    // Sarlavha qatori qat'iy 60 px — matn 1.3x gacha
+                    child: MediaQuery.withClampedTextScaling(
+                      maxScaleFactor: 1.3,
+                      child: Row(
+                        children: [
+                          if (!desktop) ...[
+                            const BrandLogo(size: 32),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                'AgroYordam',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: c.text, letterSpacing: -0.2),
+                              ),
+                            ),
+                          ],
+                          const Spacer(),
+                          _HeaderIcon(
+                            tooltip: unread > 0 ? trf('Bildirishnomalar: {0} ta yangi', [unread]) : tr('Bildirishnomalar'),
+                            onTap: () => context.push('/notifications'),
+                            child: Badge(
+                              isLabelVisible: unread > 0,
+                              backgroundColor: c.primary,
+                              smallSize: 9,
+                              child: Icon(Icons.notifications_none_rounded, color: c.text, size: 26),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          _HeaderIcon(
+                            tooltip: tr('Profil'),
+                            onTap: () => context.go('/profile'),
+                            child: Avatar(name: user?.fullName ?? '?', url: user?.avatarUrl, size: 36, color: c.olive, textColor: c.onOlive),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Manzara ustidagi sarlavha qat'iy balandlikda — katta matnda 1.4x gacha (so'z bo'linmaydi); asosiy kontent to'liq kattalashadi
+                  // Manzara ustidagi sarlavha: katta matnda 1.4x gacha; joy yetmasa ob-havo kartasi pastga tushadi (so'z bo'linmaydi)
+                  MediaQuery.withClampedTextScaling(
+                    maxScaleFactor: 1.4,
+                    child: Builder(
+                      builder: (context) {
+                        final greet = Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Semantics(
+                              header: true,
+                              child: Text(
+                                firstName.isEmpty ? tr('Salom!') : trf('Salom, {0}!', [firstName]),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 30, height: 36 / 30, fontWeight: FontWeight.w800, color: c.text, letterSpacing: -0.4),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              tr("Bugun ham bog'ingizda unumli kun bo'lsin!"),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 15, height: 1.35, color: c.muted),
+                            ),
+                          ],
+                        );
+                        final chip = _WeatherChip(value: weather, onRetry: () => ref.invalidate(weatherProvider));
+                        final stacked = MediaQuery.textScalerOf(context).scale(10) > 11.5 && MediaQuery.sizeOf(context).width < 600;
+                        return stacked
+                            ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [greet, const SizedBox(height: 10), chip])
+                            : Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(child: greet),
+                                  const SizedBox(width: 12),
+                                  chip,
+                                ],
+                              );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -188,18 +250,18 @@ class _HeaderIcon extends StatelessWidget {
   final String tooltip;
   @override
   Widget build(BuildContext context) => Tooltip(
-        message: tooltip,
-        child: Semantics(
-          button: true,
-          label: tooltip,
-          excludeSemantics: true,
-          child: InkResponse(
-            onTap: onTap,
-            radius: 24,
-            child: SizedBox(width: 44, height: 44, child: Center(child: child)),
-          ),
-        ),
-      );
+    message: tooltip,
+    child: Semantics(
+      button: true,
+      label: tooltip,
+      excludeSemantics: true,
+      child: InkResponse(
+        onTap: onTap,
+        radius: 24,
+        child: SizedBox(width: 44, height: 44, child: Center(child: child)),
+      ),
+    ),
+  );
 }
 
 /// Ob-havo kartasi (header o'ng tomoni) → A06. Holatlar: yuklanmoqda, yangi, eskirgan (> 2 soat),
@@ -219,43 +281,54 @@ class _WeatherChip extends StatelessWidget {
       border: Border.all(color: c.border),
     );
     Widget shell(Widget child, {String? label}) => Semantics(
-          button: true,
-          label: label,
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () => context.push('/weather'),
-              child: Container(
-                constraints: const BoxConstraints(minWidth: 128, maxWidth: 172, minHeight: 96),
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                decoration: box,
-                child: child,
-              ),
-            ),
-          ),
-        );
+      button: true,
+      label: label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => context.push('/weather'),
+          child: Container(constraints: const BoxConstraints(minWidth: 128, maxWidth: 172, minHeight: 96), padding: const EdgeInsets.fromLTRB(12, 10, 12, 10), decoration: box, child: child),
+        ),
+      ),
+    );
 
     if (w == null && value.isLoading) {
-      return Container(width: 140, height: 104, decoration: box, child: const Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4))));
+      return Container(
+        width: 140,
+        height: 104,
+        decoration: box,
+        child: const Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4))),
+      );
     }
     if (w == null) {
       return Container(
         constraints: const BoxConstraints(maxWidth: 172),
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
         decoration: box,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          Row(children: [
-            Icon(Icons.cloud_off_rounded, size: 18, color: c.muted),
-            const SizedBox(width: 6),
-            Expanded(child: Text(tr('Ob-havo hozir mavjud emas'), style: TextStyle(fontSize: 14, height: 1.3, color: c.text, fontWeight: FontWeight.w600))),
-          ]),
-          TextButton(
-            style: TextButton.styleFrom(minimumSize: const Size(44, 44), padding: const EdgeInsets.symmetric(horizontal: 4), foregroundColor: c.primaryDark),
-            onPressed: onRetry,
-            child: Text(tr('Qayta urinish'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-          ),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.cloud_off_rounded, size: 18, color: c.muted),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    tr('Ob-havo hozir mavjud emas'),
+                    style: TextStyle(fontSize: 14, height: 1.3, color: c.text, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            TextButton(
+              style: TextButton.styleFrom(minimumSize: const Size(44, 44), padding: const EdgeInsets.symmetric(horizontal: 4), foregroundColor: c.primaryDark),
+              onPressed: onRetry,
+              child: Text(tr('Qayta urinish'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+            ),
+          ],
+        ),
       );
     }
     final offline = value.hasError;
@@ -264,31 +337,55 @@ class _WeatherChip extends StatelessWidget {
     final note = offline
         ? (time != null ? trf('Oflayn · {0}', [time]) : tr('Oflayn'))
         : stale
-            ? trf('Eskirgan · {0}', [time!])
-            : (time != null ? trf('{0} da yangilandi', [time]) : null);
+        ? trf('Eskirgan · {0}', [time!])
+        : (time != null ? trf('{0} da yangilandi', [time]) : null);
     return shell(
       label: [w.city, '${w.temperature.round()}°', tr(w.condition), if (note != null) note].join(', '),
       ExcludeSemantics(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          Text(w.city, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: c.text)),
-          const SizedBox(height: 2),
-          Row(children: [
-            Icon(weatherIcon(w), size: 26, color: w.isDay ? c.warning : c.text),
-            const SizedBox(width: 6),
-            Text('${w.temperature.round()}°', style: TextStyle(fontSize: 26, height: 1.1, fontWeight: FontWeight.w800, color: c.text)),
-          ]),
-          Text(tr(w.condition), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, color: c.muted)),
-          if (note != null)
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              if (offline || stale) ...[Icon(offline ? Icons.cloud_off_rounded : Icons.schedule_rounded, size: 14, color: c.warning), const SizedBox(width: 4)],
-              Flexible(
-                child: Text(note,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: offline || stale ? c.warning : c.muted)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              w.city,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: c.text),
+            ),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                Icon(weatherIcon(w), size: 26, color: w.isDay ? c.warning : c.text),
+                const SizedBox(width: 6),
+                Text(
+                  '${w.temperature.round()}°',
+                  style: TextStyle(fontSize: 26, height: 1.1, fontWeight: FontWeight.w800, color: c.text),
+                ),
+              ],
+            ),
+            Text(
+              tr(w.condition),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 14, color: c.muted),
+            ),
+            if (note != null)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (offline || stale) ...[Icon(offline ? Icons.cloud_off_rounded : Icons.schedule_rounded, size: 14, color: c.warning), const SizedBox(width: 4)],
+                  Flexible(
+                    child: Text(
+                      note,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: offline || stale ? c.warning : c.muted),
+                    ),
+                  ),
+                ],
               ),
-            ]),
-        ]),
+          ],
+        ),
       ),
     );
   }
@@ -314,18 +411,37 @@ class _CheckButton extends StatelessWidget {
             constraints: const BoxConstraints(minHeight: 60),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              child: Row(children: [
-                Icon(AppIcons.scan, color: c.onPrimary, size: 28),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                    Text(tr('Ekinni tekshirish'), style: TextStyle(color: c.onPrimary, fontSize: 19, fontWeight: FontWeight.w800)),
-                    Text(tr("Barg suratini oling — AI mumkin bo'lgan sabablarni ko'rsatadi"),
-                        maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.onPrimary, fontSize: 14, height: 1.3)),
-                  ]),
-                ),
-                Icon(AppIcons.chevron, color: c.onPrimary, size: 28),
-              ]),
+              child: Row(
+                children: [
+                  Icon(AppIcons.scan, color: c.onPrimary, size: 28),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Asosiy amal nomi bo'linmaydi: tor ekran/katta matnda bir qatorda kichrayadi (TZ S31: CTA kesilmaydi)
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            tr('Ekinni tekshirish'),
+                            maxLines: 1,
+                            style: TextStyle(color: c.onPrimary, fontSize: 19, fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        Text(
+                          tr("Barg suratini oling — AI mumkin bo'lgan sabablarni ko'rsatadi"),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: c.onPrimary, fontSize: 14, height: 1.3),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(AppIcons.chevron, color: c.onPrimary, size: 28),
+                ],
+              ),
             ),
           ),
         ),
@@ -359,46 +475,59 @@ class _TasksBlock extends ConsumerWidget {
     } else if (rows.isEmpty) {
       body = AppCard(
         margin: EdgeInsets.zero,
-        child: Row(children: [
-          Icon(Icons.task_alt_rounded, color: c.success),
-          const SizedBox(width: 12),
-          Expanded(child: Text(tr("Bugun bajariladigan vazifa yo'q"), style: TextStyle(color: c.text, fontSize: 16))),
-          TextButton(onPressed: () => context.push('/reminders/add'), child: Text(tr("Qo'shish"))),
-        ]),
+        child: Row(
+          children: [
+            Icon(Icons.task_alt_rounded, color: c.success),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(tr("Bugun bajariladigan vazifa yo'q"), style: TextStyle(color: c.text, fontSize: 16)),
+            ),
+            TextButton(onPressed: () => context.push('/reminders/add'), child: Text(tr("Qo'shish"))),
+          ],
+        ),
       );
     } else {
       final shown = rows.take(limit).toList();
-      body = Column(children: [
-        for (final r in shown) Padding(padding: const EdgeInsets.only(bottom: 8), child: TaskRow(r: r)),
-        if (rows.length > limit)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton(
-              onPressed: () => context.push('/reminders'),
-              child: Text(trf('yana {0} ta vazifa', [rows.length - limit])),
+      body = Column(
+        children: [
+          for (final r in shown)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: TaskRow(r: r),
             ),
-          ),
-      ]);
+          if (rows.length > limit)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(onPressed: () => context.push('/reminders'), child: Text(trf('yana {0} ta vazifa', [rows.length - limit]))),
+            ),
+        ],
+      );
     }
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      BlockTitle(
-        tr('Bugungi vazifalar'),
-        trailing: todays.isEmpty
-            ? null
-            : Semantics(
-                label: trf('{0} tadan {1} tasi bajarildi', [todays.length, done]),
-                excludeSemantics: true,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: c.oliveSoft, borderRadius: BorderRadius.circular(999)),
-                  child: Text('$done/${todays.length}', style: TextStyle(color: c.onOliveSoft, fontWeight: FontWeight.w800, fontSize: 13)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        BlockTitle(
+          tr('Bugungi vazifalar'),
+          trailing: todays.isEmpty
+              ? null
+              : Semantics(
+                  label: trf('{0} tadan {1} tasi bajarildi', [todays.length, done]),
+                  excludeSemantics: true,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(color: c.oliveSoft, borderRadius: BorderRadius.circular(999)),
+                    child: Text(
+                      '$done/${todays.length}',
+                      style: TextStyle(color: c.onOliveSoft, fontWeight: FontWeight.w800, fontSize: 13),
+                    ),
+                  ),
                 ),
-              ),
-        action: tr("Barchasini ko'rish"),
-        onAction: () => context.push('/reminders'),
-      ),
-      body,
-    ]);
+          action: tr("Barchasini ko'rish"),
+          onAction: () => context.push('/reminders'),
+        ),
+        body,
+      ],
+    );
   }
 }
 
@@ -414,28 +543,45 @@ class _CropsBlock extends ConsumerWidget {
     if (list == null && value.hasError) {
       body = BlockError(error: value.error!, onRetry: () => ref.invalidate(cropsProvider), what: tr('Ekinlar'));
     } else if (list == null) {
-      body = const Row(children: [Expanded(child: Skeleton(height: 220)), SizedBox(width: 12), Expanded(child: Skeleton(height: 220))]);
+      body = const Row(
+        children: [
+          Expanded(child: Skeleton(height: 220)),
+          SizedBox(width: 12),
+          Expanded(child: Skeleton(height: 220)),
+        ],
+      );
     } else if (list.isEmpty) {
       body = const _EmptyGarden();
     } else {
       final sorted = [...list]..sort((a, b) => cropStateRank(cropState(a)).compareTo(cropStateRank(cropState(b))));
-      body = LayoutBuilder(builder: (context, box) {
-        final cols = box.maxWidth >= 840 ? 4 : (box.maxWidth >= 520 ? 3 : 2);
-        final shown = sorted.take(cols * 2).toList();
-        const gap = 12.0;
-        final w = (box.maxWidth - gap * (cols - 1)) / cols;
-        return Wrap(spacing: gap, runSpacing: gap, children: [for (final c in shown) SizedBox(width: w, child: CropCard(crop: c))]);
-      });
+      body = LayoutBuilder(
+        builder: (context, box) {
+          final cols = box.maxWidth >= 840 ? 4 : (box.maxWidth >= 520 ? 3 : 2);
+          final shown = sorted.take(cols * 2).toList();
+          const gap = 12.0;
+          final w = (box.maxWidth - gap * (cols - 1)) / cols;
+          return Wrap(
+            spacing: gap,
+            runSpacing: gap,
+            children: [
+              for (final c in shown)
+                SizedBox(
+                  width: w,
+                  child: CropCard(crop: c),
+                ),
+            ],
+          );
+        },
+      );
     }
     final attention = list?.where((c) => cropState(c) == CropState.attention).length ?? 0;
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      BlockTitle(
-        attention > 0 ? tr("Bog'imda e'tibor kerak") : tr("Bog'imdagi ekinlar"),
-        action: tr("Barchasini ko'rish"),
-        onAction: () => context.go('/garden'),
-      ),
-      body,
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        BlockTitle(attention > 0 ? tr("Bog'imda e'tibor kerak") : tr("Bog'imdagi ekinlar"), action: tr("Barchasini ko'rish"), onAction: () => context.go('/garden')),
+        body,
+      ],
+    );
   }
 }
 
@@ -446,37 +592,48 @@ class _EmptyGarden extends StatelessWidget {
     final c = context.c;
     return AppCard(
       margin: EdgeInsets.zero,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(
-            width: 48,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(color: c.oliveSoft, borderRadius: BorderRadius.circular(12)),
+                child: Icon(Icons.eco_outlined, color: c.onOliveSoft),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tr("Bog'ingiz hali bo'sh"),
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: c.text),
+                    ),
+                    Text(tr("Ekin qo'shsangiz, vazifalar va kuzatuvlar shu yerda ko'rinadi"), style: TextStyle(color: c.muted, fontSize: 14)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
             height: 48,
-            decoration: BoxDecoration(color: c.oliveSoft, borderRadius: BorderRadius.circular(12)),
-            child: Icon(Icons.eco_outlined, color: c.onOliveSoft),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(tr("Bog'ingiz hali bo'sh"), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: c.text)),
-              Text(tr("Ekin qo'shsangiz, vazifalar va kuzatuvlar shu yerda ko'rinadi"), style: TextStyle(color: c.muted, fontSize: 14)),
-            ]),
-          ),
-        ]),
-        const SizedBox(height: 14),
-        SizedBox(
-          height: 48,
-          child: OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: c.primaryDark,
-              side: BorderSide(color: c.primary),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: c.primaryDark,
+                side: BorderSide(color: c.primary),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () => context.push('/garden/add'),
+              icon: const Icon(AppIcons.plus),
+              label: Text(tr('Birinchi ekinni qo\'shing'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
             ),
-            onPressed: () => context.push('/garden/add'),
-            icon: const Icon(AppIcons.plus),
-            label: Text(tr('Birinchi ekinni qo\'shing'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -499,17 +656,25 @@ class _CatalogLink extends StatelessWidget {
           onTap: () => context.push('/catalog?tab=plants'),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(children: [
-              Icon(AppIcons.book, color: c.olive, size: 28),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(tr("Ma'lumotnoma"), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: c.text)),
-                  Text(tr("O'simliklar, kasalliklar va dorilar haqida"), style: TextStyle(fontSize: 14, color: c.muted)),
-                ]),
-              ),
-              Icon(AppIcons.chevron, color: c.muted),
-            ]),
+            child: Row(
+              children: [
+                Icon(AppIcons.book, color: c.olive, size: 28),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        tr("Ma'lumotnoma"),
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: c.text),
+                      ),
+                      Text(tr("O'simliklar, kasalliklar va dorilar haqida"), style: TextStyle(fontSize: 14, color: c.muted)),
+                    ],
+                  ),
+                ),
+                Icon(AppIcons.chevron, color: c.muted),
+              ],
+            ),
           ),
         ),
       ),

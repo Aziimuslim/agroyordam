@@ -285,8 +285,8 @@ class _LogEditorState extends ConsumerState<LogEditorScreen> {
               child: Text(_error!, style: TextStyle(color: c.danger, fontSize: 15)),
             ),
           const SizedBox(height: 18),
-          SizedBox(
-            height: 52,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 52),
             child: FilledButton(
               style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               onPressed: _saving ? null : _save,

@@ -219,7 +219,8 @@ class _Current extends StatelessWidget {
         Semantics(header: true, child: Text(tr('Keyingi 24 soat'), style: Theme.of(context).textTheme.titleLarge)),
         const SizedBox(height: 10),
         SizedBox(
-          height: 118,
+          // Katta matnda karta balandligi ham o'sadi (QA14: 200% matn)
+          height: 60 + 58 * (MediaQuery.textScalerOf(context).scale(14) / 14),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: w.hourly.length,
@@ -231,7 +232,7 @@ class _Current extends StatelessWidget {
                 label: [label, '${h.temperature.round()}°', if ((h.rainProbability ?? 0) > 0) trf("yog'in ehtimoli {0}%", [h.rainProbability])].join(', '),
                 excludeSemantics: true,
                 child: Container(
-                  width: 66,
+                  width: 50 + 16 * (MediaQuery.textScalerOf(context).scale(14) / 14),
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
                     color: i == 0 ? c.oliveSoft : c.card,
@@ -285,7 +286,7 @@ class _DayRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(border: last ? null : Border(bottom: BorderSide(color: c.border))),
         child: Row(children: [
-          SizedBox(width: 92, child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 15, fontWeight: first ? FontWeight.w800 : FontWeight.w600, color: c.text))),
+          Expanded(flex: 3, child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 15, fontWeight: first ? FontWeight.w800 : FontWeight.w600, color: c.text))),
           Icon(codeIcon(d.code), size: 22, color: c.text),
           SizedBox(
             width: 44,
@@ -294,6 +295,7 @@ class _DayRow extends StatelessWidget {
           Text('${d.tMin.round()}°', style: TextStyle(fontSize: 15, color: c.muted)),
           const SizedBox(width: 8),
           Expanded(
+            flex: 2,
             child: LayoutBuilder(builder: (_, box) {
               final left = (d.tMin - minAll) / span * box.maxWidth;
               final width = ((d.tMax - d.tMin) / span * box.maxWidth).clamp(6.0, box.maxWidth);

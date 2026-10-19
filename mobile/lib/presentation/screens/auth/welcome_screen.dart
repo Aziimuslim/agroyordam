@@ -11,6 +11,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/lang_sheet.dart';
 import '../../../core/widgets/widgets.dart';
+import '../home/landscape_header.dart';
 import 'auth_widgets.dart';
 import 'server_settings.dart';
 
@@ -38,100 +39,112 @@ class WelcomeScreen extends ConsumerWidget {
   Widget _content(BuildContext context, WidgetRef ref, AppColors c) {
     return Column(
       children: [
-        // Figma "Yashil dala": yashil gradient panel, belgi, sarlavha va 3 ta asosiy imkoniyat
+        // Tabiiy Agro: bosh sahifadagi manzara foni (ob-havosiz — ochiq kun), ustida matn uchun soya gradienti
         Expanded(
           child: Container(
             width: double.infinity,
             margin: const EdgeInsets.only(bottom: 22),
-            padding: const EdgeInsets.fromLTRB(22, 26, 22, 22),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF0F3D27), Color(0xFF2E8B57)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.xl),
-            ),
-            child: Stack(
-              children: [
-                Positioned(right: -18, top: 40, child: Opacity(opacity: 0.12, child: const BrandLogo(size: 150))),
-                // Til tanlash — ro'yxatdan o'tishdan oldin ham
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  child: Material(
-                    color: Colors.white.withValues(alpha: 0.16),
-                    shape: const StadiumBorder(),
-                    child: InkWell(
-                      customBorder: const StadiumBorder(),
-                      onTap: () => showLanguageSheet(context, ref),
-
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(6, 6, 12, 6),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          FlagIcon(ref.watch(langProvider), size: 24),
-                          const SizedBox(width: 8),
-                          Text(ref.watch(langProvider).short,
-                              semanticsLabel: tr('Til'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13.5)),
-                        ]),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  const Positioned.fill(child: ExcludeSemantics(child: LandscapeBackdrop(weather: null))),
+                  const Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Color(0x8C101912), Color(0x14101912), Color(0x66101912), Color(0xE6101912)],
+                          stops: [0, 0.32, 0.55, 1],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // O'ngda til tugmasi turadi — logotip unga tegmasin
-                    const Padding(padding: EdgeInsets.only(right: 76), child: BrandWordmark(size: 46, onDark: true, slogan: true)),
-                    const SizedBox(height: 28),
-                const Spacer(),
-                    Text(
-                      tr("Ekinlaringiz sog'lig'i — cho'ntagingizda"),
-                      style: TextStyle(color: Colors.white, fontSize: 28, height: 34 / 28, fontWeight: FontWeight.w800, letterSpacing: -0.5),
-                    ),
-                    const SizedBox(height: 16),
-                    for (final (icon, text) in [
-                      (Icons.center_focus_strong_rounded, tr('AI bir necha soniyada kasallikni aniqlaydi')),
-                      (Icons.event_available_outlined, tr("Kunlik parvarish va davolash rejasi")),
-                      (Icons.people_outline_rounded, tr('Fermerlar jamoasi va tajriba almashish')),
-                    ])
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(9)),
-                              child: Icon(icon, color: Colors.white, size: 17),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                text,
-                                style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 14, fontWeight: FontWeight.w600),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 26, 22, 22),
+                    child: Stack(
+                      children: [
+                        // Til tanlash — ro'yxatdan o'tishdan oldin ham
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: Material(
+                            color: Colors.white.withValues(alpha: 0.16),
+                            shape: const StadiumBorder(),
+                            child: InkWell(
+                              customBorder: const StadiumBorder(),
+                              onTap: () => showLanguageSheet(context, ref),
+
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(6, 6, 12, 6),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    FlagIcon(ref.watch(langProvider), size: 24),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      ref.watch(langProvider).short,
+                                      semanticsLabel: tr('Til'),
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13.5),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // O'ngda til tugmasi turadi — logotip unga tegmasin
+                            const Padding(padding: EdgeInsets.only(right: 76), child: BrandWordmark(size: 46, onDark: true, slogan: true)),
+                            const SizedBox(height: 28),
+                            const Spacer(),
+                            Text(
+                              tr("Ekinlaringiz sog'lig'i — cho'ntagingizda"),
+                              style: TextStyle(color: Colors.white, fontSize: 28, height: 34 / 28, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+                            ),
+                            const SizedBox(height: 16),
+                            for (final (icon, text) in [
+                              (Icons.center_focus_strong_rounded, tr('AI bir necha soniyada kasallikni aniqlaydi')),
+                              (Icons.event_available_outlined, tr("Kunlik parvarish va davolash rejasi")),
+                              (Icons.people_outline_rounded, tr('Fermerlar jamoasi va tajriba almashish')),
+                            ])
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 30,
+                                      height: 30,
+                                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(9)),
+                                      child: Icon(icon, color: Colors.white, size: 17),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        text,
+                                        style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 14, fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                           ],
                         ),
-                      ),
-                  ],
-                ),
-              ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-        PillButton(
-          label: tr('Telefon raqami bilan davom etish'),
-          icon: AppIcons.phone,
-          style: PillStyle.primary,
-          block: true,
-          onPressed: () => context.push('/auth/login?via=phone'),
-        ),
+        PillButton(label: tr('Telefon raqami bilan davom etish'), icon: AppIcons.phone, style: PillStyle.primary, block: true, onPressed: () => context.push('/auth/login?via=phone')),
         const _OrDivider(),
-        PillButton(
-          label: tr('Email bilan davom etish'),
-          icon: AppIcons.mail,
-          style: PillStyle.outline,
-          block: true,
-          onPressed: () => context.push('/auth/login?via=email'),
-        ),
+        PillButton(label: tr('Email bilan davom etish'), icon: AppIcons.mail, style: PillStyle.outline, block: true, onPressed: () => context.push('/auth/login?via=email')),
         const SizedBox(height: 14),
         TextButton(
           onPressed: () => context.push('/auth/register'),
@@ -143,11 +156,11 @@ class WelcomeScreen extends ConsumerWidget {
         // Rozilik ro'yxatdan o'tishda alohida belgi bilan olinadi (TZ S34); bu yerda faqat havola
         const TermsLink(),
         if (AppConfig.showServerSettings)
-        TextButton.icon(
-          onPressed: () => showServerSettings(context, ref),
-          icon: Icon(Icons.dns_outlined, size: 16, color: c.muted),
-          label: Text(trf('Server: {0}', [AppConfig.apiUrl]), style: TextStyle(color: c.muted, fontSize: 12)),
-        ),
+          TextButton.icon(
+            onPressed: () => showServerSettings(context, ref),
+            icon: Icon(Icons.dns_outlined, size: 16, color: c.muted),
+            label: Text(trf('Server: {0}', [AppConfig.apiUrl]), style: TextStyle(color: c.muted, fontSize: 12)),
+          ),
         Text(trf('Versiya {0}', [AppConfig.version]), style: TextStyle(color: c.muted, fontSize: 11)),
         const SizedBox(height: 6),
       ],

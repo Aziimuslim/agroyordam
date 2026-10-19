@@ -163,8 +163,8 @@ class _CareScreenState extends ConsumerState<CareScreen> {
         body,
         if (cr != null && !cr.isArchived && (all?.isNotEmpty ?? false)) ...[
           const SizedBox(height: 16),
-          SizedBox(
-            height: 52,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 52),
             child: FilledButton.icon(
               style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               onPressed: () => addObservation(context, ref, cr.id),
@@ -173,8 +173,8 @@ class _CareScreenState extends ConsumerState<CareScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          SizedBox(
-            height: 52,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 52),
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(foregroundColor: c.primaryDark, side: BorderSide(color: c.primary, width: 1.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               onPressed: () => context.push('/reminders/add?crop=${cr.id}'),

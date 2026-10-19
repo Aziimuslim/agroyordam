@@ -174,8 +174,8 @@ class _BodyState extends ConsumerState<_Body> {
                 _ConfidenceCard(d: d),
                 if (unsure) ...[
                   const SizedBox(height: 12),
-                  SizedBox(
-                    height: 52,
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 52),
                     child: FilledButton.icon(
                       style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                       onPressed: () => context.push('/diagnose${d.cropId != null ? '?crop=${d.cropId}' : ''}'),
@@ -253,7 +253,7 @@ class _Chip extends StatelessWidget {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, size: 16, color: fg),
           const SizedBox(width: 5),
-          Text(label, style: TextStyle(color: fg, fontSize: 14, fontWeight: FontWeight.w700)),
+          Flexible(child: Text(label, style: TextStyle(color: fg, fontSize: 14, fontWeight: FontWeight.w700))),
         ]),
       );
 }
@@ -374,13 +374,15 @@ class _ActionBar extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               child: SizedBox(
-                height: 52,
                 width: double.infinity,
+                child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 52),
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                   onPressed: () => context.push('/diagnosis/${d.id}/plan'),
                   icon: const Icon(Icons.event_note_outlined),
                   label: Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
                 ),
               ),
             ),

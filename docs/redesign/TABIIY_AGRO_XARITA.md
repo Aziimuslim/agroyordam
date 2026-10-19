@@ -126,6 +126,10 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 - Migratsiya 0015: `users.notification_prefs`. `GET/PUT /users/me/notification-settings`; `notify()` foydalanuvchi o'chirgan turdagi bildirishnomani yaratmaydi (parol tiklash kabi xavfsizlik xabarlari bundan mustasno).
 - `GET /weather`: `hourly` (joriy soatdan 24 soat) va `daily` (7 kun: min/max, kod, yog'in, ehtimol). Kasallik xavfi avvalgidek faqat 48 soatlik yog'indan hisoblanadi.
 
+## 0.8.10 — moslashuv, accessibility va qabul sinovlari
+
+Batafsil: [QA_HISOBOT.md](QA_HISOBOT.md). Backend: `GET /conversations/{id}/messages?before=` (eski xabarlar sahifasi).
+
 ## Ekin holati qoidasi (TZ 1-bo'lim)
 
 Foiz ko'rsatilmaydi. `last_diagnosis_at` yo'q → «Ma'lumot yetarli emas»; oxirgi tashxisda kasallik va

@@ -730,6 +730,7 @@ const stringsEn = <String, String>{
   "Oflayn: dehqonlar sizni band deb ko'radi": "Offline: farmers see you as busy",
   "Oldindan eslatish": "Remind in advance",
   "Oldingi ariza rad etildi": "Previous application was rejected",
+  "Oldingi xabarlar": "Earlier messages",
   "Oldini olish": "Prevention",
   "Olib tashlash": "Remove",
   "Olma qo'turiga qarshi nima qilay?": "What can I do about apple scab?",

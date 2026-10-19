@@ -249,8 +249,8 @@ class _EmptyGarden extends StatelessWidget {
         const SizedBox(height: 6),
         Text(tr("Ekin qo'shsangiz, vazifalar va kuzatuvlar shu yerda ko'rinadi"), textAlign: TextAlign.center, style: TextStyle(color: c.muted, fontSize: 15)),
         const SizedBox(height: 20),
-        SizedBox(
-          height: 52,
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 52),
           child: FilledButton.icon(
             style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             onPressed: onAdd,

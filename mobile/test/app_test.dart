@@ -1,4 +1,5 @@
 import 'package:agroyordam/app.dart';
+import 'package:agroyordam/application/display_prefs.dart';
 import 'package:agroyordam/application/providers.dart';
 import 'package:agroyordam/core/catalog_images.dart';
 import 'package:agroyordam/core/data/farm_options.dart';
@@ -331,5 +332,39 @@ void main() {
     expect(w.daily.single.rainProbability, 80);
     final old = Weather.fromJson({'city': 'X', 'temperature': 1, 'humidity': 1, 'condition': '', 'risk': 'low', 'risk_text': ''});
     expect(old.hourly, isEmpty); // eski server — prognoz yo'q
+  });
+
+  test('DM08: Tabiiy Agro token juftliklari kontrasti (ikkala mavzu)', () {
+    double contrast(Color a, Color b) {
+      final la = a.computeLuminance(), lb = b.computeLuminance();
+      return (la > lb ? la + 0.05 : lb + 0.05) / (la > lb ? lb + 0.05 : la + 0.05);
+    }
+
+    for (final (name, c) in [('light', AppColors.light), ('dark', AppColors.darkTheme)]) {
+      final pairs = <(String, Color, Color, double)>[
+        ('text/cream', c.text, c.cream, 4.5),
+        ('text/card', c.text, c.card, 4.5),
+        ('muted/cream', c.muted, c.cream, 4.5),
+        ('muted/card', c.muted, c.card, 4.5),
+        ('onPrimary/primary', c.onPrimary, c.primary, 4.5),
+        ('primaryDark/cream', c.primaryDark, c.cream, 4.5),
+        ('onOlive/olive', c.onOlive, c.olive, 4.5),
+        ('onOliveSoft/oliveSoft', c.onOliveSoft, c.oliveSoft, 4.5),
+        ('danger/card', c.danger, c.card, 4.5),
+        ('lineStrong/card', c.lineStrong, c.card, 3), // forma chegarasi — 3:1
+      ];
+      for (final (label, fg, bg, min) in pairs) {
+        expect(contrast(fg, bg), greaterThanOrEqualTo(min), reason: '$name $label = ${contrast(fg, bg).toStringAsFixed(2)}');
+      }
+    }
+  });
+
+  test('QA14: nochiziqli matn shkalasi — oddiy matn 200%, yirik sarlavha kamroq', () {
+    const s = NonlinearTextScaler(2);
+    expect(s.scale(14), 28); // oddiy matn to'liq
+    expect(s.scale(16), 32);
+    expect(s.scale(32), closeTo(48, 0.01)); // 1.5x
+    expect(s.scale(30) / 30, lessThan(1.6));
+    expect(const NonlinearTextScaler(1).scale(20), 20);
   });
 }

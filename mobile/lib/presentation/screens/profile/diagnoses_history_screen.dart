@@ -233,8 +233,8 @@ class _HistoryState extends ConsumerState<DiagnosesHistoryScreen> {
           ),
           body,
           const SizedBox(height: 16),
-          SizedBox(
-            height: 52,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 52),
             child: FilledButton.icon(
               style: FilledButton.styleFrom(
                 backgroundColor: c.primary,
@@ -323,9 +323,12 @@ class _DiagnosisRow extends StatelessWidget {
                           children: [
                             Icon(s.icon, size: 16, color: s.fg),
                             const SizedBox(width: 4),
-                            Text(
-                              s.label,
-                              style: TextStyle(color: s.fg, fontSize: 13, fontWeight: FontWeight.w700),
+                            // 320 px va uzun tarjimada toshib ketmasin (QA14)
+                            Flexible(
+                              child: Text(
+                                s.label,
+                                style: TextStyle(color: s.fg, fontSize: 13, fontWeight: FontWeight.w700),
+                              ),
                             ),
                           ],
                         ),

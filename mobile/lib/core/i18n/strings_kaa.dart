@@ -730,6 +730,7 @@ const stringsKaa = <String, String>{
   "Oflayn: dehqonlar sizni band deb ko'radi": "Oflayn: diyqanlar sizdi bánt dep kóredi",
   "Oldindan eslatish": "Aldınnan eskertiw",
   "Oldingi ariza rad etildi": "Aldınǵı ótinish biykar etildi",
+  "Oldingi xabarlar": "Aldıńǵı xabarlar",
   "Oldini olish": "Aldın alıw",
   "Olib tashlash": "Alıp taslaw",
   "Olma qo'turiga qarshi nima qilay?": "Alma qotırına qarsı ne isleyin?",

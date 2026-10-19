@@ -159,7 +159,7 @@ class _ExpertsTab extends ConsumerWidget {
                   Text([e.specialization, e.district ?? e.region, if (e.experienceYears != null) trf('{0} yil tajriba', [e.experienceYears])].whereType<String>().join(' · '),
                       style: Theme.of(context).textTheme.bodySmall),
                   const SizedBox(height: 4),
-                  Row(children: [
+                  Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
                     if (e.rating != null) ...[Icon(Icons.star_rounded, size: 16, color: c.gold), Text(' ${e.rating!.toStringAsFixed(1)} · ', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700))],
                     Text(trf('{0} javob', [e.answers]), style: Theme.of(context).textTheme.bodySmall),
                   ]),
@@ -248,13 +248,15 @@ class _AiTab extends ConsumerWidget {
           ],
           const SizedBox(height: 14),
           SizedBox(
-            height: 52,
             width: double.infinity,
+            child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 52),
             child: FilledButton.icon(
               style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               onPressed: () => context.push('/assistant'),
               icon: const Icon(Icons.chat_bubble_outline_rounded),
               label: Text(tr('Suhbatni ochish'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            ),
             ),
           ),
         ]),

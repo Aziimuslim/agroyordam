@@ -237,9 +237,9 @@ class _TaskSheetState extends ConsumerState<_TaskSheet> {
             Text(r.description!, style: TextStyle(fontSize: 16, height: 1.45, color: c.text)),
           ],
           const SizedBox(height: 20),
-          SizedBox(
+          Container(
             width: double.infinity,
-            height: 52,
+            constraints: const BoxConstraints(minHeight: 52),
             child: FilledButton.icon(
               style: FilledButton.styleFrom(
                 backgroundColor: r.isCompleted ? c.cream2 : c.primary,
@@ -257,9 +257,9 @@ class _TaskSheetState extends ConsumerState<_TaskSheet> {
             ),
           ),
           const SizedBox(height: 8),
-          SizedBox(
+          Container(
             width: double.infinity,
-            height: 52,
+            constraints: const BoxConstraints(minHeight: 52),
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
                 foregroundColor: c.primaryDark,

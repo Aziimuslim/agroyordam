@@ -19,13 +19,12 @@ class BlockTitle extends StatelessWidget {
     final c = context.c;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Row(children: [
-        Expanded(
-          child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, children: [
-            Semantics(header: true, child: Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: c.text))),
-            if (trailing != null) trailing!,
-          ]),
-        ),
+      // Sig'masa amal keyingi qatorga o'tadi — sarlavha harfma-harf bo'linmaydi (QA14: 200% matn)
+      child: Wrap(alignment: WrapAlignment.spaceBetween, crossAxisAlignment: WrapCrossAlignment.center, children: [
+        Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, children: [
+          Semantics(header: true, child: Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: c.text))),
+          if (trailing != null) trailing!,
+        ]),
         if (action != null)
           TextButton(
             style: TextButton.styleFrom(foregroundColor: c.text, minimumSize: const Size(44, 44), padding: const EdgeInsets.symmetric(horizontal: 8)),

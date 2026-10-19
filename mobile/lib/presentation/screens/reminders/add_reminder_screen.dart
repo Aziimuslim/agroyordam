@@ -391,8 +391,8 @@ class _AddReminderState extends ConsumerState<AddReminderScreen> {
                 ]),
               ),
             const SizedBox(height: 20),
-            SizedBox(
-              height: 52,
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 52),
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                 onPressed: _loading ? null : _save,

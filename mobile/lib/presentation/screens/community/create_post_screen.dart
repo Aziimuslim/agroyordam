@@ -200,8 +200,8 @@ class _CreatePostState extends ConsumerState<CreatePostScreen> {
                 ),
               ])
             else
-              SizedBox(
-                height: 52,
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 52),
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(foregroundColor: c.primaryDark, side: BorderSide(color: c.primary, width: 1.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                   onPressed: _pick,
@@ -217,8 +217,8 @@ class _CreatePostState extends ConsumerState<CreatePostScreen> {
                 child: Text(_error!, style: TextStyle(color: c.danger, fontSize: 15)),
               ),
             const SizedBox(height: 20),
-            SizedBox(
-              height: 52,
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 52),
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                 onPressed: _loading ? null : _publish,

@@ -30,8 +30,22 @@
   <link rel="icon" type="image/png" href="favicon.png"/>
 
   <title>AgroYordam</title>
-  <meta name="theme-color" content="#0F3D27">
-  <style>html,body{background:#FBF1E0;margin:0}</style>
+  <meta name="theme-color" content="#FBF6EA" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#101912" media="(prefers-color-scheme: dark)">
+  <!-- TZ DM01: Flutter yuklanguncha fon tanlangan mavzuga mos (oq chaqnash yo'q) -->
+  <style>html,body{background:#FBF6EA;margin:0}@media (prefers-color-scheme: dark){html,body{background:#101912}}</style>
+  <script>
+    try {
+      var m = JSON.parse(localStorage.getItem('flutter.agro_theme_mode') || 'null');
+      if (m === 'dark' || m === 'light') {
+        var bg = m === 'dark' ? '#101912' : '#FBF6EA';
+        var st = document.createElement('style');
+        st.textContent = 'html,body{background:' + bg + ' !important}';
+        document.head.appendChild(st);
+        document.querySelectorAll('meta[name="theme-color"]').forEach(function (e) { e.setAttribute('content', bg); });
+      }
+    } catch (e) {}
+  </script>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>

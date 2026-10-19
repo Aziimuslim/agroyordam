@@ -45,6 +45,8 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
   Timer? _typingTimer;
   AppUser? _other;
   bool _blocked = false;
+  static const _page = 50;
+  bool _hasOlder = false, _loadingOlder = false;
 
   String? get _myId => ref.read(currentUserProvider)?.id;
 
@@ -71,6 +73,7 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
         _messages
           ..clear()
           ..addAll(msgs);
+        _hasOlder = msgs.length >= _page;
         _loading = false;
       });
       _toBottom(force: true);
@@ -136,6 +139,28 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
             }
           });
         }
+    }
+  }
+
+  /// Eski xabarlar: ro'yxat tepasiga qo'shiladi, ko'rinayotgan joy siljimaydi.
+  Future<void> _loadOlder() async {
+    if (_loadingOlder || _messages.isEmpty) return;
+    setState(() => _loadingOlder = true);
+    try {
+      final older = await ref.read(communityRepoProvider).messages(widget.id, before: _messages.first.id);
+      if (!mounted) return;
+      final before = _scroll.hasClients ? _scroll.position.maxScrollExtent : 0.0;
+      setState(() {
+        _messages.insertAll(0, older.where((m) => !_messages.any((x) => x.id == m.id)));
+        _hasOlder = older.length >= _page;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scroll.hasClients) _scroll.jumpTo(_scroll.offset + (_scroll.position.maxScrollExtent - before));
+      });
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _loadingOlder = false);
     }
   }
 
@@ -221,6 +246,14 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         children: [
+          if (_hasOlder)
+            Center(
+              child: TextButton.icon(
+                onPressed: _loadingOlder ? null : _loadOlder,
+                icon: _loadingOlder ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.history_rounded),
+                label: Text(tr('Oldingi xabarlar')),
+              ),
+            ),
           if (_messages.isEmpty && _out.isEmpty)
             EmptyNote(trf('{0} bilan suhbatni boshlang', [other?.fullName ?? tr('Suhbatdosh')]), icon: Icons.waving_hand_outlined),
           for (final m in _messages)

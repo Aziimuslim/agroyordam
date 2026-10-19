@@ -77,13 +77,20 @@ class CatalogImage extends StatelessWidget {
       color: c.cream2,
       alignment: Alignment.center,
       padding: const EdgeInsets.all(6),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.image_outlined, color: c.subtle, size: 22),
-        if (placeholderText != null) ...[
-          const SizedBox(height: 4),
-          Text(placeholderText!, textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: c.subtle)),
-        ],
-      ]),
+      // Kichik joyda yoki katta matnda toshmasin: sig'maganda faqat ikonka (QA14)
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.image_outlined, color: c.subtle, size: 22),
+          if (placeholderText != null) ...[
+            const SizedBox(height: 4),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: (width ?? 120).clamp(40, 400).toDouble()),
+              child: Text(placeholderText!, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: c.subtle)),
+            ),
+          ],
+        ]),
+      ),
     );
     final Widget img = asset != null
         ? Image.asset(asset!, width: width, height: height, fit: BoxFit.cover, errorBuilder: (_, __, ___) => placeholder)

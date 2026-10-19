@@ -319,8 +319,8 @@ class _OverviewTab extends ConsumerWidget {
       _Facts(crop: crop),
       if (!crop.isArchived) ...[
         const SizedBox(height: 24),
-        SizedBox(
-          height: 52,
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 52),
           child: FilledButton.icon(
             style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             onPressed: () => context.push('/diagnose?crop=${crop.id}'),
@@ -330,8 +330,8 @@ class _OverviewTab extends ConsumerWidget {
         ),
         ...[
           const SizedBox(height: 10),
-          SizedBox(
-            height: 52,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 52),
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
                 foregroundColor: c.primaryDark,
@@ -497,8 +497,8 @@ class _TasksTab extends ConsumerWidget {
       if (done.isNotEmpty) section(tr('Bajarilgan'), done.take(10).toList()),
       if (!crop.isArchived) ...[
         const SizedBox(height: 8),
-        SizedBox(
-          height: 52,
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 52),
           child: OutlinedButton.icon(
             style: OutlinedButton.styleFrom(foregroundColor: c.primaryDark, side: BorderSide(color: c.primary, width: 1.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             onPressed: () => context.push('/reminders/add?crop=${crop.id}'),
@@ -523,8 +523,8 @@ class _DiaryTab extends ConsumerWidget {
     final list = value.value;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (!crop.isArchived) ...[
-        SizedBox(
-          height: 52,
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 52),
           child: FilledButton.icon(
             style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             onPressed: () => addObservation(context, ref, crop.id),

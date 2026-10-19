@@ -74,7 +74,8 @@ class MessageBubble extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 10),
           child: Column(crossAxisAlignment: me ? CrossAxisAlignment.end : CrossAxisAlignment.start, children: [
             bubble,
-            Row(mainAxisSize: MainAxisSize.min, children: [
+            // Katta matnda toshib ketmasin — kerak bo'lsa keyingi qatorga o'tadi
+            Wrap(crossAxisAlignment: WrapCrossAlignment.center, alignment: me ? WrapAlignment.end : WrapAlignment.start, children: [
               if (time != null) Text(timeAgo(time), style: TextStyle(fontSize: 12.5, color: c.muted)),
               if (statusText != null) ...[
                 const SizedBox(width: 6),

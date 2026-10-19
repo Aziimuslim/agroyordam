@@ -243,8 +243,8 @@ class _PrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    return SizedBox(
-      height: 52,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 52),
       child: FilledButton.icon(
         style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
         onPressed: onPressed,
@@ -263,8 +263,8 @@ class _OutlineButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    return SizedBox(
-      height: 52,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 52),
       child: OutlinedButton.icon(
         style: OutlinedButton.styleFrom(
           foregroundColor: c.primaryDark,
