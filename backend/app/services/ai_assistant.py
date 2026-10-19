@@ -4,6 +4,7 @@ MVP: kalit so'zlar bo'yicha KB'dan qidiradi va javob tuzadi. Keyinchalik LLM
 provayderi shu `answer()` interfeysi ortiga ulanadi.
 """
 import re
+from collections.abc import AsyncIterator
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -61,3 +62,12 @@ async def answer(db: AsyncSession, question: str) -> str:
 
     return ("Savolingizni aniqroq yozing: qaysi ekin, qanday belgilar (dog'lar rangi, barg sarg'ayishi, so'lish) "
             "va qachondan beri kuzatilyapti. Yoki barg rasmini AI Tashxis orqali yuboring — aniqroq javob beraman.")
+
+
+async def answer_stream(db: AsyncSession, question: str) -> AsyncIterator[str]:
+    """Javob bo'laklari (TZ S10 streaming). Hozirgi KB javobi bir zumda tayyor bo'ladi va so'z guruhlari bilan
+    uzatiladi; LLM provayderi ulanganda shu interfeys orqali haqiqiy tokenlar keladi."""
+    text = await answer(db, question)
+    parts = re.findall(r"\S+\s*", text)
+    for i in range(0, len(parts), 6):
+        yield "".join(parts[i:i + 6])

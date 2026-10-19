@@ -411,4 +411,12 @@ void main() {
     expect([f.isActive, f.errorCode], [false, 422]);
     expect(AnalysisJob.fromJson({'id': 'j', 'status': 'cancelled'}).isActive, isFalse);
   });
+
+  test('0.8.13: AI suhbat JSON — qisman javob, bog\'lanish, suhbat', () {
+    final m = AIMessage.fromJson({'id': 'a', 'role': 'assistant', 'content': 'x', 'status': 'partial', 'reply_to_id': 'q', 'conversation_id': 'c'});
+    expect([m.isPartial, m.isUser, m.replyToId, m.conversationId], [true, false, 'q', 'c']);
+    expect(AIMessage.fromJson({'role': 'user', 'content': 'y'}).status, 'done'); // eski server
+    final c = AIConversation.fromJson({'id': 'c', 'title': 'Sug\'orish', 'last_message': 'z', 'message_count': 4});
+    expect([c.title, c.messageCount], ["Sug'orish", 4]);
+  });
 }

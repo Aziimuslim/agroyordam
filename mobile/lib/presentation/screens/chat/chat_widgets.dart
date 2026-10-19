@@ -155,6 +155,7 @@ class ChatInputBar extends StatefulWidget {
     required this.onSend,
     this.hint,
     this.icon = AppIcons.send,
+    this.sendTooltip,
     this.onChanged,
     this.maxLength = 4000,
     this.enabled = true,
@@ -170,6 +171,9 @@ class ChatInputBar extends StatefulWidget {
   final VoidCallback onSend;
   final String? hint;
   final IconData icon;
+
+  /// Tugma nomi (standart — "Yuborish"; AI oqimida — "To'xtatish").
+  final String? sendTooltip;
   final ValueChanged<String>? onChanged;
   final int maxLength;
   final bool enabled, busy;
@@ -255,7 +259,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
               ),
               const SizedBox(width: 8),
               Tooltip(
-                message: tr('Yuborish'),
+                message: widget.sendTooltip ?? tr('Yuborish'),
                 child: Material(
                   color: canSend ? c.primary : c.cream2,
                   shape: const CircleBorder(),

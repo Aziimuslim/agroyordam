@@ -167,7 +167,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         GoRoute(path: 'plan', builder: (_, s) => CarePlanScreen(key: ValueKey(s.matchedLocation), diagnosisId: s.pathParameters['id']!)),
       ]),
       GoRoute(path: '/diagnoses', builder: (_, __) => const DiagnosesHistoryScreen()),
-      GoRoute(path: '/assistant', builder: (_, s) => AssistantScreen(prefill: s.uri.queryParameters['q'])),
+      GoRoute(path: '/assistant', builder: (_, s) => AssistantScreen(prefill: s.uri.queryParameters['q'], conversationId: s.uri.queryParameters['c'])),
       GoRoute(path: '/catalog', builder: (_, s) => CatalogScreen(tab: s.uri.queryParameters['tab'] ?? 'plants'), routes: [
         GoRoute(path: 'plant/:id', builder: (_, s) => PlantScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
         GoRoute(path: 'disease/:id', builder: (_, s) => DiseaseScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),

@@ -29,8 +29,8 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S06 | Ekin tafsiloti | `/garden/:id?tab=` · `CropDetailScreen` | ✅ 0.8.1 | A04 da rasmli kuzatuv (UI); "o'chirish" TZ bo'yicha olib tashlandi |
 | S07 | Tashxislar tarixi | `/diagnoses` | ✅ 0.8.2 | Server pagination (hozir 200 tagacha bitta so'rov) |
 | S08 | Tashxis natijasi | `/diagnosis/:id` | ✅ 0.8.2 | Fikrga ixtiyoriy sabab yozish ⛔ (API faqat ha/yo'q) |
-| S09 | Maslahat (AI) | `/help?tab=ai` | ✅ 0.8.5 | Bugungi bepul limit ko'rsatiladi; tayyor savol faqat yozish maydoniga qo'yiladi. Suhbatlar ro'yxati ⛔ — backend'da bitta AI tarix |
-| S10 | AI suhbat | `/assistant?q=` | ✅ 0.8.5 | Yuborilmoqda/xato + qayta urinish, qoralama saqlanadi, avto-scroll faqat pastda bo'lsa. Streaming, to'xtatish, bir nechta suhbat ⛔ (backend) |
+| S09 | Maslahat (AI) | `/help?tab=ai` | ✅ 0.8.13 | Bugungi bepul limit; «Yangi suhbat»; «Suhbatlarim» — qidiruv (300 ms, nom va xabarlar bo'yicha), ochish, nomlash, o'chirish (tasdiq); tayyor savol faqat yozish maydoniga qo'yiladi |
+| S10 | AI suhbat | `/assistant?c=&q=` | ✅ 0.8.13 | Savol yuborilmoqda → tasdiqlandi → javob oqim (SSE) bilan; «To'xtatish» — qisman javob «to'xtatildi» deb saqlanadi; «Qayta javob» shu savolga bog'langan javobni almashtiradi (limitdan hisoblanmaydi); suhbat bo'yicha qoralama; menyu: yangi suhbat, nomlash, o'chirish. Javob hozir KB'dan bir zumda tuziladi — oqim interfeysi LLM ulanishiga tayyor |
 | S11 | Jamoat | `/help?tab=comm` | ✅ 0.8.5 | Barchasi/Obunalar/Tajriba/Savollar; like optimistik (xatoda qaytadi). |
 | S12 | Yangi post | `/community/new`, `?edit=` | ✅ 0.8.11 | Tur majburiy, sarlavha 3–100, matn 10–3000 (server ham tekshiradi); tahrirlash. 0–5 rasm (har biri ≤ 10 MB, jami ≤ 25 MB): preview, olib tashlash; rasm yuklanmasa post e'lon qilinmaydi, yuklanmagan rasm belgilanadi |
 | S13 | Post tafsiloti | `/community/:id?comment=1` | ✅ 0.8.11 | Agronom javoblari tepada; rasmlar — grid va swipe/zoom ko'ruvchi (←/→); izohga javob (bir daraja, composer ustida kontekst + bekor qilish); o'z izohini tahrirlash; o'chirilgan ota izoh «Izoh o'chirilgan», javoblari saqlanadi; shikoyat |
@@ -146,6 +146,14 @@ API: `POST /diagnoses/jobs` (multipart: `image`, `client_key`, ixtiyoriy `crop_i
 `GET /diagnoses/jobs/{id}`; `POST /diagnoses/jobs/{id}/cancel`. Worker shu jarayonda (asyncio, bir vaqtda 2 ta AI so'rov);
 natija yozishdan oldin `finishing` shartli UPDATE bilan egallanadi — bekor qilish bilan poyga bo'lmaydi.
 Limit: bugungi tashxislar + tugallanmagan ishlar (bekor qilingan/xato hisoblanmaydi). Eski `POST /diagnoses` (sinxron) eski ilovalar uchun qoldi.
+
+## 0.8.13 — AI suhbat (S09/S10)
+
+Migratsiya `0018`: `ai_conversations`; `ai_chat_messages.conversation_id/reply_to_id/status` (eski tarix har foydalanuvchi uchun
+«Oldingi suhbat»ga ko'chiriladi). API: `GET /ai/conversations?q=`, `PATCH|DELETE /ai/conversations/{id}`,
+`GET /ai/conversations/{id}/messages`, `POST /ai/messages` (SSE: `user` → `delta`… → `done` | `error`),
+`POST /ai/messages/{id}/retry` (SSE). Oqim uzilsa/to'xtatilsa kelgan qism `partial` bo'lib saqlanadi.
+Eski `POST /ai/chat` va `GET /ai/chat/history` eski ilovalar uchun qoldi.
 
 ## Ekin holati qoidasi (TZ 1-bo'lim)
 

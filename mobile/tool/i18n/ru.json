@@ -1339,5 +1339,21 @@
  "Tahlilda kutilmagan xato. Qayta urinib ko'ring.": "Непредвиденная ошибка анализа. Попробуйте снова.",
  "Tahlil topilmadi": "Анализ не найден",
  "Rasm sifati past. Yorug' joyda, bargga yaqinroq qilib qayta suratga oling.": "Низкое качество фото. Переснимите при хорошем свете, ближе к листу.",
- "Tahlil amalga oshmadi. Qayta urinib ko'ring.": "Анализ не выполнен. Попробуйте снова."
+ "Tahlil amalga oshmadi. Qayta urinib ko'ring.": "Анализ не выполнен. Попробуйте снова.",
+ "So'rov bajarilmadi": "Запрос не выполнен",
+ "Suhbat nomi": "Название чата",
+ "Suhbatni o'chirasizmi?": "Удалить чат?",
+ "«{0}» va undagi barcha xabarlar o'chiriladi.": "«{0}» и все его сообщения будут удалены.",
+ "Suhbat o'chirildi": "Чат удалён",
+ "AI javob bera olmadi. Qayta urinib ko'ring.": "ИИ не смог ответить. Попробуйте снова.",
+ "Javob uzildi. Qayta urinib ko'ring.": "Ответ прервался. Попробуйте снова.",
+ "Nomini o'zgartirish": "Переименовать",
+ "Suhbatni o'chirish": "Удалить чат",
+ "To'xtatish": "Остановить",
+ "Javob olish": "Получить ответ",
+ "To'xtatildi — javob to'liq emas": "Остановлено — ответ неполный",
+ "Qayta javob": "Ответить заново",
+ "Suhbatlarim": "Мои чаты",
+ "Suhbatlardan qidirish": "Поиск по чатам",
+ "Oldingi suhbat": "Предыдущий чат"
 }

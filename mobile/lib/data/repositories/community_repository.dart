@@ -1,3 +1,9 @@
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
+
+import '../../core/i18n/i18n.dart';
+import '../../core/network/api_exception.dart';
 import '../../domain/entities/entities.dart';
 import 'base.dart';
 
@@ -59,10 +65,56 @@ class CommunityRepository extends BaseRepository {
       call(() async => Conversation.fromJson((await dio.put('/conversations/$convId/mute', data: {'muted': muted})).data));
   Future<void> hideConversation(String convId) => call(() => dio.delete('/conversations/$convId'));
 
-  // AI Yordamchi
-  Future<List<AIMessage>> aiHistory() => call(() async => list((await dio.get('/ai/chat/history')).data, AIMessage.fromJson));
-  Future<AIMessage> aiAsk(String text) =>
-      call(() async => AIMessage.fromJson((await dio.post('/ai/chat', data: {'message': text})).data['reply']));
+  // AI Yordamchi (TZ S09/S10)
+  Future<List<AIConversation>> aiConversations({String? q}) => call(() async =>
+      list((await dio.get('/ai/conversations', queryParameters: {if (q != null && q.trim().isNotEmpty) 'q': q.trim()})).data, AIConversation.fromJson));
+  Future<List<AIMessage>> aiMessages(String convId) => call(() async => list((await dio.get('/ai/conversations/$convId/messages')).data, AIMessage.fromJson));
+  Future<void> aiRename(String convId, String title) => call(() => dio.patch('/ai/conversations/$convId', data: {'title': title}));
+  Future<void> aiDelete(String convId) => call(() => dio.delete('/ai/conversations/$convId'));
+
+  /// Savol yuborish — javob oqim (SSE) bilan keladi. [cancel] — "To'xtatish": server qisman javobni saqlaydi.
+  Stream<AIStreamEvent> aiSend(String text, {String? conversationId, CancelToken? cancel}) =>
+      _sse('/ai/messages', {'message': text, if (conversationId != null) 'conversation_id': conversationId}, cancel);
+
+  /// Qayta javob — aynan shu savolga bog'langan javob almashtiriladi (limitdan hisoblanmaydi).
+  Stream<AIStreamEvent> aiRetry(String messageId, {CancelToken? cancel}) => _sse('/ai/messages/$messageId/retry', null, cancel);
+
+  Stream<AIStreamEvent> _sse(String path, Object? body, CancelToken? cancel) async* {
+    final Response<ResponseBody> r;
+    try {
+      r = await dio.post<ResponseBody>(path,
+          data: body,
+          cancelToken: cancel,
+          options: Options(responseType: ResponseType.stream, headers: {'Accept': 'text/event-stream'}, validateStatus: (_) => true));
+    } catch (e) {
+      throw ApiException.from(e);
+    }
+    final lines = r.data!.stream.cast<List<int>>().transform(utf8.decoder).transform(const LineSplitter());
+    final code = r.statusCode ?? 0;
+    if (code >= 400) {
+      final raw = await lines.join('\n');
+      String msg = tr("So'rov bajarilmadi");
+      try {
+        final d = jsonDecode(raw)['detail'];
+        if (d is String) msg = tr(d);
+        if (d is List && d.isNotEmpty) msg = '${(d.first as Map)['msg']}'.replaceFirst('Value error, ', '');
+      } catch (_) {}
+      throw ApiException(msg, statusCode: code);
+    }
+    String? event;
+    final data = StringBuffer();
+    await for (final line in lines) {
+      if (line.isEmpty) {
+        if (event != null && data.isNotEmpty) yield AIStreamEvent(event, Map<String, dynamic>.from(jsonDecode(data.toString())));
+        event = null;
+        data.clear();
+      } else if (line.startsWith('event: ')) {
+        event = line.substring(7);
+      } else if (line.startsWith('data: ')) {
+        data.write(line.substring(6));
+      }
+    }
+  }
 
   // Bildirishnomalar
   Future<List<AppNotification>> notifications() =>

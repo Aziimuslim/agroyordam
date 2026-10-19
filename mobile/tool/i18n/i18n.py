@@ -19,6 +19,8 @@ EXTRA = ['Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba', 'Y
          "Topilmadi", "Xabar bo'sh", "Xabar topilmadi", "Yozuv o'chirilgan", "Email yoki telefon raqamidan kamida bittasi kerak",
          # Tarif imkoniyatlari (backend payment_service.PREMIUM_FEATURES, premium_screen: tr(f))
          "Joriy parol noto'g'ri", "Yangi parol eskisidan farq qilishi kerak",
+         # 0.8.13 AI suhbat (ai.py): eski tarix suhbati nomi
+         "Oldingi suhbat",
          # 0.8.12 A01 fon tahlili (analysis_jobs.py)
          "Rasm topilmadi. Qayta yuklang.", "Tahlil amalga oshmadi. Qayta urinib ko'ring.", "Tahlilda kutilmagan xato. Qayta urinib ko'ring.", "Tahlil topilmadi",
          "Rasm sifati past. Yorug' joyda, bargga yaqinroq qilib qayta suratga oling.",

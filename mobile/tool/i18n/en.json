@@ -1339,5 +1339,21 @@
  "Tahlilda kutilmagan xato. Qayta urinib ko'ring.": "Unexpected analysis error. Please try again.",
  "Tahlil topilmadi": "Analysis not found",
  "Rasm sifati past. Yorug' joyda, bargga yaqinroq qilib qayta suratga oling.": "Low photo quality. Retake it in good light, closer to the leaf.",
- "Tahlil amalga oshmadi. Qayta urinib ko'ring.": "Analysis failed. Please try again."
+ "Tahlil amalga oshmadi. Qayta urinib ko'ring.": "Analysis failed. Please try again.",
+ "So'rov bajarilmadi": "Request failed",
+ "Suhbat nomi": "Chat name",
+ "Suhbatni o'chirasizmi?": "Delete this chat?",
+ "«{0}» va undagi barcha xabarlar o'chiriladi.": "“{0}” and all its messages will be deleted.",
+ "Suhbat o'chirildi": "Chat deleted",
+ "AI javob bera olmadi. Qayta urinib ko'ring.": "The AI couldn't answer. Please try again.",
+ "Javob uzildi. Qayta urinib ko'ring.": "The answer was interrupted. Please try again.",
+ "Nomini o'zgartirish": "Rename",
+ "Suhbatni o'chirish": "Delete chat",
+ "To'xtatish": "Stop",
+ "Javob olish": "Get an answer",
+ "To'xtatildi — javob to'liq emas": "Stopped — the answer is incomplete",
+ "Qayta javob": "Regenerate",
+ "Suhbatlarim": "My chats",
+ "Suhbatlardan qidirish": "Search chats",
+ "Oldingi suhbat": "Previous chat"
 }

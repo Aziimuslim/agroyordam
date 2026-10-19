@@ -72,11 +72,47 @@ class Conversation {
 }
 
 class AIMessage {
-  AIMessage({required this.role, required this.content, this.createdAt});
+  AIMessage({this.id, required this.role, required this.content, this.conversationId, this.replyToId, this.status = 'done', this.createdAt});
+  final String? id, conversationId, replyToId;
   final String role, content;
+
+  /// done | partial — to'xtatilgan/uzilgan javob tugallangan deb ko'rsatilmaydi (TZ S10).
+  final String status;
   final DateTime? createdAt;
   bool get isUser => role == 'user';
+  bool get isPartial => status == 'partial';
 
-  factory AIMessage.fromJson(Map<String, dynamic> j) =>
-      AIMessage(role: j['role'], content: j['content'], createdAt: parseDate(j['created_at']));
+  factory AIMessage.fromJson(Map<String, dynamic> j) => AIMessage(
+        id: j['id'],
+        role: j['role'],
+        content: j['content'],
+        conversationId: j['conversation_id'],
+        replyToId: j['reply_to_id'],
+        status: j['status'] ?? 'done',
+        createdAt: parseDate(j['created_at']),
+      );
+}
+
+/// TZ S09: alohida AI suhbat.
+class AIConversation {
+  AIConversation({required this.id, required this.title, this.lastMessage, this.messageCount = 0, this.updatedAt});
+  final String id, title;
+  final String? lastMessage;
+  final int messageCount;
+  final DateTime? updatedAt;
+
+  factory AIConversation.fromJson(Map<String, dynamic> j) => AIConversation(
+        id: j['id'],
+        title: j['title'],
+        lastMessage: j['last_message'],
+        messageCount: j['message_count'] ?? 0,
+        updatedAt: parseDate(j['updated_at']),
+      );
+}
+
+/// AI oqim hodisasi: user (savol saqlandi) | delta (javob bo'lagi) | done (javob tugadi) | error.
+class AIStreamEvent {
+  AIStreamEvent(this.type, this.data);
+  final String type;
+  final Map<String, dynamic> data;
 }

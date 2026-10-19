@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +17,7 @@ import '../../../core/widgets/ds.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 import '../community/post_card.dart';
+import '../diagnosis/assistant_screen.dart';
 
 /// "Maslahat" — yordam olinadigan barcha joy: Agronomlar · AI yordamchi · Jamoat.
 class HelpScreen extends ConsumerStatefulWidget {
@@ -254,13 +257,15 @@ class _AiTab extends ConsumerWidget {
             child: FilledButton.icon(
               style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               onPressed: () => context.push('/assistant'),
-              icon: const Icon(Icons.chat_bubble_outline_rounded),
-              label: Text(tr('Suhbatni ochish'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              icon: const Icon(Icons.add_comment_outlined),
+              label: Text(tr('Yangi suhbat'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             ),
             ),
           ),
         ]),
       ),
+      const SizedBox(height: 16),
+      const _AiConversations(),
       const SizedBox(height: 16),
       Text(tr('Tayyor savollar'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: c.text)),
       const SizedBox(height: 4),
@@ -282,6 +287,96 @@ class _AiTab extends ConsumerWidget {
                   const SizedBox(width: 10),
                   Expanded(child: Text(e, style: TextStyle(fontSize: 15, color: c.text))),
                   Icon(Icons.chevron_right_rounded, color: c.muted),
+                ]),
+              ),
+            ),
+          ),
+        ),
+    ]);
+  }
+}
+
+/// TZ S09 tarix: o'z AI suhbatlari — qidiruv (300 ms), ochish, nomlash, o'chirish (tasdiq bilan).
+class _AiConversations extends ConsumerStatefulWidget {
+  const _AiConversations();
+  @override
+  ConsumerState<_AiConversations> createState() => _AiConversationsState();
+}
+
+class _AiConversationsState extends ConsumerState<_AiConversations> {
+  String _q = '';
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _menu(AIConversation conv) async {
+    final action = await showSheet<String>(context, title: aiTitle(conv.title), builder: (ctx) => Column(children: [
+          ListRow(icon: AppIcons.edit, label: tr("Nomini o'zgartirish"), onTap: () => Navigator.pop(ctx, 'rename')),
+          ListRow(icon: AppIcons.trash, label: tr("Suhbatni o'chirish"), danger: true, onTap: () => Navigator.pop(ctx, 'delete')),
+        ]));
+    if (!mounted || action == null) return;
+    if (action == 'rename') {
+      await renameAiConversation(context, ref, conv.id, conv.title);
+    } else {
+      await deleteAiConversation(context, ref, conv.id, conv.title);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final v = ref.watch(aiConversationsProvider(_q));
+    final list = v.value;
+    if (list == null && v.hasError) {
+      return BlockError(error: v.error!, what: tr('Suhbatlarim'), onRetry: () => ref.invalidate(aiConversationsProvider));
+    }
+    if (list == null) return const Skeleton(height: 72);
+    if (list.isEmpty && _q.isEmpty) return const SizedBox.shrink(); // hali suhbat yo'q — tayyor savollar yetarli
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text(tr('Suhbatlarim'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: c.text)),
+      const SizedBox(height: 8),
+      TextField(
+        onChanged: (s) {
+          _debounce?.cancel();
+          _debounce = Timer(const Duration(milliseconds: 300), () => mounted ? setState(() => _q = s.trim()) : null);
+        },
+        style: const TextStyle(fontSize: 16),
+        decoration: InputDecoration(
+          hintText: tr('Suhbatlardan qidirish'),
+          prefixIcon: const Icon(Icons.search_rounded),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+      ),
+      const SizedBox(height: 8),
+      if (list.isEmpty) EmptyNote(tr('Hech narsa topilmadi'), icon: Icons.search_off_rounded),
+      for (final conv in list)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Material(
+            color: c.card,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: c.border)),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => context.push(Uri(path: '/assistant', queryParameters: {'c': conv.id}).toString()),
+              onLongPress: () => _menu(conv),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 10, 2, 10),
+                child: Row(children: [
+                  Icon(AppIcons.bot, color: c.olive),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(aiTitle(conv.title), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: c.text)),
+                      if (conv.lastMessage != null)
+                        Text(conv.lastMessage!, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, color: c.muted)),
+                      Text(timeAgo(conv.updatedAt), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12.5, color: c.muted)),
+                    ]),
+                  ),
+                  IconButton(tooltip: tr('Amallar'), onPressed: () => _menu(conv), icon: Icon(Icons.more_vert_rounded, color: c.muted)),
                 ]),
               ),
             ),

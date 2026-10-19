@@ -148,6 +148,9 @@ final userPostsProvider =
 final postProvider = FutureProvider.autoDispose.family<Post, String>((ref, id) => ref.watch(communityRepoProvider).post(id));
 final commentsProvider = FutureProvider.autoDispose.family<List<Comment>, String>((ref, id) => ref.watch(communityRepoProvider).comments(id));
 final profileProvider = FutureProvider.autoDispose.family<UserProfile, String>((ref, id) => ref.watch(communityRepoProvider).profile(id));
+/// TZ S09: AI suhbatlar ro'yxati (qidiruv so'zi bo'yicha).
+final aiConversationsProvider = FutureProvider.autoDispose.family<List<AIConversation>, String>(
+    (ref, q) => ref.watch(communityRepoProvider).aiConversations(q: q));
 final conversationsProvider = FutureProvider.autoDispose<List<Conversation>>((ref) => ref.watch(communityRepoProvider).conversations());
 /// A02: barcha saqlanganlar (kalit: "kind:id") — tugmalar holati shundan olinadi.
 final bookmarksProvider = FutureProvider.autoDispose<List<Bookmark>>((ref) => ref.watch(communityRepoProvider).bookmarks());
