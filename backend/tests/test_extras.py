@@ -110,3 +110,22 @@ async def test_report_duplicate(client, user_headers):
     a = (await client.post(f"{API}/reports", json={"post_id": post["id"], "reason": "spam"}, headers=other)).json()
     b = (await client.post(f"{API}/reports", json={"post_id": post["id"], "reason": "spam"}, headers=other)).json()
     assert a["id"] == b["id"]
+
+
+async def test_notification_settings(client, user_headers):
+    other = auth(await register(client, "izohchi"))
+    s = (await client.get(f"{API}/users/me/notification-settings", headers=user_headers)).json()
+    assert s == {"tasks": True, "messages": True, "community": True, "service": True}
+    post = (await client.post(f"{API}/posts", json={"title": "Sozlama", "content": "Bildirishnoma sinovi", "category": "advice"}, headers=user_headers)).json()
+    await client.post(f"{API}/posts/{post['id']}/comments", json={"content": "Birinchi"}, headers=other)
+    assert [n["type"] for n in (await client.get(f"{API}/notifications", headers=user_headers)).json()] == ["comment"]
+    r = await client.put(f"{API}/users/me/notification-settings", json={"tasks": True, "messages": True, "community": False, "service": True}, headers=user_headers)
+    assert r.status_code == 200 and r.json()["community"] is False
+    await client.post(f"{API}/posts/{post['id']}/comments", json={"content": "Ikkinchi"}, headers=other)
+    await client.post(f"{API}/posts/{post['id']}/like", headers=other)
+    assert len((await client.get(f"{API}/notifications", headers=user_headers)).json()) == 1  # yangi izoh/layk yozilmadi
+    # xabarlar yoqiq — keladi
+    me_id = (await me(client, user_headers))["id"]
+    conv = (await client.post(f"{API}/conversations", json={"user_id": me_id}, headers=other)).json()
+    await client.post(f"{API}/conversations/{conv['id']}/messages", json={"content": "salom"}, headers=other)
+    assert "message" in [n["type"] for n in (await client.get(f"{API}/notifications", headers=user_headers)).json()]

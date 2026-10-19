@@ -11,6 +11,7 @@ import 'screens/people/blocked_screen.dart';
 import 'screens/people/user_search_screen.dart';
 import 'screens/saved/saved_screen.dart';
 import 'screens/settings/about_screen.dart';
+import 'screens/settings/notification_settings_screen.dart';
 import 'screens/settings/appearance_screen.dart';
 import 'screens/settings/language_screen.dart';
 import 'screens/auth/login_screen.dart';
@@ -182,6 +183,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings/appearance', builder: (_, __) => const AppearanceScreen()),
       GoRoute(path: '/settings/language', builder: (_, __) => const LanguageScreen()),
       GoRoute(path: '/settings/about', builder: (_, __) => const AboutScreen()),
+      GoRoute(path: '/settings/notifications', builder: (_, __) => const NotificationSettingsScreen()),
       GoRoute(path: '/settings/blocked', builder: (_, __) => const BlockedScreen()),
       GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
       GoRoute(path: '/subscription', redirect: (_, __) => '/premium'),

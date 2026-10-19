@@ -5,10 +5,26 @@ import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.models import Notification
+from app.models import Notification, User
 from app.websocket.manager import notifications_hub
 
 log = logging.getLogger(__name__)
+
+
+# A05: bildirishnoma turi → foydalanuvchi o'chira oladigan guruh. Ro'yxatda yo'q tur (masalan, parol tiklash
+# — xavfsizlik) doim yuboriladi.
+CATEGORIES: dict[str, str] = {
+    "reminder": "tasks",
+    "message": "messages", "question_message": "messages",
+    "comment": "community", "like": "community", "follow": "community",
+    "subscription": "service", "expert_approved": "service", "expert_rejected": "service", "moderation": "service",
+    "broadcast": "service", "diagnosis_ready": "service", "diagnosis_reviewed": "service", "question_closed": "service",
+}
+DEFAULT_PREFS = {"tasks": True, "messages": True, "community": True, "service": True}
+
+
+def prefs_of(user: User) -> dict[str, bool]:
+    return {**DEFAULT_PREFS, **{k: bool(v) for k, v in (user.notification_prefs or {}).items() if k in DEFAULT_PREFS}}
 
 
 async def notify(
@@ -18,7 +34,12 @@ async def notify(
     title: str,
     body: str | None = None,
     reference_id: uuid.UUID | None = None,
-) -> Notification:
+) -> Notification | None:
+    cat = CATEGORIES.get(type_)
+    if cat is not None:
+        user = await db.get(User, user_id)
+        if user is not None and not prefs_of(user).get(cat, True):
+            return None  # foydalanuvchi bu turdagi bildirishnomani o'chirgan
     n = Notification(user_id=user_id, type=type_, title=title, body=body, reference_id=reference_id)
     db.add(n)
     await db.flush()

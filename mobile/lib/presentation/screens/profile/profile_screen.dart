@@ -129,6 +129,7 @@ class ProfileScreen extends ConsumerWidget {
             onTap: () => context.push('/settings/appearance'),
           ),
           ListRow(icon: AppIcons.globe, label: tr('Ilova tili'), value: ref.watch(langProvider).label, onTap: () => context.push('/settings/language')),
+          ListRow(icon: Icons.notifications_active_outlined, label: tr('Bildirishnoma sozlamalari'), onTap: () => context.push('/settings/notifications')),
           ListRow(icon: Icons.block_outlined, label: tr('Bloklanganlar'), onTap: () => context.push('/settings/blocked')),
           ListRow(icon: Icons.info_outline_rounded, label: tr('Ilova haqida'), value: AppConfig.version, onTap: () => context.push('/settings/about')),
           if (user.isAdmin)

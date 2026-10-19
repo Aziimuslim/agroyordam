@@ -7,6 +7,7 @@ import '../../../core/i18n/i18n.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/utils/format.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 import 'landscape_header.dart';
@@ -16,16 +17,18 @@ String hhmm(DateTime t) {
   return '${l.hour.toString().padLeft(2, '0')}:${l.minute.toString().padLeft(2, '0')}';
 }
 
-IconData weatherIcon(Weather w) => switch (sceneFor(w.code)) {
+IconData weatherIcon(Weather w) => codeIcon(w.code, isDay: w.isDay);
+
+IconData codeIcon(int code, {bool isDay = true}) => switch (sceneFor(code)) {
       SkyScene.rain => Icons.water_drop_outlined,
       SkyScene.snow => Icons.ac_unit_rounded,
       SkyScene.fog => Icons.foggy,
-      SkyScene.clouds => w.isDay ? Icons.wb_cloudy_outlined : Icons.nights_stay_outlined,
-      SkyScene.clear => w.isDay ? Icons.wb_sunny_outlined : Icons.dark_mode_outlined,
+      SkyScene.clouds => isDay ? Icons.wb_cloudy_outlined : Icons.nights_stay_outlined,
+      SkyScene.clear => isDay ? Icons.wb_sunny_outlined : Icons.dark_mode_outlined,
     };
 
 /// A06 Hudud va ob-havo: joriy ob-havo, kasallik xavfi, manba va yangilanish vaqti; hudud tanlash
-/// (profilga saqlanadi — aniq GPS koordinata olinmaydi). Soatlik/kunlik prognoz hozircha API'da yo'q.
+/// (profilga saqlanadi — aniq GPS koordinata olinmaydi). Soatlik (24 soat) va kunlik (7 kun) prognoz — Open-Meteo.
 class WeatherScreen extends ConsumerStatefulWidget {
   const WeatherScreen({super.key});
   @override
@@ -211,9 +214,108 @@ class _Current extends StatelessWidget {
         ].join(' · '),
         style: TextStyle(color: c.muted, fontSize: 14),
       ),
-      const SizedBox(height: 4),
-      Text(tr('Soatlik va kunlik prognoz keyingi versiyada qo\'shiladi.'), style: TextStyle(color: c.muted, fontSize: 14)),
+      if (w.hourly.isNotEmpty) ...[
+        const SizedBox(height: 20),
+        Semantics(header: true, child: Text(tr('Keyingi 24 soat'), style: Theme.of(context).textTheme.titleLarge)),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 118,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: w.hourly.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (_, i) {
+              final h = w.hourly[i];
+              final label = i == 0 ? tr('Hozir') : '${h.time.hour.toString().padLeft(2, '0')}:00';
+              return Semantics(
+                label: [label, '${h.temperature.round()}°', if ((h.rainProbability ?? 0) > 0) trf("yog'in ehtimoli {0}%", [h.rainProbability])].join(', '),
+                excludeSemantics: true,
+                child: Container(
+                  width: 66,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: i == 0 ? c.oliveSoft : c.card,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: i == 0 ? c.olive : c.border),
+                  ),
+                  child: Column(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: i == 0 ? c.onOliveSoft : c.muted)),
+                    Icon(codeIcon(h.code, isDay: h.isDay), color: c.text, size: 22),
+                    Text('${h.temperature.round()}°', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: c.text)),
+                    Text((h.rainProbability ?? 0) > 0 ? '${h.rainProbability}%' : ' ', style: TextStyle(fontSize: 12.5, color: c.primaryDark, fontWeight: FontWeight.w700)),
+                  ]),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+      if (w.daily.isNotEmpty) ...[
+        const SizedBox(height: 20),
+        Semantics(header: true, child: Text(tr('7 kunlik prognoz'), style: Theme.of(context).textTheme.titleLarge)),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(color: c.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
+          child: Column(children: [
+            for (var i = 0; i < w.daily.length; i++)
+              _DayRow(d: w.daily[i], first: i == 0, last: i == w.daily.length - 1, minAll: w.daily.map((e) => e.tMin).reduce((a, b) => a < b ? a : b), maxAll: w.daily.map((e) => e.tMax).reduce((a, b) => a > b ? a : b)),
+          ]),
+        ),
+        const SizedBox(height: 8),
+        Text(tr("Prognoz — taxmin. Purkash va sug'orishni rejalashtirishda yaqin kunlarga ko'proq tayaning."), style: TextStyle(color: c.muted, fontSize: 14)),
+      ],
     ]);
+  }
+}
+
+class _DayRow extends StatelessWidget {
+  const _DayRow({required this.d, required this.first, required this.last, required this.minAll, required this.maxAll});
+  final DayForecast d;
+  final bool first, last;
+  final double minAll, maxAll;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final name = first ? tr('Bugun') : weekdayName(d.date);
+    final span = (maxAll - minAll).abs() < 1 ? 1.0 : maxAll - minAll;
+    return Semantics(
+      label: [name, tr(d.condition), trf('eng yuqori {0}°, eng past {1}°', [d.tMax.round(), d.tMin.round()]), if ((d.rainProbability ?? 0) > 0) trf("yog'in ehtimoli {0}%", [d.rainProbability])].join(', '),
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(border: last ? null : Border(bottom: BorderSide(color: c.border))),
+        child: Row(children: [
+          SizedBox(width: 92, child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 15, fontWeight: first ? FontWeight.w800 : FontWeight.w600, color: c.text))),
+          Icon(codeIcon(d.code), size: 22, color: c.text),
+          SizedBox(
+            width: 44,
+            child: Text((d.rainProbability ?? 0) > 0 ? '${d.rainProbability}%' : '', textAlign: TextAlign.center, style: TextStyle(fontSize: 12.5, color: c.primaryDark, fontWeight: FontWeight.w700)),
+          ),
+          Text('${d.tMin.round()}°', style: TextStyle(fontSize: 15, color: c.muted)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: LayoutBuilder(builder: (_, box) {
+              final left = (d.tMin - minAll) / span * box.maxWidth;
+              final width = ((d.tMax - d.tMin) / span * box.maxWidth).clamp(6.0, box.maxWidth);
+              return SizedBox(
+                height: 6,
+                child: Stack(children: [
+                  Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(color: c.cream2, borderRadius: BorderRadius.circular(3)))),
+                  Positioned(
+                    left: left.clamp(0.0, box.maxWidth - width),
+                    top: 0,
+                    bottom: 0,
+                    child: Container(width: width, decoration: BoxDecoration(color: c.olive, borderRadius: BorderRadius.circular(3))),
+                  ),
+                ]),
+              );
+            }),
+          ),
+          const SizedBox(width: 8),
+          Text('${d.tMax.round()}°', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: c.text)),
+        ]),
+      ),
+    );
   }
 }
 

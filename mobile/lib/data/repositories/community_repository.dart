@@ -58,6 +58,10 @@ class CommunityRepository extends BaseRepository {
   // Bildirishnomalar
   Future<List<AppNotification>> notifications() =>
       call(() async => list((await dio.get('/notifications')).data, AppNotification.fromJson));
+  Future<Map<String, bool>> notificationSettings() =>
+      call(() async => Map<String, bool>.from((await dio.get('/users/me/notification-settings')).data as Map));
+  Future<Map<String, bool>> saveNotificationSettings(Map<String, bool> v) =>
+      call(() async => Map<String, bool>.from((await dio.put('/users/me/notification-settings', data: v)).data as Map));
   Future<void> readAll() => call(() => dio.put('/notifications/read-all'));
   Future<void> readOne(String id) => call(() => dio.put('/notifications/$id/read'));
 }

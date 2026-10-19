@@ -316,4 +316,20 @@ void main() {
     final ch = Challenge.fromJson({'challenge_id': 'x', 'purpose': 'register', 'channel': 'sms', 'destination_masked': '+998 ••• •• 33', 'expires_in': 300, 'resend_in': 60, 'attempts_left': 5});
     expect(ch.devCode, isNull);
   });
+
+  test('Ob-havo prognozi: soatlik va kunlik', () {
+    final w = Weather.fromJson({
+      'city': 'Namangan', 'temperature': 21, 'humidity': 50, 'condition': 'ochiq osmon', 'risk': 'low', 'risk_text': '',
+      'hourly': [
+        {'time': '2026-10-20T14:00', 'temperature': 21.4, 'code': 0, 'rain_probability': 5, 'is_day': true},
+      ],
+      'daily': [
+        {'date': '2026-10-21', 't_max': 22, 't_min': 8, 'code': 61, 'condition': "yomg'ir", 'rain_mm': 2.5, 'rain_probability': 80},
+      ],
+    });
+    expect(w.hourly.single.time.hour, 14);
+    expect(w.daily.single.rainProbability, 80);
+    final old = Weather.fromJson({'city': 'X', 'temperature': 1, 'humidity': 1, 'condition': '', 'risk': 'low', 'risk_text': ''});
+    expect(old.hourly, isEmpty); // eski server — prognoz yo'q
+  });
 }

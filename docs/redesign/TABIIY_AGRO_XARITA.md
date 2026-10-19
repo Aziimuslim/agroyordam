@@ -57,12 +57,12 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S34 | Ro'yxatdan o'tish | `/auth/register` | ✅ 0.8.7 | Ism 2–80, kanal tanlovi, parol+tasdiq, rozilik (belgilanmagan, versiya va vaqt saqlanadi). Kanal bo'lsa hisob kod tasdig'idan keyin; productionda kanal yo'q — darhol yaratiladi va bu ochiq yoziladi |
 | S35 | Kodni tasdiqlash | `/auth/verify` | ✅ 0.8.7 (sinov rejimida) | 6 raqam, TTL 5 daq, qayta yuborish 60 s, 5 urinish, eski kod yaroqsiz, noto'g'ri/eskirgan farqlanadi. Haqiqiy SMS/email yuborish ⛔ (provayder) |
 | S36 | Parolni tiklash | `/auth/recovery` (`/forgot`) | ✅ 0.8.7 | Kod → yangi parol (recovery token 10 daq, bir martalik, login emas, barcha seanslar tugaydi). Kanal yo'q bo'lsa — administrator orqali yo'l ko'rsatiladi |
-| A01 | Tahlil jarayoni | S03 ichida bosqichlar | 🟡 | Yuklash → tahlil bosqichlari, yuklashda bekor qilish, 60 s xabari ✅; server job holatlari (queued/processing) ⛔ — backend sinxron |
+| A01 | Tahlil jarayoni | S03 ichida bosqichlar | 🟡 | Yuklash → tahlil bosqichlari, yuklashda bekor qilish, 60 s xabari ✅; server job holatlari (queued/processing) ⛔ — backend sinxron (AI bir necha soniyada javob beradi). Fon jarayoniga o'tkazish tashxis, agronom navbati, dataset va limit hisoblarini o'zgartiradi — alohida bosqich |
 | A02 | Saqlanganlar | `/saved` | ✅ 0.8.8 | Post/O'simlik/Kasallik/Vosita tablari, qidiruv; saqlash tugmasi S13/S20/S21/S22 da (optimistik, xatoda qaytadi); o'chirilgan element — placeholder |
 | A03 | Vazifa tafsiloti | pastki oyna | ✅ 0.8.3 | — (tahrir, seriya: faqat shu / shu va keyingilar) |
 | A04 | Kuzatuv/kundalik | S06 «Kundalik», `/garden/:id/log` | ✅ 0.8.8 | Sana, matn 0–2000, 5 tagacha rasm (jami 25 MB), tahrirlash/o'chirish, versiya konflikti (409), saqlanmagan o'zgarish dialogi |
-| A05 | Sozlamalar va hujjatlar | `/settings/about` | 🟡 0.8.6 | Versiya, yordam, manbalar, maxfiylik qoidalari; server manzili productionda yashirildi. Rasmiy shartlar/maxfiylik hujjati ⛔ (matn tasdiqlanmagan); bildirishnoma turlari sozlamasi ⛔ |
-| A06 | Hudud va ob-havo | — | ✅ 0.8.0 | Soatlik/kunlik prognoz (provayder qo'llaydi, keyingi bosqich) |
+| A05 | Sozlamalar va hujjatlar | `/settings/about`, `/settings/notifications` | 🟡 0.8.9 | Bildirishnoma turlari (vazifalar, xabarlar, jamoat, xizmat) — serverda saqlanadi, o'chirilgan tur yaratilmaydi; xavfsizlik xabarlari doim. Telefon push (FCM mijozi) ⛔; rasmiy shartlar/maxfiylik hujjati ⛔ |
+| A06 | Hudud va ob-havo | `/weather` | ✅ 0.8.9 | Keyingi 24 soat (harorat, yog'in ehtimoli) va 7 kunlik prognoz (min/max, yog'in), manba va yangilanish vaqti; hudud tanlash |
 | A07 | Foydalanuvchi qidiruvi | `/users/search` (S15 «Yangi suhbat») | ✅ 0.8.8 | Ism/@username, 2 belgidan; minimal ommaviy profil; bloklangan va faol bo'lmaganlar chiqmaydi; telefon bo'yicha qidiruv yo'q |
 | A08 | Modal oqimlar | shikoyat, bloklash, buyurtma xulosasi, tiklash, agronomga yuborish | ✅ 0.8.8 | Bloklash: ta'sir tushuntiriladi, tasdiq, `/settings/blocked` da blokdan chiqarish; shikoyat dublikati yaratilmaydi |
 
@@ -120,6 +120,11 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 - Bloklash ikki tomonlama: lenta va izohlarda yashiriladi, yangi suhbat/xabar (REST va WebSocket) va obuna taqiqlanadi, mavjud obunalar o'chadi.
 - `PUT/DELETE /crops/{id}/logs/{log_id}`: versiya mos kelmasa 409; rasm faqat serverga yuklangan media manzilidan.
 - Shikoyat: bir obyektga ko'rib chiqilmagan ikkinchi shikoyat yaratilmaydi.
+
+## 0.8.9 da backend'ga qo'shilgan
+
+- Migratsiya 0015: `users.notification_prefs`. `GET/PUT /users/me/notification-settings`; `notify()` foydalanuvchi o'chirgan turdagi bildirishnomani yaratmaydi (parol tiklash kabi xavfsizlik xabarlari bundan mustasno).
+- `GET /weather`: `hourly` (joriy soatdan 24 soat) va `daily` (7 kun: min/max, kod, yog'in, ehtimol). Kasallik xavfi avvalgidek faqat 48 soatlik yog'indan hisoblanadi.
 
 ## Ekin holati qoidasi (TZ 1-bo'lim)
 

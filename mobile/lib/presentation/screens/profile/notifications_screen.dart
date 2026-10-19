@@ -185,7 +185,9 @@ class _NotificationsState extends ConsumerState<NotificationsScreen> {
       maxWidth: 760,
       onRefresh: () async => ref.invalidate(notificationsProvider),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        TopBar(title: tr('Bildirishnomalar'), subtitle: unread > 0 ? trf('{0} ta yangi', [unread]) : null),
+        TopBar(title: tr('Bildirishnomalar'), subtitle: unread > 0 ? trf('{0} ta yangi', [unread]) : null, actions: [
+          IconButton(tooltip: tr('Bildirishnoma sozlamalari'), onPressed: () => context.push('/settings/notifications'), icon: Icon(Icons.tune_rounded, color: context.c.text)),
+        ]),
         Row(children: [
           Expanded(
             child: ChipTabs(

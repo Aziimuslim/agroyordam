@@ -39,6 +39,8 @@ class User(Base):
     work_hours: Mapped[str | None] = mapped_column(String(100))  # agronom: "Du–Ju, 9:00–18:00"
     education: Mapped[str | None] = mapped_column(String(255))  # agronom: o'qigan joyi
     skills: Mapped[list | None] = mapped_column(JSON)  # agronom: yo'nalishlari (ekinlar, mavzular)
+    # A05: bildirishnoma turlari {"tasks","messages","community","service"} → bool; null — hammasi yoqiq
+    notification_prefs: Mapped[dict | None] = mapped_column(JSON)
     terms_version: Mapped[str | None] = mapped_column(String(40))  # rozilik berilgan qoidalar versiyasi (TZ S34)
     terms_accepted_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = created_at_col()

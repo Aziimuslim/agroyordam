@@ -101,8 +101,14 @@ class Weather {
     this.isDay = true,
     this.updatedAt,
     this.region,
+    this.hourly = const [],
+    this.daily = const [],
   });
   final String city, condition, risk, riskText;
+
+  /// A06: keyingi 24 soat va 7 kun (provayder bergan bo'lsa; hudud mahalliy vaqti).
+  final List<HourForecast> hourly;
+  final List<DayForecast> daily;
   final String? region;
   final double temperature, rainMm;
   final int humidity;
@@ -129,5 +135,42 @@ class Weather {
         code: (j['code'] as num?)?.toInt() ?? 0,
         isDay: j['is_day'] ?? true,
         updatedAt: parseDate(j['updated_at']),
+        hourly: [for (final h in (j['hourly'] as List? ?? const [])) HourForecast.fromJson(Map<String, dynamic>.from(h))],
+        daily: [for (final d in (j['daily'] as List? ?? const [])) DayForecast.fromJson(Map<String, dynamic>.from(d))],
+      );
+}
+
+/// Soatlik prognoz. `time` — hudud mahalliy vaqti (vaqt zonasi o'zgartirilmaydi).
+class HourForecast {
+  HourForecast({required this.time, required this.temperature, this.code = 0, this.rainProbability, this.isDay = true});
+  final DateTime time;
+  final double temperature;
+  final int code;
+  final int? rainProbability;
+  final bool isDay;
+  factory HourForecast.fromJson(Map<String, dynamic> j) => HourForecast(
+        time: DateTime.parse(j['time']),
+        temperature: (j['temperature'] as num).toDouble(),
+        code: (j['code'] as num?)?.toInt() ?? 0,
+        rainProbability: (j['rain_probability'] as num?)?.toInt(),
+        isDay: j['is_day'] ?? true,
+      );
+}
+
+class DayForecast {
+  DayForecast({required this.date, required this.tMax, required this.tMin, this.code = 0, this.condition = '', this.rainMm = 0, this.rainProbability});
+  final DateTime date;
+  final double tMax, tMin, rainMm;
+  final int code;
+  final String condition;
+  final int? rainProbability;
+  factory DayForecast.fromJson(Map<String, dynamic> j) => DayForecast(
+        date: DateTime.parse(j['date']),
+        tMax: (j['t_max'] as num).toDouble(),
+        tMin: (j['t_min'] as num).toDouble(),
+        code: (j['code'] as num?)?.toInt() ?? 0,
+        condition: j['condition'] ?? '',
+        rainMm: (j['rain_mm'] as num?)?.toDouble() ?? 0,
+        rainProbability: (j['rain_probability'] as num?)?.toInt(),
       );
 }

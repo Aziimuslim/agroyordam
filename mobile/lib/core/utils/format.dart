@@ -41,6 +41,9 @@ String formatDayLong([DateTime? d]) {
   return trf('{0}, {1}-{2}', [day, t.day, month]);
 }
 
+/// Hafta kuni nomi (tarjima qilingan): "Seshanba".
+String weekdayName(DateTime d) => tr(_weekdays[d.weekday - 1]);
+
 /// "12-oktabr" (yil va hafta kunisiz)
 String formatDayMonth(DateTime d) {
   final t = d.toLocal();

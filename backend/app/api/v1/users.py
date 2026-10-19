@@ -13,7 +13,7 @@ from app.core.security import hash_password, hash_refresh_token, verify_password
 from app.models import Follower, Post, RefreshToken, User, UserBlock
 from app.schemas.user import EXPERT_FIELDS, UserMe, UserProfile, UserPublic, UserUpdate
 from app.services import block_service
-from app.services.notification_service import notify
+from app.services.notification_service import notify, prefs_of
 from app.services.storage import get_storage, read_image
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -81,6 +81,26 @@ async def upload_avatar(file: UploadFile = File(...), user: User = Depends(get_c
     await db.commit()
     await db.refresh(user)
     return user
+
+
+class NotificationSettings(BaseModel):
+    tasks: bool = True
+    messages: bool = True
+    community: bool = True
+    service: bool = True
+
+
+@router.get("/me/notification-settings", response_model=NotificationSettings)
+async def get_notification_settings(me_: User = Depends(get_current_user)):
+    """A05: ilova ichidagi bildirishnoma turlari. Xavfsizlik xabarlari (parol tiklash) o'chirilmaydi."""
+    return NotificationSettings(**prefs_of(me_))
+
+
+@router.put("/me/notification-settings", response_model=NotificationSettings)
+async def put_notification_settings(body: NotificationSettings, me_: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    me_.notification_prefs = body.model_dump()
+    await db.commit()
+    return body
 
 
 @router.get("/search", response_model=list[UserPublic])
