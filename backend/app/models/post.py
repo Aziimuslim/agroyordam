@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, String, Text, Uuid
+from sqlalchemy import JSON, ForeignKey, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -16,7 +16,8 @@ class Post(Base):
     diagnosis_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("diagnoses.id", ondelete="SET NULL"))
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     content: Mapped[str | None] = mapped_column(Text)
-    image_url: Mapped[str | None] = mapped_column(String(255))
+    image_url: Mapped[str | None] = mapped_column(String(255))  # birinchi rasm (eski klientlar uchun)
+    image_urls: Mapped[list | None] = mapped_column(JSON)  # TZ S12: 0–5 rasm
     category: Mapped[str | None] = mapped_column(String(30))  # disease | question | experience | advice
     created_at: Mapped[datetime] = created_at_col()
     updated_at: Mapped[datetime] = updated_at_col()

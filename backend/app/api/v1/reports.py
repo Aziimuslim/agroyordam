@@ -8,6 +8,7 @@ from app.core.database import get_db
 from app.core.deps import get_current_user, require_admin
 from app.core.security import utcnow
 from app.models import Comment, Post, Report, User
+from app.services.community_service import remove_comment
 from app.schemas.community import ReportIn, ReportOut
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
@@ -54,7 +55,9 @@ async def resolve(rid: uuid.UUID, remove_content: bool = False, db: AsyncSession
     out = ReportOut.model_validate(r)
     if remove_content:
         target = await db.get(Comment, r.comment_id) if r.comment_id else await db.get(Post, r.post_id) if r.post_id else None
-        if target is not None:
+        if isinstance(target, Comment):
+            await remove_comment(db, target)
+        elif target is not None:
             await db.delete(target)  # shikoyat ham cascade bilan o'chadi
     await db.commit()
     return out

@@ -32,11 +32,11 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S09 | Maslahat (AI) | `/help?tab=ai` | ✅ 0.8.5 | Bugungi bepul limit ko'rsatiladi; tayyor savol faqat yozish maydoniga qo'yiladi. Suhbatlar ro'yxati ⛔ — backend'da bitta AI tarix |
 | S10 | AI suhbat | `/assistant?q=` | ✅ 0.8.5 | Yuborilmoqda/xato + qayta urinish, qoralama saqlanadi, avto-scroll faqat pastda bo'lsa. Streaming, to'xtatish, bir nechta suhbat ⛔ (backend) |
 | S11 | Jamoat | `/help?tab=comm` | ✅ 0.8.5 | Barchasi/Obunalar/Tajriba/Savollar; like optimistik (xatoda qaytadi). Bookmark ⛔ |
-| S12 | Yangi post | `/community/new`, `?edit=` | ✅ 0.8.5 | Tur majburiy, sarlavha 3–100, matn 10–3000 (server ham tekshiradi); tahrirlash. 5 tagacha rasm ⛔ (backend bitta `image_url`) |
-| S13 | Post tafsiloti | `/community/:id?comment=1` | ✅ 0.8.5 | Agronom javoblari tepada; izoh o'chirish/shikoyat (sabab majburiy); o'chirilgan post holati. Izohga javob ⛔, bookmark ⛔ |
+| S12 | Yangi post | `/community/new`, `?edit=` | ✅ 0.8.11 | Tur majburiy, sarlavha 3–100, matn 10–3000 (server ham tekshiradi); tahrirlash. 0–5 rasm (har biri ≤ 10 MB, jami ≤ 25 MB): preview, olib tashlash; rasm yuklanmasa post e'lon qilinmaydi, yuklanmagan rasm belgilanadi |
+| S13 | Post tafsiloti | `/community/:id?comment=1` | ✅ 0.8.11 | Agronom javoblari tepada; rasmlar — grid va swipe/zoom ko'ruvchi (←/→); izohga javob (bir daraja, composer ustida kontekst + bekor qilish); o'z izohini tahrirlash; o'chirilgan ota izoh «Izoh o'chirilgan», javoblari saqlanadi; shikoyat |
 | S14 | Fermer profili | `/users/:id` | ✅ 0.8.5 | Postlar/Haqida, obuna, xabar yozish, o'z profilida tahrirlash; telefon/manzil ko'rsatilmaydi. Bloklash ✅ 0.8.8 |
-| S15 | Xabarlar | `/messages` | ✅ 0.8.5 | Ism bo'yicha qidiruv, o'qilmaganlar, «Rasm» preview. A07 foydalanuvchi qidiruvi ⛔, suhbatni o'chirish/ovozsiz ⛔ |
-| S16 | Shaxsiy chat | `/messages/:id` | ✅ 0.8.5 | Yuborish REST orqali: yuborilmoqda → yuborildi/o'qildi yoki xato + qayta yuborish; «yozmoqda...»; soxta «Onlayn» olib tashlandi (backend'da presence yo'q). Rasm yuborish UI ⛔ |
+| S15 | Xabarlar | `/messages` | ✅ 0.8.11 | Ism bo'yicha qidiruv, o'qilmaganlar, «Rasm»/«N ta rasm» preview; menyu (⋮/uzoq bosish): o'qilgan deb belgilash, ovozsiz, o'z ro'yxatidan yashirish (yangi xabar bilan qaytadi) |
+| S16 | Shaxsiy chat | `/messages/:id` | ✅ 0.8.11 | REST orqali: yuborilmoqda → yuborildi → yetkazildi → o'qildi (oxirgi ikkisi server event) yoki xato + qayta yuborish/olib tashlash; 5 tagacha rasm; rasm ko'ruvchi; menyu: ovozsiz, profil, bloklash; «Yangi xabar» tugmasi; qoralama suhbat bo'yicha; soxta «Onlayn» yo'q |
 | S17 | O'simliklar | `/catalog?tab=plants` | ✅ 0.8.4 | — |
 | S18 | Kasalliklar | `/catalog?tab=diseases` | ✅ 0.8.4 | «Belgilarni solishtirish» alohida oqimi yo'q (solishtirish S21 ichida) |
 | S19 | Dorilar | `/catalog?tab=medicines` | ✅ 0.8.4 | Mintaqaviy ro'yxatdan o'tish ma'lumoti ⛔ |
@@ -129,6 +129,15 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 ## 0.8.10 — moslashuv, accessibility va qabul sinovlari
 
 Batafsil: [QA_HISOBOT.md](QA_HISOBOT.md). Backend: `GET /conversations/{id}/messages?before=` (eski xabarlar sahifasi).
+
+## 0.8.11 — Jamoat va chat kengaytmasi (S12, S13, S15, S16)
+
+Migratsiya `0016`: `posts.image_urls`, `comments.parent_id/reply_to_id/deleted_at`, `messages.image_urls/delivered_at`,
+`conversation_participants.muted/hidden_at`. API: `POST /posts` va `PUT /posts/{id}` — `image_urls` (0–5);
+`POST /posts/{id}/comments` — `reply_to_id`; `PUT /comments/{id}`; `POST /conversations/{id}/messages` — `image_urls` (≤ 5);
+`PUT /conversations/{id}/read`, `PUT /conversations/{id}/mute`, `DELETE /conversations/{id}` (faqat o'zidan yashirish).
+«Yetkazildi»: qabul qiluvchi realtime ulangan bo'lsa darhol, aks holda u suhbatlar/xabarlarni olganda; WS `delivered` event.
+Ovozsiz suhbatdan bildirishnoma yuborilmaydi. Eski klientlar uchun `image_url` (birinchi rasm) saqlanadi.
 
 ## Ekin holati qoidasi (TZ 1-bo'lim)
 

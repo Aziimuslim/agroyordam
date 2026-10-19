@@ -86,5 +86,5 @@ P0 va P1 darajadagi ochiq nuqson yo'q.
 - SMS/email provayderi (QA01, QA13) va rasmiy qoidalar matni — buyurtmachi qarori.
 - Push (QA11): Firebase loyihasi va ilovada FCM mijozi.
 - AI tahlil holatlari (QA06/A01): tahlilni fon jarayoniga o'tkazish.
-- 5 rasmli post va izohga javob (QA08), rasmli xabar va "delivered" (QA09) — backend kengaytmasi.
+- ~~5 rasmli post va izohga javob (QA08), rasmli xabar va "delivered" (QA09)~~ — 0.8.11 da bajarildi (e2e: post 5 rasm + ko'ruvchi, javob va o'chirilgan ota izoh, chatda rasm, yuborildi → yetkazildi → o'qildi; crawler S11–S16, A02: 1x 56, 200% 20, RU 320px 8 tekshiruv — 0 xato).
 - Haqiqiy qurilmada: kamera ruxsatlari (QA05), ekran o'quvchisi (QA14), Android splash vizual tekshiruvi.

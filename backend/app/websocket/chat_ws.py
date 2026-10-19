@@ -5,7 +5,8 @@ from sqlalchemy import select
 
 from app.core.database import SessionLocal
 from app.core.security import decode_access_token
-from app.models import ConversationParticipant, Message
+from app.models import ConversationParticipant
+from app.services import chat_service
 from app.services.chat_service import save_message
 from app.websocket.manager import chat_hub
 
@@ -42,27 +43,18 @@ async def chat_ws(websocket: WebSocket, conversation_id: uuid.UUID, token: str =
                 continue
             if kind == "read":
                 async with SessionLocal() as db:
-                    msgs = await db.scalars(
-                        select(Message).where(
-                            Message.conversation_id == conversation_id,
-                            Message.sender_id != user_id,
-                            Message.is_read.is_(False),
-                        )
-                    )
-                    for m in msgs:
-                        m.is_read = True
-                    await db.commit()
-                await chat_hub.send(key, {"event": "read", "user_id": str(user_id)})
+                    await chat_service.mark_read(db, user_id, conversation_id)
                 continue
             content = (data.get("content") or "").strip()
-            if not content and not data.get("image_url"):
+            images = [u for u in (data.get("image_urls") or ([data["image_url"]] if data.get("image_url") else [])) if isinstance(u, str) and u][:5]
+            if not content and not images:
                 continue
             async with SessionLocal() as db:
                 from app.api.v1.chat import blocked_conversation
 
                 if await blocked_conversation(db, conversation_id, user_id):
                     continue  # A08: bloklangan suhbatga yozilmaydi
-                await save_message(db, conversation_id, user_id, content[:4000], data.get("image_url"))
+                await save_message(db, conversation_id, user_id, content[:4000] or None, images)
                 await db.commit()
     except WebSocketDisconnect:
         pass

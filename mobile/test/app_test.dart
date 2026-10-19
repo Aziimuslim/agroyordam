@@ -9,9 +9,11 @@ import 'package:agroyordam/core/i18n/translit.dart';
 import 'package:agroyordam/core/storage/token_storage.dart';
 import 'package:agroyordam/core/theme/app_colors.dart';
 import 'package:agroyordam/core/utils/format.dart';
+import 'package:agroyordam/core/widgets/photos.dart';
 import 'package:agroyordam/domain/entities/entities.dart';
 import 'package:agroyordam/presentation/router.dart';
 import 'package:agroyordam/presentation/screens/auth/auth_widgets.dart';
+import 'package:agroyordam/presentation/screens/chat/chat_widgets.dart';
 import 'package:agroyordam/presentation/screens/expert/expert_shell.dart';
 import 'package:agroyordam/presentation/screens/reminders/today_tasks.dart';
 import 'package:flutter/material.dart';
@@ -366,5 +368,36 @@ void main() {
     expect(s.scale(32), closeTo(48, 0.01)); // 1.5x
     expect(s.scale(30) / 30, lessThan(1.6));
     expect(const NonlinearTextScaler(1).scale(20), 20);
+  });
+
+  test('0.8.11: post/izoh/xabar JSON — rasmlar ro\'yxati, javob, o\'chirilgan izoh, yetkazildi', () {
+    final author = {'id': 'u', 'full_name': 'Ali', 'username': 'ali', 'role': 'farmer'};
+    final p = Post.fromJson({'id': 'p', 'author': author, 'title': 'T', 'image_url': '/a.jpg', 'image_urls': ['/a.jpg', '/b.jpg']});
+    expect(p.imageUrls, ['/a.jpg', '/b.jpg']);
+    expect(Post.fromJson({'id': 'p', 'author': author, 'title': 'T', 'image_url': '/a.jpg'}).imageUrls, ['/a.jpg']); // eski server
+    expect(Post.fromJson({'id': 'p', 'author': author, 'title': 'T'}).imageUrls, isEmpty);
+    final gone = Comment.fromJson({'id': 'c', 'author': null, 'content': '', 'deleted': true});
+    expect(gone.deleted && gone.author == null, isTrue);
+    final r = Comment.fromJson({'id': 'r', 'author': author, 'content': 'x', 'parent_id': 'c', 'reply_to_id': 'c', 'reply_to_name': 'Vali'});
+    expect([r.parentId, r.replyToName], ['c', 'Vali']);
+    final m = ChatMessage.fromJson({'id': 'm', 'sender_id': 'u', 'image_urls': ['/1.jpg', '/2.jpg'], 'is_read': false, 'delivered': true});
+    expect([m.imageUrls.length, m.delivered, m.isRead], [2, true, false]);
+    expect(ChatMessage.fromJson({'id': 'm', 'sender_id': 'u', 'is_read': true}).delivered, isTrue); // eski server: o'qilgan = yetkazilgan
+    expect(m.copyWith(isRead: true).imageUrls.length, 2);
+  });
+
+  testWidgets('0.8.11: 5 rasmli grid "+1" ko\'rsatadi, xabar "Yetkazildi" holati', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(extensions: const [AppColors.light]),
+      home: Scaffold(
+        body: Column(children: [
+          SizedBox(width: 300, child: PhotoGrid(urls: [for (var i = 0; i < 5; i++) '/m/$i.jpg'])),
+          const MessageBubble(text: 'salom', me: true, state: MsgState.delivered),
+        ]),
+      ),
+    ));
+    expect(find.text('+1'), findsOneWidget);
+    expect(find.text('Yetkazildi'), findsOneWidget);
+    expect(kMaxPhotos, 5);
   });
 }

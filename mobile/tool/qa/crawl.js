@@ -17,6 +17,7 @@ const ROUTES = [
   ['A07', '/users/search'], ['A08', '/settings/blocked'], ['H', '/help'],
 ];
 const AUTH = [['S33', '/auth/login'], ['S34', '/auth/register'], ['S35', '/auth/verify'], ['S36', '/auth/recovery'], ['W', '/welcome']];
+const ONLY = process.env.ONLY ? process.env.ONLY.split(',') : null; // masalan ONLY=S12,S13,S15,S16
 const SIZES = (process.env.SIZES || '320,390,768,1440').split(',').map(Number);
 const SCHEMES = (process.env.SCHEMES || 'light,dark').split(',');
 const SCALE = Number(process.env.SCALE || 1); // 2 — 200% matn (brauzer shrift o'lchami)
@@ -38,7 +39,7 @@ const go = (p, u) => p.evaluate(u => { history.pushState({}, '', u); dispatchEve
     await p.evaluate(() => document.querySelector('flt-semantics-placeholder')?.click()); await sleep(1500);
     for (const w of SIZES) {
       await p.setViewportSize({ width: w, height: w >= 768 ? 900 : 760 });
-      for (const [id, r] of AUTH) {
+      for (const [id, r] of AUTH.filter(([id]) => !ONLY || ONLY.includes(id))) {
         errs = []; await go(p, r); await sleep(1500);
         if (w === 320 || w === 1440) await p.screenshot({ path: `${OUT}${id}_${w}_${scheme}${SCALE !== 1 ? '_x' + SCALE : ''}${process.env.LANG_CODE ? '_' + process.env.LANG_CODE : ''}.png` });
         report.push({ id, r, w, scheme, scale: SCALE, errs: [...new Set(errs)] });
@@ -51,7 +52,7 @@ const go = (p, u) => p.evaluate(u => { history.pushState({}, '', u); dispatchEve
     await p.keyboard.press('Enter'); await sleep(6000);
     for (const w of SIZES) {
       await p.setViewportSize({ width: w, height: w >= 768 ? 900 : 760 });
-      for (const [id, r] of ROUTES) {
+      for (const [id, r] of ROUTES.filter(([id]) => !ONLY || ONLY.includes(id))) {
         errs = []; await go(p, r); await sleep(2200);
         if (w === 320 || w === 1440) await p.screenshot({ path: `${OUT}${id}_${w}_${scheme}${SCALE !== 1 ? '_x' + SCALE : ''}${process.env.LANG_CODE ? '_' + process.env.LANG_CODE : ''}.png` });
         report.push({ id, r, w, scheme, scale: SCALE, errs: [...new Set(errs)] });

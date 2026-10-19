@@ -24,6 +24,7 @@ from app.services import model_ops
 from app.services.ai_client import AIServiceError, get_ai_client
 from app.services.review_service import USABLE
 from app.services.app_settings import EDITABLE, all_settings, audit, get_int
+from app.services.community_service import remove_comment
 from app.services.notification_service import notify
 
 router = APIRouter(prefix="/admin", tags=["Admin panel"], dependencies=[Depends(require_admin)])
@@ -343,7 +344,10 @@ async def hide_reported(body: ModerateIn, admin: User = Depends(require_admin), 
     what = "izohingiz" if body.kind == "comment" else "postingiz"
     col = Report.comment_id if body.kind == "comment" else Report.post_id
     await db.execute(delete(Report).where(col == target.id))
-    await db.delete(target)
+    if isinstance(target, Comment):
+        await remove_comment(db, target)  # javoblari bo'lsa "Izoh o'chirilgan" bo'lib qoladi
+    else:
+        await db.delete(target)
     await notify(db, author_id, "moderation", f"Jamoatdagi {what} olib tashlandi", "Jamoat qoidalariga mos kelmadi.")
     await audit(db, admin, "report_hide", f"Shikoyat bo'yicha {'izoh' if body.kind == 'comment' else 'post'} olib tashlandi", author_id)
     await db.commit()

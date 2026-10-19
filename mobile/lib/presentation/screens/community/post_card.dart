@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
-import '../../../core/config.dart';
 import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/widgets/photos.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 import 'report_sheet.dart';
@@ -92,7 +92,6 @@ class _PostCardState extends ConsumerState<PostCard> {
   Widget build(BuildContext context) {
     final c = context.c;
     final p = _p;
-    final img = AppConfig.mediaUrl(p.imageUrl);
     void open({bool comment = false}) => widget.detail ? null : context.push('/community/${p.id}${comment ? '?comment=1' : ''}');
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -135,17 +134,12 @@ class _PostCardState extends ConsumerState<PostCard> {
             IconButton(icon: Icon(Icons.more_vert_rounded, color: c.muted), onPressed: _menu, tooltip: tr('Amallar')),
           ]),
         ),
-        if (img != null)
-          Semantics(
-            button: !widget.detail,
+        // TZ S12/S13: rasmsiz postda bo'sh konteyner yo'q; lentada rasm postni ochadi, tafsilotda — swipe/zoom ko'ruvchi
+        if (p.imageUrls.isNotEmpty)
+          PhotoGrid(
+            urls: p.imageUrls,
             label: p.title,
-            child: GestureDetector(
-              onTap: widget.detail ? null : open,
-              child: AspectRatio(
-                aspectRatio: 16 / 10,
-                child: Image.network(img, fit: BoxFit.cover, errorBuilder: (_, __, ___) => ColoredBox(color: c.cream2, child: Icon(AppIcons.image, color: c.muted, size: 40))),
-              ),
-            ),
+            onTap: (i) => widget.detail ? showPhotoViewer(context, p.imageUrls, initial: i, label: p.title) : open(),
           ),
         InkWell(
           onTap: widget.detail ? null : open,

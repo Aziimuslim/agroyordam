@@ -1,12 +1,16 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+
+import '../../../core/config.dart';
 
 import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/utils/format.dart';
 
-/// Xabar holati (TZ S16): navbatda → yuborildi → o'qildi (faqat server event bilan) yoki xato.
-enum MsgState { pending, sent, read, failed }
+/// Xabar holati (TZ S16): navbatda → yuborildi → yetkazildi → o'qildi (oxirgi ikkisi faqat server event bilan) yoki xato.
+enum MsgState { pending, sent, delivered, read, failed }
 
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
@@ -18,9 +22,21 @@ class MessageBubble extends StatelessWidget {
     this.read,
     this.state,
     this.onRetry,
+    this.onRemove,
     this.label,
+    this.images = const [],
+    this.localImages = const [],
+    this.onImageTap,
   });
   final String text;
+
+  /// TZ S16: xabardagi rasmlar (server) yoki hali yuborilmagan rasmlar (qurilmada).
+  final List<String> images;
+  final List<Uint8List> localImages;
+  final ValueChanged<int>? onImageTap;
+
+  /// Yuborilmagan xabarni olib tashlash.
+  final VoidCallback? onRemove;
   final bool me, muted;
   final DateTime? time;
 
@@ -40,6 +56,7 @@ class MessageBubble extends StatelessWidget {
     final (statusIcon, statusText) = switch (st) {
       MsgState.pending => (Icons.schedule_rounded, tr('Yuborilmoqda')),
       MsgState.sent => (Icons.done_rounded, tr('Yuborildi')),
+      MsgState.delivered => (Icons.done_all_rounded, tr('Yetkazildi')),
       MsgState.read => (Icons.done_all_rounded, tr("O'qildi")),
       MsgState.failed => (Icons.error_outline_rounded, tr('Yuborilmadi')),
       null => (null, null),
@@ -63,7 +80,34 @@ class MessageBubble extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 4),
             child: Text(label!, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: c.olive)),
           ),
-        SelectableText(text, style: TextStyle(fontSize: 16, height: 1.45, color: st == MsgState.failed ? c.danger : fg)),
+        if (images.isNotEmpty || localImages.isNotEmpty)
+          Padding(
+            padding: EdgeInsets.only(bottom: text.isEmpty ? 0 : 8),
+            child: Wrap(spacing: 4, runSpacing: 4, children: [
+              for (var i = 0; i < images.length + localImages.length; i++)
+                Semantics(
+                  button: onImageTap != null && i < images.length,
+                  image: true,
+                  label: trf('Rasm {0}/{1}', [i + 1, images.length + localImages.length]),
+                  excludeSemantics: true,
+                  child: GestureDetector(
+                    onTap: onImageTap != null && i < images.length ? () => onImageTap!(i) : null,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: SizedBox(
+                        width: images.length + localImages.length == 1 ? 220 : 108,
+                        height: images.length + localImages.length == 1 ? 160 : 108,
+                        child: i < images.length
+                            ? Image.network(AppConfig.mediaUrl(images[i])!, fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => ColoredBox(color: c.cream2, child: Icon(AppIcons.image, color: c.muted)))
+                            : Image.memory(localImages[i - images.length], fit: BoxFit.cover),
+                      ),
+                    ),
+                  ),
+                ),
+            ]),
+          ),
+        if (text.isNotEmpty) SelectableText(text, style: TextStyle(fontSize: 16, height: 1.45, color: st == MsgState.failed ? c.danger : fg)),
       ]),
     );
     return Align(
@@ -79,7 +123,7 @@ class MessageBubble extends StatelessWidget {
               if (time != null) Text(timeAgo(time), style: TextStyle(fontSize: 12.5, color: c.muted)),
               if (statusText != null) ...[
                 const SizedBox(width: 6),
-                Icon(statusIcon, size: 15, color: st == MsgState.failed ? c.danger : c.muted),
+                Icon(statusIcon, size: 15, color: st == MsgState.failed ? c.danger : (st == MsgState.read ? c.primary : c.muted)),
                 const SizedBox(width: 3),
                 Text(statusText, style: TextStyle(fontSize: 12.5, color: st == MsgState.failed ? c.danger : c.muted)),
               ],
@@ -88,6 +132,12 @@ class MessageBubble extends StatelessWidget {
                   style: TextButton.styleFrom(minimumSize: const Size(44, 36), padding: const EdgeInsets.symmetric(horizontal: 8)),
                   onPressed: onRetry,
                   child: Text(tr('Qayta yuborish')),
+                ),
+              if (st == MsgState.failed && onRemove != null)
+                TextButton(
+                  style: TextButton.styleFrom(minimumSize: const Size(44, 36), padding: const EdgeInsets.symmetric(horizontal: 8), foregroundColor: c.danger),
+                  onPressed: onRemove,
+                  child: Text(tr('Olib tashlash')),
                 ),
             ]),
           ]),
@@ -111,6 +161,10 @@ class ChatInputBar extends StatefulWidget {
     this.busy = false,
     this.disabledText,
     this.autofocus = false,
+    this.top,
+    this.leading,
+    this.allowEmpty = false,
+    this.focusNode,
   });
   final TextEditingController controller;
   final VoidCallback onSend;
@@ -123,6 +177,16 @@ class ChatInputBar extends StatefulWidget {
   /// Yozib bo'lmaganda (post o'chirilgan, bloklangan) — tushuntirish.
   final String? disabledText;
   final bool autofocus;
+
+  /// Maydon ustidagi qism: javob konteksti yoki tanlangan rasmlar.
+  final Widget? top;
+
+  /// Maydon chapidagi tugma (masalan, rasm biriktirish).
+  final Widget? leading;
+
+  /// Matnsiz yuborish mumkin (masalan, faqat rasm).
+  final bool allowEmpty;
+  final FocusNode? focusNode;
 
   @override
   State<ChatInputBar> createState() => _ChatInputBarState();
@@ -156,7 +220,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
   Widget build(BuildContext context) {
     final c = context.c;
     final len = widget.controller.text.characters.length;
-    final canSend = widget.enabled && !widget.busy && widget.controller.text.trim().isNotEmpty && len <= widget.maxLength;
+    final canSend = widget.enabled && !widget.busy && (widget.allowEmpty || widget.controller.text.trim().isNotEmpty) && len <= widget.maxLength;
     return Container(
       padding: EdgeInsets.fromLTRB(12, 10, 12, 10 + MediaQuery.viewPaddingOf(context).bottom),
       decoration: BoxDecoration(color: c.card, border: Border(top: BorderSide(color: c.border))),
@@ -165,10 +229,14 @@ class _ChatInputBarState extends State<ChatInputBar> {
               padding: const EdgeInsets.symmetric(vertical: 10),
               child: Text(widget.disabledText!, textAlign: TextAlign.center, style: TextStyle(color: c.muted, fontSize: 15)),
             )
-          : Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          : Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              if (widget.top != null) Padding(padding: const EdgeInsets.only(bottom: 8), child: widget.top!),
+              Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              if (widget.leading != null) ...[widget.leading!, const SizedBox(width: 4)],
               Expanded(
                 child: TextField(
                   controller: widget.controller,
+                  focusNode: widget.focusNode,
                   enabled: widget.enabled,
                   autofocus: widget.autofocus,
                   onChanged: widget.onChanged,
@@ -204,6 +272,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
                   ),
                 ),
               ),
+            ]),
             ]),
     );
   }

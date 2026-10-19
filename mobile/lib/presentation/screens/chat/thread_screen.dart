@@ -11,21 +11,25 @@ import '../../../core/config.dart';
 import '../../../core/i18n/i18n.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/widgets/blocks.dart';
+import '../../../core/widgets/photos.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 import 'chat_widgets.dart';
 
 class _Out {
-  _Out(this.text) : at = DateTime.now();
+  _Out(this.text, this.photos) : at = DateTime.now();
   final String text;
+  final List<PickedPhoto> photos;
   final DateTime at;
   bool failed = false;
 }
 
-/// S16 Shaxsiy suhbat. Yuborish doim REST orqali — natija aniq: yuborilmoqda → yuborildi / xato + qayta yuborish.
-/// WebSocket faqat yangi xabar, "yozmoqda" va "o'qildi" hodisalarini oladi; ulanmasa ekran REST bilan ishlayveradi.
-/// Suhbatdoshning onlayn holati backend'da yo'q — shuning uchun ko'rsatilmaydi.
+/// S16 Shaxsiy suhbat. Yuborish doim REST orqali — natija aniq: yuborilmoqda → yuborildi → yetkazildi → o'qildi
+/// (oxirgi ikkisi faqat server event bilan) yoki xato + qayta yuborish / olib tashlash. 1 yuborishda 5 tagacha rasm (jami ≤ 25 MB).
+/// WebSocket yangi xabar, "yozmoqda", "yetkazildi" va "o'qildi" hodisalarini oladi; ulanmasa ekran REST bilan ishlayveradi.
+/// Suhbatdoshning onlayn holati backend'da yo'q — shuning uchun ko'rsatilmaydi. Qoralama suhbat bo'yicha saqlanadi.
 class ThreadScreen extends ConsumerStatefulWidget {
   const ThreadScreen({super.key, required this.id});
   final String id;
@@ -34,7 +38,11 @@ class ThreadScreen extends ConsumerStatefulWidget {
 }
 
 class _ThreadState extends ConsumerState<ThreadScreen> {
-  final _ctrl = TextEditingController();
+  /// TZ S16: qoralama conversationId bo'yicha (ilova ochiq turgan davomida).
+  static final Map<String, String> _drafts = {};
+  late final _ctrl = TextEditingController(text: _drafts[widget.id]);
+  final List<PickedPhoto> _pending = [];
+  bool _muted = false, _newBelow = false;
   final _scroll = ScrollController();
   final List<ChatMessage> _messages = [];
   final List<_Out> _out = [];
@@ -53,6 +61,9 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
   @override
   void initState() {
     super.initState();
+    _scroll.addListener(() {
+      if (_newBelow && _nearBottom) setState(() => _newBelow = false);
+    });
     _load();
   }
 
@@ -70,6 +81,7 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
         final conv = convs.where((c) => c.id == widget.id).firstOrNull;
         _other = conv?.other;
         _blocked = conv?.blocked ?? false;
+        _muted = conv?.muted ?? false;
         _messages
           ..clear()
           ..addAll(msgs);
@@ -119,9 +131,22 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
     switch (data['event']) {
       case 'message':
         final m = ChatMessage.fromJson(Map<String, dynamic>.from(data['data']));
+        final wasNear = _nearBottom;
         _add(m);
-        if (m.senderId != _myId) _ws?.sink.add(jsonEncode({'type': 'read'}));
+        if (m.senderId != _myId) {
+          _ws?.sink.add(jsonEncode({'type': 'read'}));
+          if (!wasNear) setState(() => _newBelow = true); // pastga avtomatik tortilmaydi — tugma ko'rsatiladi
+        }
         _toBottom();
+      case 'delivered':
+        if (data['user_id'] != _myId) {
+          setState(() {
+            for (var i = 0; i < _messages.length; i++) {
+              final m = _messages[i];
+              if (!m.delivered && m.senderId == _myId) _messages[i] = m.copyWith(delivered: true);
+            }
+          });
+        }
       case 'typing':
         if (data['user_id'] != _myId) {
           setState(() => _typing = true);
@@ -133,9 +158,7 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
           setState(() {
             for (var i = 0; i < _messages.length; i++) {
               final m = _messages[i];
-              if (!m.isRead && m.senderId == _myId) {
-                _messages[i] = ChatMessage(id: m.id, senderId: m.senderId, content: m.content, imageUrl: m.imageUrl, isRead: true, createdAt: m.createdAt);
-              }
+              if (!m.isRead && m.senderId == _myId) _messages[i] = m.copyWith(isRead: true, delivered: true);
             }
           });
         }
@@ -175,7 +198,11 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
   Future<void> _deliver(_Out o) async {
     setState(() => o.failed = false);
     try {
-      final m = await ref.read(communityRepoProvider).send(widget.id, o.text);
+      // Rasmlar avval yuklanadi; yuklanganlari qayta urinishda qayta yuklanmaydi
+      final garden = ref.read(gardenRepoProvider);
+      final ok = await uploadPhotos(o.photos, (b, n) => garden.upload(b, n, folder: 'messages'), () => mounted ? setState(() {}) : null);
+      if (!ok) throw StateError('upload');
+      final m = await ref.read(communityRepoProvider).send(widget.id, o.text, images: [for (final p in o.photos) p.url!]);
       if (!mounted) return;
       setState(() => _out.remove(o));
       _add(m); // WS orqali avvalroq kelgan bo'lsa takrorlanmaydi
@@ -190,12 +217,54 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
 
   void _send() {
     final t = _ctrl.text.trim();
-    if (t.isEmpty) return;
+    if (t.isEmpty && _pending.isEmpty) return;
     _ctrl.clear();
-    final o = _Out(t);
-    setState(() => _out.add(o));
+    _drafts.remove(widget.id);
+    final o = _Out(t, [..._pending]);
+    setState(() {
+      _out.add(o);
+      _pending.clear();
+    });
     _toBottom(force: true);
     _deliver(o);
+  }
+
+  Future<void> _attach() async {
+    final picked = await pickPhotos(context, current: _pending);
+    if (picked.isNotEmpty && mounted) setState(() => _pending.addAll(picked));
+  }
+
+  Future<void> _toggleMute() async {
+    try {
+      final conv = await ref.read(communityRepoProvider).muteConversation(widget.id, !_muted);
+      if (!mounted) return;
+      setState(() => _muted = conv.muted);
+      ref.invalidate(conversationsProvider);
+      showToast(context, _muted ? tr("Suhbat ovozsiz — bildirishnoma kelmaydi") : tr('Bildirishnomalar yoqildi'));
+    } catch (e) {
+      if (mounted) showError(context, e);
+    }
+  }
+
+  /// A08: suhbatdan turib bloklash (tasdiq bilan). Blokdan chiqarish — profil yoki "Bloklanganlar".
+  Future<void> _block() async {
+    final other = _other;
+    if (other == null) return;
+    final ok = await confirm(context, trf('{0} bloklansinmi?', [other.fullName]),
+        tr("Bir-biringizning postlari, izohlari va qidiruvdagi profilingiz ko'rinmaydi, yozishib bo'lmaydi, obunalar bekor qilinadi. Blokdan chiqarish: Profil → Bloklanganlar."),
+        ok: tr('Bloklash'), danger: true);
+    if (!ok || !mounted) return;
+    try {
+      await ref.read(communityRepoProvider).block(other.id, true);
+      ref.invalidate(conversationsProvider);
+      ref.invalidate(feedProvider);
+      ref.invalidate(blocksProvider);
+      if (!mounted) return;
+      setState(() => _blocked = true);
+      showToast(context, trf('{0} bloklandi', [other.fullName]));
+    } catch (e) {
+      if (mounted) showError(context, e);
+    }
   }
 
   DateTime _lastTyping = DateTime(2000);
@@ -218,6 +287,12 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
 
   @override
   void dispose() {
+    final draft = _ctrl.text.trim();
+    if (draft.isEmpty) {
+      _drafts.remove(widget.id);
+    } else {
+      _drafts[widget.id] = _ctrl.text;
+    }
     _sub?.cancel();
     _ws?.sink.close();
     _typingTimer?.cancel();
@@ -258,13 +333,23 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
             EmptyNote(trf('{0} bilan suhbatni boshlang', [other?.fullName ?? tr('Suhbatdosh')]), icon: Icons.waving_hand_outlined),
           for (final m in _messages)
             MessageBubble(
-              text: (m.content ?? '').isNotEmpty ? m.content! : tr('Rasm'),
+              text: m.content ?? '',
+              images: m.imageUrls,
+              onImageTap: (i) => showPhotoViewer(context, m.imageUrls, initial: i, label: other?.fullName ?? ''),
               me: m.senderId == me?.id,
               time: m.createdAt,
-              state: m.senderId == me?.id ? (m.isRead ? MsgState.read : MsgState.sent) : null,
+              state: m.senderId == me?.id ? (m.isRead ? MsgState.read : (m.delivered ? MsgState.delivered : MsgState.sent)) : null,
             ),
           for (final o in _out)
-            MessageBubble(text: o.text, me: true, time: o.at, state: o.failed ? MsgState.failed : MsgState.pending, onRetry: () => _deliver(o)),
+            MessageBubble(
+              text: o.text,
+              localImages: [for (final p in o.photos) p.bytes!],
+              me: true,
+              time: o.at,
+              state: o.failed ? MsgState.failed : MsgState.pending,
+              onRetry: () => _deliver(o),
+              onRemove: () => setState(() => _out.remove(o)),
+            ),
         ],
       );
     }
@@ -313,6 +398,22 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
                     icon: Icon(Icons.arrow_back_rounded, color: c.text),
                   ),
                   Expanded(child: header),
+                  if (_muted) Tooltip(message: tr('Ovozsiz'), child: Icon(Icons.notifications_off_outlined, color: c.muted, size: 20)),
+                  if (!_loading && _error == null)
+                    PopupMenuButton<String>(
+                      tooltip: tr('Amallar'),
+                      icon: Icon(Icons.more_vert_rounded, color: c.text),
+                      onSelected: (v) => switch (v) {
+                        'mute' => _toggleMute(),
+                        'block' => _block(),
+                        _ => other == null ? null : context.push('/users/${other.id}'),
+                      },
+                      itemBuilder: (_) => [
+                        PopupMenuItem(value: 'mute', child: Text(_muted ? tr('Ovozni yoqish') : tr('Ovozsiz qilish'))),
+                        if (other != null) PopupMenuItem(value: 'profile', child: Text(tr('Profilni ko\'rish'))),
+                        if (other != null && !_blocked) PopupMenuItem(value: 'block', child: Text(tr('Bloklash'))),
+                      ],
+                    ),
                 ]),
               ),
               if (!_loading && _error == null && !_live)
@@ -323,12 +424,41 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
                   child: Text(tr("Jonli yangilanish o'chiq — yangi xabarlar uchun pastga torting yoki qayta oching"),
                       style: TextStyle(fontSize: 13, color: c.muted)),
                 ),
-              Expanded(child: _loading || _error != null ? body : RefreshIndicator(onRefresh: _load, child: body)),
+              Expanded(
+                child: Stack(children: [
+                  Positioned.fill(child: _loading || _error != null ? body : RefreshIndicator(onRefresh: _load, child: body)),
+                  if (_newBelow)
+                    Positioned(
+                      bottom: 12,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: FilledButton.icon(
+                          style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, minimumSize: const Size(0, 44)),
+                          onPressed: () {
+                            setState(() => _newBelow = false);
+                            _toBottom(force: true);
+                          },
+                          icon: const Icon(Icons.arrow_downward_rounded, size: 18),
+                          label: Text(tr('Yangi xabar')),
+                        ),
+                      ),
+                    ),
+                ]),
+              ),
               ChatInputBar(
                 controller: _ctrl,
                 onSend: _send,
                 onChanged: _onChanged,
                 maxLength: 4000,
+                allowEmpty: _pending.isNotEmpty,
+                top: _pending.isEmpty ? null : PhotoPickerGrid(photos: _pending, size: 64, onRemove: (i) => setState(() => _pending.removeAt(i))),
+                leading: IconButton(
+                  tooltip: trf("Rasm biriktirish ({0}/{1})", [_pending.length, kMaxPhotos]),
+                  style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+                  onPressed: _pending.length >= kMaxPhotos ? null : _attach,
+                  icon: Icon(AppIcons.image, color: _pending.length >= kMaxPhotos ? c.muted : c.primaryDark),
+                ),
                 enabled: !_loading && _error == null && !_blocked,
                 disabledText: notFound
                     ? tr("Suhbat mavjud emas — xabar yozib bo'lmaydi")

@@ -20,7 +20,9 @@ class CommunityRepository extends BaseRepository {
   Future<Post> like(String id, bool like) =>
       call(() async => Post.fromJson((like ? await dio.post('/posts/$id/like') : await dio.delete('/posts/$id/like')).data));
   Future<List<Comment>> comments(String id) => call(() async => list((await dio.get('/posts/$id/comments')).data, Comment.fromJson));
-  Future<void> addComment(String id, String text) => call(() => dio.post('/posts/$id/comments', data: {'content': text}));
+  Future<void> addComment(String id, String text, {String? replyTo}) =>
+      call(() => dio.post('/posts/$id/comments', data: {'content': text, if (replyTo != null) 'reply_to_id': replyTo}));
+  Future<void> editComment(String id, String text) => call(() => dio.put('/comments/$id', data: {'content': text}));
   Future<void> deleteComment(String id) => call(() => dio.delete('/comments/$id'));
   Future<void> report({String? postId, String? commentId, required String reason}) =>
       call(() => dio.post('/reports', data: {'post_id': postId, 'comment_id': commentId, 'reason': reason}));
@@ -48,9 +50,14 @@ class CommunityRepository extends BaseRepository {
   Future<List<ChatMessage>> messages(String convId, {int limit = 50, String? before}) => call(() async => list(
       (await dio.get('/conversations/$convId/messages', queryParameters: {'limit': limit, if (before != null) 'before': before})).data,
       ChatMessage.fromJson));
-  Future<ChatMessage> send(String convId, String text) =>
-      call(() async => ChatMessage.fromJson((await dio.post('/conversations/$convId/messages', data: {'content': text})).data));
+  Future<ChatMessage> send(String convId, String text, {List<String> images = const []}) => call(() async => ChatMessage.fromJson(
+      (await dio.post('/conversations/$convId/messages', data: {'content': text, if (images.isNotEmpty) 'image_urls': images})).data));
   Future<void> markRead(String messageId) => call(() => dio.put('/messages/$messageId/read'));
+  // TZ S15 suhbat menyusi
+  Future<void> readConversation(String convId) => call(() => dio.put('/conversations/$convId/read'));
+  Future<Conversation> muteConversation(String convId, bool muted) =>
+      call(() async => Conversation.fromJson((await dio.put('/conversations/$convId/mute', data: {'muted': muted})).data));
+  Future<void> hideConversation(String convId) => call(() => dio.delete('/conversations/$convId'));
 
   // AI Yordamchi
   Future<List<AIMessage>> aiHistory() => call(() async => list((await dio.get('/ai/chat/history')).data, AIMessage.fromJson));

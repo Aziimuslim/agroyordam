@@ -1,17 +1,14 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../application/providers.dart';
-import '../../../core/config.dart';
 import '../../../core/i18n/i18n.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/widgets/photos.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 
@@ -33,7 +30,8 @@ class EditPostRoute extends ConsumerWidget {
   }
 }
 
-/// S12 Yangi post / tahrirlash. Tur majburiy, sarlavha 3–100, matn 10–3000, 1 ta rasm (backend bitta rasm saqlaydi).
+/// S12 Yangi post / tahrirlash. Tur majburiy, sarlavha 3–100, matn 10–3000, 0–5 rasm (jami ≤ 25 MB).
+/// Rasm qisman yuklansa post e'lon qilinmaydi — yuklanmagan rasm belgilanadi, uni olib tashlash yoki qayta urinish mumkin.
 /// Ikki marta bosish bitta post; API xatosida matn, tur va rasm yo'qolmaydi; saqlanmagan o'zgarishda dialog.
 class CreatePostScreen extends ConsumerStatefulWidget {
   const CreatePostScreen({super.key, this.post});
@@ -47,9 +45,7 @@ class _CreatePostState extends ConsumerState<CreatePostScreen> {
   late final _title = TextEditingController(text: widget.post?.title);
   late final _content = TextEditingController(text: widget.post?.content);
   late String? _category = widget.post?.category;
-  Uint8List? _image;
-  String _imageName = 'post.jpg';
-  late String? _existingUrl = widget.post?.imageUrl;
+  late final List<PickedPhoto> _photos = [for (final u in widget.post?.imageUrls ?? const <String>[]) PickedPhoto.url(u)];
   bool _loading = false, _dirty = false, _submitted = false;
   String? _error;
 
@@ -71,17 +67,10 @@ class _CreatePostState extends ConsumerState<CreatePostScreen> {
   }
 
   Future<void> _pick() async {
-    final f = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
-    if (f == null) return;
-    final bytes = await f.readAsBytes();
-    if (bytes.length > 10 * 1024 * 1024) {
-      if (mounted) showToast(context, tr("Rasm 10 MB dan katta bo'lmasin"));
-      return;
-    }
+    final picked = await pickPhotos(context, current: _photos);
+    if (picked.isEmpty || !mounted) return;
     setState(() {
-      _image = bytes;
-      _imageName = f.name.contains('.') ? f.name : '${f.name}.jpg';
-      _existingUrl = null;
+      _photos.addAll(picked);
       _dirty = true;
     });
   }
@@ -95,10 +84,19 @@ class _CreatePostState extends ConsumerState<CreatePostScreen> {
     if (_loading) return;
     setState(() => _loading = true);
     try {
-      String? url = _existingUrl;
-      // Rasm to'liq yuklanmasa post e'lon qilinmaydi (TZ S12)
-      if (_image != null) url = await ref.read(gardenRepoProvider).upload(_image!, _imageName);
-      final data = {'title': _title.text.trim(), 'content': _content.text.trim(), 'category': _category, 'image_url': url};
+      // Rasmlar to'liq yuklanmasa post e'lon qilinmaydi (TZ S12); yuklanganlari qayta yuklanmaydi
+      final repo0 = ref.read(gardenRepoProvider);
+      final ok = await uploadPhotos(_photos, (b, n) => repo0.upload(b, n), () => mounted ? setState(() {}) : null);
+      if (!ok) {
+        if (mounted) setState(() => _error = tr("Ba'zi rasmlar yuklanmadi. Ularni olib tashlang yoki qayta «Joylash»ni bosing."));
+        return;
+      }
+      final data = {
+        'title': _title.text.trim(),
+        'content': _content.text.trim(),
+        'category': _category,
+        'image_urls': [for (final p in _photos) p.url!],
+      };
       final repo = ref.read(communityRepoProvider);
       final post = _editing ? await repo.updatePost(widget.post!.id, data) : await repo.createPost(data);
       ref.invalidate(feedProvider);
@@ -126,7 +124,6 @@ class _CreatePostState extends ConsumerState<CreatePostScreen> {
           padding: const EdgeInsets.only(top: 16, bottom: 6),
           child: Text(t, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: c.text)),
         );
-    final hasImage = _image != null || _existingUrl != null;
     return PopScope(
       canPop: !_dirty,
       onPopInvokedWithResult: (didPop, _) async {
@@ -175,40 +172,15 @@ class _CreatePostState extends ConsumerState<CreatePostScreen> {
               decoration: InputDecoration(hintText: tr('Tajribangiz, savolingiz yoki maslahatingiz...'), errorMaxLines: 2),
               validator: (v) => (v ?? '').trim().length < 10 ? tr("Matn kamida 10 ta belgidan iborat bo'lsin") : null,
             ),
-            label(tr('Rasm (ixtiyoriy)')),
-            if (hasImage)
-              Stack(children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: _image != null
-                      ? Image.memory(_image!, height: 200, width: double.infinity, fit: BoxFit.cover)
-                      : Image.network(AppConfig.mediaUrl(_existingUrl)!, height: 200, width: double.infinity, fit: BoxFit.cover),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: IconButton(
-                    tooltip: tr('Rasmni olib tashlash'),
-                    style: IconButton.styleFrom(backgroundColor: const Color(0xE6FFFFFF), minimumSize: const Size(44, 44)),
-                    icon: const Icon(Icons.close_rounded, color: Color(0xFF20251B)),
-                    onPressed: () => setState(() {
-                      _image = null;
-                      _existingUrl = null;
-                      _dirty = true;
-                    }),
-                  ),
-                ),
-              ])
-            else
-              ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 52),
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(foregroundColor: c.primaryDark, side: BorderSide(color: c.primary, width: 1.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  onPressed: _pick,
-                  icon: const Icon(AppIcons.image),
-                  label: Text(tr("Rasm qo'shish"), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                ),
-              ),
+            label(trf("Rasmlar (ixtiyoriy, {0} tagacha)", [kMaxPhotos])),
+            PhotoPickerGrid(
+              photos: _photos,
+              onAdd: _loading ? null : _pick,
+              onRemove: (i) => setState(() {
+                _photos.removeAt(i);
+                _dirty = true;
+              }),
+            ),
             if (_error != null)
               Container(
                 margin: const EdgeInsets.only(top: 12),

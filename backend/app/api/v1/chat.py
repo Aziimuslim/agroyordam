@@ -1,7 +1,8 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, select, update
+from pydantic import BaseModel
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -10,6 +11,8 @@ from app.models import Conversation, ConversationParticipant, Message, User
 from app.schemas.chat import ConversationIn, ConversationOut, MessageIn, MessageOut
 from app.schemas.user import UserPublic
 from app.services import block_service
+from app.core.security import utcnow
+from app.services import chat_service
 from app.services.chat_service import save_message
 
 router = APIRouter(tags=["Chat"])
@@ -33,6 +36,14 @@ async def blocked_conversation(db: AsyncSession, conv_id: uuid.UUID, user_id: uu
     return False
 
 
+async def my_part(db: AsyncSession, conv_id: uuid.UUID, user: User) -> ConversationParticipant:
+    part = await db.scalar(select(ConversationParticipant).where(
+        ConversationParticipant.conversation_id == conv_id, ConversationParticipant.user_id == user.id))
+    if part is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Suhbat topilmadi")
+    return part
+
+
 async def conv_out(db: AsyncSession, conv: Conversation, me: User) -> ConversationOut:
     users = (await db.scalars(select(User).join(ConversationParticipant, ConversationParticipant.user_id == User.id)
                               .where(ConversationParticipant.conversation_id == conv.id))).all()
@@ -41,18 +52,25 @@ async def conv_out(db: AsyncSession, conv: Conversation, me: User) -> Conversati
     blocked = bool(others) and await block_service.between(db, me.id, others[0].id)
     unread = await db.scalar(select(func.count()).select_from(Message).where(
         Message.conversation_id == conv.id, Message.sender_id != me.id, Message.is_read.is_(False))) or 0
+    muted = bool(await db.scalar(select(ConversationParticipant.muted).where(
+        ConversationParticipant.conversation_id == conv.id, ConversationParticipant.user_id == me.id)))
     return ConversationOut(
         id=conv.id, participants=[UserPublic.model_validate(u) for u in users if u.id != me.id],
-        last_message=MessageOut.model_validate(last) if last else None, unread_count=unread, updated_at=conv.updated_at,
-        blocked=blocked,
+        last_message=MessageOut.of(last) if last else None, unread_count=unread, updated_at=conv.updated_at,
+        blocked=blocked, muted=muted,
     )
 
 
 @router.get("/conversations", response_model=list[ConversationOut])
 async def list_conversations(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    # TZ S15: o'z ro'yxatidan yashirilgan suhbat yangi xabar kelguncha ko'rinmaydi
     stmt = (select(Conversation).join(ConversationParticipant, ConversationParticipant.conversation_id == Conversation.id)
-            .where(ConversationParticipant.user_id == user.id).order_by(Conversation.updated_at.desc()))
-    return [await conv_out(db, c, user) for c in (await db.scalars(stmt)).all()]
+            .where(ConversationParticipant.user_id == user.id,
+                   (ConversationParticipant.hidden_at.is_(None)) | (Conversation.updated_at > ConversationParticipant.hidden_at))
+            .order_by(Conversation.updated_at.desc()))
+    convs = (await db.scalars(stmt)).all()
+    await chat_service.mark_delivered(db, user.id, [c.id for c in convs])
+    return [await conv_out(db, c, user) for c in convs]
 
 
 @router.post("/conversations", response_model=ConversationOut, status_code=201)
@@ -69,6 +87,10 @@ async def start_conversation(body: ConversationIn, user: User = Depends(get_curr
     existing = await db.scalar(select(Conversation).join(ConversationParticipant, ConversationParticipant.conversation_id == Conversation.id)
                                .where(ConversationParticipant.user_id == other.id, Conversation.id.in_(mine)).limit(1))
     if existing:
+        part = await my_part(db, existing.id, user)
+        if part.hidden_at is not None:  # yashirilgan suhbat qayta ochildi
+            part.hidden_at = None
+            await db.commit()
         return await conv_out(db, existing, user)
     conv = Conversation()
     db.add(conv)
@@ -90,7 +112,12 @@ async def list_messages(conv_id: uuid.UUID, limit: int = 100, before: uuid.UUID 
         if pivot is None or pivot.conversation_id != conv_id:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Xabar topilmadi")
         stmt = stmt.where(Message.created_at < pivot.created_at)
-    return list(reversed((await db.scalars(stmt)).all()))
+    rows = list(reversed((await db.scalars(stmt)).all()))
+    if any(m.sender_id != user.id and m.delivered_at is None for m in rows):
+        await chat_service.mark_delivered(db, user.id, [conv_id])
+        for m in rows:
+            await db.refresh(m)
+    return [MessageOut.of(m) for m in rows]
 
 
 @router.post("/conversations/{conv_id}/messages", response_model=MessageOut, status_code=201)
@@ -98,11 +125,12 @@ async def send_message(conv_id: uuid.UUID, body: MessageIn, user: User = Depends
     await ensure_member(db, conv_id, user)
     if await blocked_conversation(db, conv_id, user.id):
         raise HTTPException(status.HTTP_403_FORBIDDEN, block_service.BLOCKED_MSG)
-    if not (body.content or "").strip() and not body.image_url:
+    images = body.image_urls if body.image_urls is not None else ([body.image_url] if body.image_url else [])
+    if not (body.content or "").strip() and not images:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Bo'sh xabar")
-    msg = await save_message(db, conv_id, user.id, (body.content or "").strip() or None, body.image_url)
+    msg = await save_message(db, conv_id, user.id, (body.content or "").strip() or None, images)
     await db.commit()
-    return msg
+    return MessageOut.of(msg)
 
 
 @router.put("/messages/{message_id}/read", response_model=MessageOut)
@@ -113,9 +141,37 @@ async def mark_read(message_id: uuid.UUID, user: User = Depends(get_current_user
     await ensure_member(db, msg.conversation_id, user)
     if msg.sender_id != user.id:
         # shu xabargacha bo'lgan barcha xabarlarni o'qilgan deb belgilaymiz
-        await db.execute(update(Message).where(
-            Message.conversation_id == msg.conversation_id, Message.sender_id != user.id,
-            Message.created_at <= msg.created_at).values(is_read=True))
-        await db.commit()
+        await chat_service.mark_read(db, user.id, msg.conversation_id, until=msg.created_at)
         await db.refresh(msg)
-    return msg
+    return MessageOut.of(msg)
+
+
+@router.put("/conversations/{conv_id}/read", status_code=204)
+async def read_conversation(conv_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """TZ S15 menyusi: o'qilgan deb belgilash."""
+    await ensure_member(db, conv_id, user)
+    await chat_service.mark_read(db, user.id, conv_id)
+
+
+class MuteIn(BaseModel):
+    muted: bool
+
+
+@router.put("/conversations/{conv_id}/mute", response_model=ConversationOut)
+async def mute_conversation(conv_id: uuid.UUID, body: MuteIn, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """TZ S15/S16: ovozsiz — bu suhbatdan bildirishnoma kelmaydi."""
+    conv = await ensure_member(db, conv_id, user)
+    part = await my_part(db, conv_id, user)
+    part.muted = body.muted
+    await db.commit()
+    return await conv_out(db, conv, user)
+
+
+@router.delete("/conversations/{conv_id}", status_code=204)
+async def hide_conversation(conv_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """TZ S15: suhbatni faqat o'z ro'yxatidan yashirish. Boshqa ishtirokchi xabarlari o'chmaydi;
+    yangi xabar kelsa suhbat qayta paydo bo'ladi."""
+    await ensure_member(db, conv_id, user)
+    part = await my_part(db, conv_id, user)
+    part.hidden_at = utcnow()
+    await db.commit()
