@@ -127,3 +127,46 @@ async def test_uploads(client, user_headers):
     assert r.status_code == 201 and r.json()["url"].endswith(".jpg")
     served = await client.get(r.json()["url"])
     assert served.status_code == 200
+
+
+async def test_reminder_series_scope_and_validation(client, user_headers):
+    from datetime import datetime
+
+    base = {"title": "Sug'orish", "reminder_type": "watering"}
+    # Tekshiruv: sarlavha 3+, tugash ≥ boshlanish, custom uchun N
+    assert (await client.post("/api/v1/reminders", json={**base, "title": "ab", "reminder_date": "2026-11-01"}, headers=user_headers)).status_code == 422
+    assert (await client.post("/api/v1/reminders", json={**base, "reminder_date": "2026-11-05", "repeat": "daily",
+                                                         "repeat_until": "2026-11-01"}, headers=user_headers)).status_code == 422
+    assert (await client.post("/api/v1/reminders", json={**base, "reminder_date": "2026-11-05", "repeat": "custom",
+                                                         "repeat_until": "2026-11-20"}, headers=user_headers)).status_code == 422
+
+    # Oylik: 31-yanvar → 28-fevral (oyning oxirgi kuni), 31-mart
+    m = (await client.post("/api/v1/reminders", json={**base, "title": "O'g'itlash", "reminder_date": "2027-01-31", "repeat": "monthly",
+                                                      "repeat_until": "2027-03-31"}, headers=user_headers)).json()
+    series = [x for x in (await client.get("/api/v1/reminders", headers=user_headers)).json() if x["series_id"] == m["series_id"]]
+    assert sorted(x["reminder_date"] for x in series) == ["2027-01-31", "2027-02-28", "2027-03-31"]
+
+    # Kunlik seriya: 3 ta occurrence; "shu va keyingilar" tahriri va o'chirish
+    d = (await client.post("/api/v1/reminders", json={**base, "reminder_date": "2027-05-01", "reminder_time": "07:30",
+                                                      "repeat": "daily", "repeat_until": "2027-05-03", "remind_before": 60},
+                           headers=user_headers)).json()
+    occ = sorted((x for x in (await client.get("/api/v1/reminders", headers=user_headers)).json() if x["series_id"] == d["series_id"]),
+                 key=lambda x: x["reminder_date"])
+    assert len(occ) == 3 and occ[0]["remind_before"] == 60
+    second = occ[1]["id"]
+    assert (await client.get(f"/api/v1/reminders/{second}", headers=user_headers)).json()["reminder_date"] == "2027-05-02"
+    await client.put(f"/api/v1/reminders/{second}?scope=future", json={"title": "Chuqur sug'orish"}, headers=user_headers)
+    titles = {x["reminder_date"]: x["title"] for x in (await client.get("/api/v1/reminders", headers=user_headers)).json()
+              if x["series_id"] == d["series_id"]}
+    assert titles == {"2027-05-01": "Sug'orish", "2027-05-02": "Chuqur sug'orish", "2027-05-03": "Chuqur sug'orish"}
+    done = (await client.put(f"/api/v1/reminders/{occ[0]['id']}/complete", headers=user_headers)).json()
+    assert done["completed_at"] is not None
+    assert (await client.put(f"/api/v1/reminders/{occ[0]['id']}/complete", headers=user_headers)).json()["completed_at"] is None
+    assert (await client.delete(f"/api/v1/reminders/{second}?scope=future", headers=user_headers)).status_code == 204
+    left = [x for x in (await client.get("/api/v1/reminders", headers=user_headers)).json() if x["series_id"] == d["series_id"]]
+    assert [x["reminder_date"] for x in left] == ["2027-05-01"]
+
+    # Scheduler mahalliy vaqtda: 07:30 − 60 daqiqa = 06:30 dan keyin yuboriladi
+    # 06:00 da faqat avvalgi oylik seriya (3 ta) yuboriladi; 06:31 da — kunlik vazifa (bitta)
+    assert await send_due_reminders(datetime(2027, 5, 1, 6, 0)) == 3
+    assert await send_due_reminders(datetime(2027, 5, 1, 6, 31)) == 1

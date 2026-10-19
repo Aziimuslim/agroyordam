@@ -47,4 +47,5 @@ class CommunityRepository extends BaseRepository {
   Future<List<AppNotification>> notifications() =>
       call(() async => list((await dio.get('/notifications')).data, AppNotification.fromJson));
   Future<void> readAll() => call(() => dio.put('/notifications/read-all'));
+  Future<void> readOne(String id) => call(() => dio.put('/notifications/$id/read'));
 }

@@ -1,14 +1,17 @@
+import calendar
 import uuid
-from datetime import date
+from datetime import date, timedelta
+from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models import Crop, Diagnosis, Reminder, User
-from app.schemas.reminder import ReminderIn, ReminderOut, ReminderUpdate
+from app.core.security import utcnow
+from app.schemas.reminder import MAX_OCCURRENCES, ReminderIn, ReminderOut, ReminderUpdate
 
 router = APIRouter(prefix="/reminders", tags=["Reminders"])
 
@@ -60,23 +63,75 @@ async def list_reminders(
     return [await rem_out(db, r) for r in (await db.scalars(stmt)).all()]
 
 
+def occurrences(start: date, repeat: str | None, every: int | None, until: date | None) -> list[date]:
+    """Takrorlanish sanalari. Oylikda oy 31 kunsiz bo'lsa — oyning oxirgi kuni (TZ S26)."""
+    if not repeat or until is None:
+        return [start]
+    out: list[date] = []
+    i = 0
+    while len(out) < MAX_OCCURRENCES:
+        if repeat == "monthly":
+            m = start.month - 1 + i
+            y, m = start.year + m // 12, m % 12 + 1
+            d = date(y, m, min(start.day, calendar.monthrange(y, m)[1]))
+        else:
+            step = {"daily": 1, "weekly": 7}.get(repeat, every or 1)
+            d = start + timedelta(days=step * i)
+        if d > until:
+            break
+        out.append(d)
+        i += 1
+    return out
+
+
 @router.post("", response_model=ReminderOut, status_code=201)
 async def create_reminder(body: ReminderIn, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Bitta vazifa yoki takrorlanuvchi seriya (har sana — alohida yozuv, umumiy series_id). Birinchisi qaytadi."""
     await check_refs(db, user, body.crop_id, body.diagnosis_id)
-    r = Reminder(user_id=user.id, **body.model_dump())
-    db.add(r)
+    data = body.model_dump()
+    dates = occurrences(body.reminder_date, body.repeat, body.repeat_every, body.repeat_until)
+    series = uuid.uuid4() if len(dates) > 1 else None
+    if series is None:
+        data.update(repeat=None, repeat_every=None, repeat_until=None)
+    rows = [Reminder(user_id=user.id, **{**data, "reminder_date": d, "series_id": series}) for d in dates]
+    db.add_all(rows)
     await db.commit()
-    await db.refresh(r)
-    return await rem_out(db, r)
+    await db.refresh(rows[0])
+    return await rem_out(db, rows[0])
+
+
+@router.get("/{rid}", response_model=ReminderOut)
+async def get_reminder(rid: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    return await rem_out(db, await own(db, rid, user))
+
+
+def _series_scope(r: Reminder, scope: str):
+    """scope=future: shu va keyingi (sanasi ≥) occurrence'lar; aks holda faqat shu yozuv."""
+    if scope == "future" and r.series_id:
+        return (Reminder.series_id == r.series_id, Reminder.reminder_date >= r.reminder_date)
+    return (Reminder.id == r.id,)
 
 
 @router.put("/{rid}", response_model=ReminderOut)
-async def update_reminder(rid: uuid.UUID, body: ReminderUpdate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def update_reminder(rid: uuid.UUID, body: ReminderUpdate, scope: Literal["one", "future"] = Query(default="one"),
+                          user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     r = await own(db, rid, user)
     data = body.model_dump(exclude_unset=True)
     await check_refs(db, user, data.get("crop_id"), None)
-    for k, v in data.items():
-        setattr(r, k, v)
+    if scope == "future" and r.series_id:
+        # Seriyada sana har occurrence'ning o'zida qoladi; qolgan maydonlar keyingilarga ham yoziladi
+        shared = {k: v for k, v in data.items() if k not in ("reminder_date", "is_completed")}
+        for x in (await db.scalars(select(Reminder).where(*_series_scope(r, scope)))).all():
+            for k, v in shared.items():
+                setattr(x, k, v)
+        for k in ("reminder_date", "is_completed"):
+            if k in data:
+                setattr(r, k, data[k])
+    else:
+        for k, v in data.items():
+            setattr(r, k, v)
+    if "is_completed" in data:
+        r.completed_at = utcnow() if r.is_completed else None
     await db.commit()
     await db.refresh(r)
     return await rem_out(db, r)
@@ -86,6 +141,7 @@ async def update_reminder(rid: uuid.UUID, body: ReminderUpdate, user: User = Dep
 async def complete_reminder(rid: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     r = await own(db, rid, user)
     r.is_completed = not r.is_completed
+    r.completed_at = utcnow() if r.is_completed else None
     # Parvarish vazifasi bajarilsa ekin sog'lig'i biroz yaxshilanadi
     if r.is_completed and r.crop_id:
         crop = await db.get(Crop, r.crop_id)
@@ -97,6 +153,8 @@ async def complete_reminder(rid: uuid.UUID, user: User = Depends(get_current_use
 
 
 @router.delete("/{rid}", status_code=204)
-async def delete_reminder(rid: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    await db.delete(await own(db, rid, user))
+async def delete_reminder(rid: uuid.UUID, scope: Literal["one", "future"] = Query(default="one"),
+                          user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    r = await own(db, rid, user)
+    await db.execute(delete(Reminder).where(Reminder.user_id == user.id, *_series_scope(r, scope)))
     await db.commit()

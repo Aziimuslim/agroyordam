@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     APP_NAME: str = "AgroYordam"
-    APP_VERSION: str = "0.8.2"
+    APP_VERSION: str = "0.8.3"
     ENVIRONMENT: str = "development"  # development | production | test
 
     # Dev'da Docker'siz ishga tushirish uchun SQLite; docker-compose PostgreSQL beradi
@@ -66,6 +66,10 @@ class Settings(BaseSettings):
     PAYMENT_RETURN_URL: str = "http://localhost:8080/premium"
 
     FCM_SERVER_KEY: str | None = None
+    # Eslatma sanasi/vaqti foydalanuvchi hududi vaqtida saqlanadi (TZ 4: boshlang'ich Asia/Tashkent)
+    APP_TIMEZONE: str = "Asia/Tashkent"
+    # Kun bo'yi (vaqtsiz) vazifa bildirishnomasi shu soatda yuboriladi
+    ALL_DAY_NOTIFY_HOUR: int = 8
     ENABLE_SCHEDULER: bool = True
     SEED_DEMO_DATA: bool = True
 

@@ -85,7 +85,11 @@ class GardenRepository extends BaseRepository {
   Future<Reminder> createReminder(Map<String, dynamic> data) =>
       call(() async => Reminder.fromJson((await dio.post('/reminders', data: data)).data));
   Future<Reminder> toggleReminder(String id) => call(() async => Reminder.fromJson((await dio.put('/reminders/$id/complete')).data));
-  Future<void> deleteReminder(String id) => call(() => dio.delete('/reminders/$id'));
+  /// [scope] = one | future (takrorlanuvchi seriyada: faqat shu yoki shu va keyingilar).
+  Future<void> deleteReminder(String id, {String scope = 'one'}) => call(() => dio.delete('/reminders/$id', queryParameters: {'scope': scope}));
+  Future<Reminder> reminder(String id) => call(() async => Reminder.fromJson((await dio.get('/reminders/$id')).data));
+  Future<Reminder> updateReminder(String id, Map<String, dynamic> data, {String scope = 'one'}) =>
+      call(() async => Reminder.fromJson((await dio.put('/reminders/$id', data: data, queryParameters: {'scope': scope})).data));
 
   Future<String> upload(List<int> bytes, String filename, {String folder = 'posts'}) => call(() async {
         final ext = filename.split('.').last.toLowerCase();

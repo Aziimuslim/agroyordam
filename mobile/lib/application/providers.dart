@@ -125,6 +125,7 @@ final diagnosisProvider = FutureProvider.autoDispose.family<Diagnosis, String>((
 final carePlanProvider = FutureProvider.autoDispose.family<CarePlan, String>((ref, id) => ref.watch(gardenRepoProvider).carePlan(id));
 final diagnosesProvider = FutureProvider.autoDispose<List<Diagnosis>>((ref) => ref.watch(gardenRepoProvider).diagnoses());
 final remindersProvider = FutureProvider.autoDispose<List<Reminder>>((ref) => ref.watch(gardenRepoProvider).reminders());
+final reminderProvider = FutureProvider.autoDispose.family<Reminder, String>((ref, id) => ref.watch(gardenRepoProvider).reminder(id));
 /// Bitta ekin vazifalari (arxivlangan ekin uchun ham — tarix S06 da ko'rinadi).
 final cropRemindersProvider =
     FutureProvider.autoDispose.family<List<Reminder>, String>((ref, id) => ref.watch(gardenRepoProvider).reminders(cropId: id));

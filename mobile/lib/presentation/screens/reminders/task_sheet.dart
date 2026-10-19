@@ -10,6 +10,53 @@ import '../../../core/utils/format.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 
+/// Vazifa o'zgarganda bog'liq ro'yxatlar (S01, S04, S06, S25) sinxron yangilanadi.
+void refreshTasks(WidgetRef ref, {String? cropId}) {
+  ref.invalidate(remindersProvider);
+  ref.invalidate(cropRemindersProvider);
+  ref.invalidate(reminderProvider);
+  if (cropId != null) ref.invalidate(cropProvider(cropId));
+}
+
+/// "Har kuni" / "Har hafta" / "Har oy" / "Har 3 kunda" (+ "· 30-noyabrgacha").
+String? repeatLabel(Reminder r) {
+  final base = switch (r.repeat) {
+    'daily' => tr('Har kuni'),
+    'weekly' => tr('Har hafta'),
+    'monthly' => tr('Har oy'),
+    'custom' => trf('Har {0} kunda', [r.repeatEvery ?? 1]),
+    _ => null,
+  };
+  if (base == null) return null;
+  return r.repeatUntil == null ? base : '$base · ${trf('{0} gacha', [formatDayMonth(r.repeatUntil!)])}';
+}
+
+String remindBeforeLabel(int minutes) => switch (minutes) {
+      0 => tr('Aynan vaqtida'),
+      < 60 => trf('Vaqtidan {0} daqiqa oldin', [minutes]),
+      < 1440 => trf('Vaqtidan {0} soat oldin', [minutes ~/ 60]),
+      _ => trf('Vaqtidan {0} kun oldin', [minutes ~/ 1440]),
+    };
+
+/// Seriyadagi vazifa uchun: faqat shu yoki shu va keyingilar. null — bekor qilindi.
+Future<String?> askSeriesScope(BuildContext context, {required String title}) => showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: context.c.card,
+      constraints: const BoxConstraints(maxWidth: 560),
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+            child: Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ctx.c.text)),
+          ),
+          ListTile(minTileHeight: 52, leading: const Icon(Icons.event_outlined), title: Text(tr('Faqat shu vazifa')), onTap: () => Navigator.pop(ctx, 'one')),
+          ListTile(minTileHeight: 52, leading: const Icon(Icons.event_repeat_outlined), title: Text(tr('Shu va keyingi takrorlar')), onTap: () => Navigator.pop(ctx, 'future')),
+          const SizedBox(height: 8),
+        ]),
+      ),
+    );
+
 /// Vazifani bajarildi/bajarilmadi qilish. Holat faqat server tasdig'idan keyin o'zgaradi (TZ 4);
 /// bog'liq ro'yxatlar (S01, S25, S06) yangilanadi. Muvaffaqiyatda "Bekor qilish" taklif qilinadi.
 Future<bool> toggleTask(BuildContext context, WidgetRef ref, Reminder r, {bool offerUndo = true}) async {
@@ -21,9 +68,7 @@ Future<bool> toggleTask(BuildContext context, WidgetRef ref, Reminder r, {bool o
     if (context.mounted) showError(context, e);
     return false;
   }
-  ref.invalidate(remindersProvider);
-  ref.invalidate(cropRemindersProvider);
-  if (r.cropId != null) ref.invalidate(cropProvider(r.cropId!));
+  refreshTasks(ref, cropId: r.cropId);
   if (offerUndo && messenger != null) {
     messenger
       ..hideCurrentSnackBar()
@@ -35,9 +80,7 @@ Future<bool> toggleTask(BuildContext context, WidgetRef ref, Reminder r, {bool o
             onPressed: () async {
               try {
                 await repo.toggleReminder(r.id);
-                ref.invalidate(remindersProvider);
-                ref.invalidate(cropRemindersProvider);
-                if (r.cropId != null) ref.invalidate(cropProvider(r.cropId!));
+                refreshTasks(ref, cropId: r.cropId);
               } catch (_) {
                 messenger.showSnackBar(SnackBar(content: Text(tr("Bekor qilib bo'lmadi. Qayta urinib ko'ring"))));
               }
@@ -79,27 +122,20 @@ class _TaskSheetState extends ConsumerState<_TaskSheet> {
   }
 
   Future<void> _delete() async {
-    final yes = await showDialog<bool>(
-      context: context,
-      builder: (d) => AlertDialog(
-        title: Text(tr("Vazifani o'chirasizmi?")),
-        content: Text(widget.r.title),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(d, false), child: Text(tr('Bekor qilish'))),
-          TextButton(
-            onPressed: () => Navigator.pop(d, true),
-            child: Text(tr("O'chirish"), style: TextStyle(color: context.c.danger)),
-          ),
-        ],
-      ),
-    );
-    if (yes != true || !mounted) return;
+    final r = widget.r;
+    String scope = 'one';
+    if (r.isSeries) {
+      final picked = await askSeriesScope(context, title: tr("Qaysi vazifalarni o'chirasiz?"));
+      if (picked == null || !mounted) return;
+      scope = picked;
+    }
+    final yes = await confirm(context, scope == 'future' ? tr("Takrorlarni o'chirasizmi?") : tr("Vazifani o'chirasizmi?"), r.title,
+        ok: tr("O'chirish"), danger: true);
+    if (!yes || !mounted) return;
     setState(() => _busy = true);
     try {
-      await ref.read(gardenRepoProvider).deleteReminder(widget.r.id);
-      ref.invalidate(remindersProvider);
-      ref.invalidate(cropRemindersProvider);
-      if (widget.r.cropId != null) ref.invalidate(cropProvider(widget.r.cropId!));
+      await ref.read(gardenRepoProvider).deleteReminder(r.id, scope: scope);
+      refreshTasks(ref, cropId: r.cropId);
       if (mounted) {
         Navigator.of(context).pop();
         showToast(context, tr("Vazifa o'chirildi"));
@@ -169,7 +205,11 @@ class _TaskSheetState extends ConsumerState<_TaskSheet> {
           ),
           const SizedBox(height: 12),
           row(AppIcons.forReminder(r.type), tr('Turi'), reminderTypeLabels[r.type] ?? tr('Parvarish')),
-          row(AppIcons.calendar, tr('Muddat'), [formatDate(r.date), if (r.time != null) r.time!.substring(0, 5)].join(' · ')),
+          row(AppIcons.calendar, tr('Muddat'), [formatDate(r.date), r.time != null ? r.time!.substring(0, 5) : tr("Kun bo'yi")].join(' · ')),
+          if (repeatLabel(r) != null) row(Icons.event_repeat_outlined, tr('Takrorlash'), repeatLabel(r)!),
+          if (r.remindBefore != null) row(AppIcons.bell, tr('Eslatish'), remindBeforeLabel(r.remindBefore!)),
+          if (r.isCompleted && r.completedAt != null)
+            row(Icons.task_alt_rounded, tr('Bajarildi'), [formatDate(r.completedAt), hhmmLocal(r.completedAt!)].join(' · ')),
           if (r.cropId != null)
             row(
               AppIcons.leaf,
@@ -217,6 +257,26 @@ class _TaskSheetState extends ConsumerState<_TaskSheet> {
             ),
           ),
           const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: c.primaryDark,
+                side: BorderSide(color: c.primary, width: 1.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: _busy
+                  ? null
+                  : () {
+                      Navigator.of(context).pop();
+                      context.push('/reminders/${r.id}/edit');
+                    },
+              icon: const Icon(AppIcons.edit),
+              label: Text(tr('Tahrirlash'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            ),
+          ),
+          const SizedBox(height: 4),
           SizedBox(
             width: double.infinity,
             height: 48,

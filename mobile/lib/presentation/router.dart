@@ -107,6 +107,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ]),
       GoRoute(path: '/reminders', builder: (_, s) => RemindersScreen(cropId: s.uri.queryParameters['crop']), routes: [
         GoRoute(path: 'add', builder: (_, s) => AddReminderScreen(cropId: s.uri.queryParameters['crop'])),
+        GoRoute(path: ':id/edit', builder: (_, s) => EditReminderRoute(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
       ]),
       GoRoute(path: '/profile', pageBuilder: (_, s) => _tab(const ProfileScreen(), s), routes: [
         GoRoute(path: 'edit', builder: (_, __) => const EditProfileScreen()),

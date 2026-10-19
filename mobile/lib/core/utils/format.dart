@@ -73,3 +73,9 @@ Map<String, String> get postCategoryLabels => {
 };
 
 Map<String, String> get riskLabels => {'low': tr('Past xavf'), 'medium': tr("O'rta xavf"), 'high': tr('Yuqori xavf')};
+
+/// "08:05" — mahalliy vaqt.
+String hhmmLocal(DateTime t) {
+  final l = t.toLocal();
+  return '${l.hour.toString().padLeft(2, '0')}:${l.minute.toString().padLeft(2, '0')}';
+}

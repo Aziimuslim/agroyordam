@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime, time
 
-from sqlalchemy import Boolean, Date, ForeignKey, Index, String, Text, Time, Uuid
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, Integer, SmallInteger, String, Text, Time, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -22,4 +22,11 @@ class Reminder(Base):
     reminder_date: Mapped[date] = mapped_column(Date, nullable=False)
     reminder_time: Mapped[time | None] = mapped_column(Time)
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    # Takrorlanuvchi vazifa (TZ S26): har bir sana alohida yozuv (occurrence), umumiy series_id bilan.
+    series_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, index=True)
+    repeat: Mapped[str | None] = mapped_column(String(10))  # daily | weekly | monthly | custom
+    repeat_every: Mapped[int | None] = mapped_column(SmallInteger)  # custom: har N kunda
+    repeat_until: Mapped[date | None] = mapped_column(Date)
+    remind_before: Mapped[int | None] = mapped_column(Integer)  # daqiqa: bildirishnoma shuncha oldin
     created_at: Mapped[datetime] = created_at_col()

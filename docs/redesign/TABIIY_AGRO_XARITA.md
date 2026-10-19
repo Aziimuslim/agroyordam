@@ -1,7 +1,7 @@
 # Tabiiy Agro — ekranlar xaritasi va yetishmayotgan imkoniyatlar
 
 Manba: «AgroYordam dizayn va funksional texnik topshiriq» v1.1 (19.10.2026), Tabiiy Agro light/dark maketlari.
-Holat: 0.8.2 (dizayn tizimi, S01; bog' guruhi S02/S05/S06; tashxis guruhi S03/S04/S07/S08). Agronom va admin panellari bu bosqichda o'zgarmaydi.
+Holat: 0.8.3 (dizayn tizimi, S01; bog' S02/S05/S06; tashxis S03/S04/S07/S08; vazifalar S25/S26/S27). Agronom va admin panellari bu bosqichda o'zgarmaydi.
 
 ## Mavjud arxitektura (saqlanadi)
 
@@ -45,9 +45,9 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S22 | Dori tafsiloti | `/catalog/medicine/:id` | 🟡 | Yorliq hujjati ⛔ |
 | S23 | Profil | `/profile` | 🟡 | Saqlanganlar (A02) ⛔ |
 | S24 | Shaxsiy ma'lumotlar | `/profile/edit` | ✅ (0.7.0) | Username tahriri; aloqa tasdiqlash (S35) ⛔ |
-| S25 | Eslatmalar | `/reminders` | 🟡 | Bajarilgan tabi |
-| S26 | Yangi eslatma | `/reminders/add` | 🟡 | Takrorlash va oldindan eslatish ⛔ (backend `reminders` da yo'q) |
-| S27 | Bildirishnomalar | `/notifications` | 🟡 | O'qilmagan filtri (klient tomonda bajarsa bo'ladi) |
+| S25 | Eslatmalar | `/reminders?crop=` | ✅ 0.8.3 | — |
+| S26 | Yangi eslatma | `/reminders/add`, `/reminders/:id/edit` | ✅ 0.8.3 | Qurilma push'i ⛔ (ilovada FCM yo'q — eslatma ilova ichidagi Bildirishnomalarda); takrorlash turini tahrirda o'zgartirish yo'q |
+| S27 | Bildirishnomalar | `/notifications` | ✅ 0.8.3 | Bildirishnoma sozlamalari (A05) ⛔ |
 | S28 | Parolni o'zgartirish | `/profile/password` | 🟡 | Parol kuchi; «boshqa seanslardan chiqish» ixtiyoriy (hozir doim chiqaradi) |
 | S29 | Obunam | `/premium` | 🟡 | Oylik/Yillik serverdan ✅; A08 buyurtma xulosasi |
 | S30 | To'lovlar tarixi | `/premium/payments` | 🟡 | Chek ⛔ |
@@ -59,7 +59,7 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S36 | Parolni tiklash | `/forgot` | 🟡 | Hozir token orqali (dev); SMS ⛔ |
 | A01 | Tahlil jarayoni | S03 ichida bosqichlar | 🟡 | Yuklash → tahlil bosqichlari, yuklashda bekor qilish, 60 s xabari ✅; server job holatlari (queued/processing) ⛔ — backend sinxron |
 | A02 | Saqlanganlar | — | ⛔ | Bookmark API ⛔ |
-| A03 | Vazifa tafsiloti | — | ✅ 0.8.0 (pastki oyna) | Tahrir (`PUT /reminders/:id` bor) |
+| A03 | Vazifa tafsiloti | pastki oyna | ✅ 0.8.3 | — (tahrir, seriya: faqat shu / shu va keyingilar) |
 | A04 | Kuzatuv/kundalik | S06 «Kundalik» tabi | 🟡 | Matn ✅ (2000 belgi); rasm biriktirish va yozuvni tahrirlash/o'chirish API ⛔ |
 | A05 | Sozlamalar va hujjatlar | qisman | 🟡 | Server manzili productionda yashirilishi kerak |
 | A06 | Hudud va ob-havo | — | ✅ 0.8.0 | Soatlik/kunlik prognoz (provayder qo'llaydi, keyingi bosqich) |
@@ -80,6 +80,12 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 ## 0.8.2 da backend'ga qo'shilgan
 
 - `diagnoses.hidden_at` (migratsiya 0009): `DELETE /diagnoses/{id}` endi tarixdan **yashiradi** (yozuv, agronom javobi va dataset saqlanadi), `POST /diagnoses/{id}/restore` qaytaradi. Yashirilgan tashxis ekin holati va sog'liq tarixida hisobga olinmaydi.
+
+## 0.8.3 da backend'ga qo'shilgan
+
+- `reminders`: `completed_at`, `series_id`, `repeat` (daily/weekly/monthly/custom), `repeat_every`, `repeat_until`, `remind_before` (migratsiya 0010). Takrorlash har sana uchun alohida yozuv yaratadi (≤ 200, ≤ 1 yil); oylikda oyning oxirgi kuni qoidasi.
+- `GET /reminders/{id}`; `PUT`/`DELETE /reminders/{id}?scope=one|future`.
+- Scheduler endi sana/vaqtni `APP_TIMEZONE` (Asia/Tashkent) bo'yicha talqin qiladi — avval UTC deb olinib, eslatma 5 soat kech kelardi. Kun bo'yi vazifa 08:00 da, `remind_before` hisobga olinadi.
 
 ## Ekin holati qoidasi (TZ 1-bo'lim)
 

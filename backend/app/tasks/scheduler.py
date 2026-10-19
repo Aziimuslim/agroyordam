@@ -1,12 +1,14 @@
 """APScheduler vazifalari: eslatma bildirishnomalari va obuna muddati tekshiruvi."""
 import logging
-from datetime import datetime
+from datetime import datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import and_, select
 
+from app.core.config import settings
 from app.core.database import SessionLocal
-from app.core.security import utcnow
+from app.core.security import utcnow  # noqa: F401  (expire_subscriptions)
 from app.models import Notification, Reminder, Subscription, User
 from app.services.notification_service import notify
 
@@ -14,14 +16,23 @@ log = logging.getLogger(__name__)
 _scheduler = AsyncIOScheduler(timezone="UTC")
 
 
-async def send_due_reminders() -> int:
-    now = utcnow()
+def notify_at(r: Reminder) -> datetime:
+    """Bildirishnoma vaqti (mahalliy, naive): sana + vaqt (kun bo'yi — ALL_DAY_NOTIFY_HOUR) − remind_before."""
+    at = datetime.combine(r.reminder_date, r.reminder_time or time(settings.ALL_DAY_NOTIFY_HOUR))
+    return at - timedelta(minutes=r.remind_before or 0)
+
+
+async def send_due_reminders(now_local: datetime | None = None) -> int:
+    """Vaqti kelgan vazifalar uchun bitta bildirishnoma. Sana/vaqt APP_TIMEZONE bo'yicha talqin qilinadi
+    (avval UTC deb olinardi — Toshkentda 5 soat kechikardi)."""
+    now = now_local or datetime.now(ZoneInfo(settings.APP_TIMEZONE)).replace(tzinfo=None)
     sent = 0
     async with SessionLocal() as db:
+        # remind_before 7 kungacha — shuncha oldinroq sanalarni ham ko'ramiz
         due = (await db.scalars(select(Reminder).where(
-            Reminder.is_completed.is_(False), Reminder.reminder_date <= now.date()))).all()
+            Reminder.is_completed.is_(False), Reminder.reminder_date <= now.date() + timedelta(days=7)))).all()
         for r in due:
-            if r.reminder_date == now.date() and r.reminder_time and datetime.combine(r.reminder_date, r.reminder_time) > now:
+            if notify_at(r) > now:
                 continue
             already = await db.scalar(select(Notification.id).where(
                 and_(Notification.reference_id == r.id, Notification.type == "reminder")))

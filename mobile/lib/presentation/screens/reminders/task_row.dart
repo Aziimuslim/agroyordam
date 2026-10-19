@@ -29,84 +29,113 @@ class TaskRowState extends ConsumerState<TaskRow> {
     final r = widget.r;
     final now = DateTime.now();
     final overdue = !r.isCompleted && r.date.isBefore(DateTime(now.year, now.month, now.day));
-    final time = overdue ? tr("Kechikkan") : (r.time != null ? r.time!.substring(0, 5) : tr('Bugun'));
-    final meta = [if (r.cropName != null) r.cropName!, if (overdue) shortDate(r.date)].join(' · ');
-    return Material(
-      color: c.card,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
+    final isToday = r.date == DateTime(now.year, now.month, now.day);
+    // Vaqt yo'q — kun bo'yi vazifa; bugun bo'lmagan sana meta qatorida ko'rinadi
+    final time = overdue ? tr("Kechikkan") : (r.time != null ? r.time!.substring(0, 5) : tr("Kun bo'yi"));
+    final meta = [if (r.cropName != null) r.cropName!, if (!isToday) shortDate(r.date), if (r.isSeries) tr('Takrorlanadi')].join(' · ');
+    // Qator — tugma (matnlari yorliq bo'ladi); checkbox ichida alohida semantik tugun
+    return Semantics(
+      button: true,
+      hint: tr('Tafsilotni ochish'),
+      child: Material(
+        color: c.card,
         borderRadius: BorderRadius.circular(16),
-        onTap: () => showTaskSheet(context, r),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 64),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
-          padding: const EdgeInsets.fromLTRB(4, 4, 8, 4),
-          child: Row(children: [
-            // Checkbox — alohida 48 px bosish maydoni; holat server tasdig'idan keyin
-            // container: alohida semantik tugun — aks holda butun qator "checkbox" bo'lib, bosish A03 ni ochadi
-            Semantics(
-              container: true,
-              checked: r.isCompleted,
-              button: true,
-              label: r.isCompleted ? trf('{0}: bajarilgan. Qaytarish', [r.title]) : trf('{0}: bajarildi deb belgilash', [r.title]),
-              excludeSemantics: true,
-              child: InkResponse(
-                radius: 24,
-                onTap: _busy || widget.readOnly
-                    ? null
-                    : () async {
-                        setState(() => _busy = true);
-                        await toggleTask(context, ref, r);
-                        if (mounted) setState(() => _busy = false);
-                      },
-                child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: Center(
-                    child: _busy
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : AnimatedContainer(
-                            duration: const Duration(milliseconds: 160),
-                            width: 26,
-                            height: 26,
-                            decoration: BoxDecoration(
-                              color: r.isCompleted ? c.olive : Colors.transparent,
-                              shape: BoxShape.circle,
-                              border: r.isCompleted ? null : Border.all(color: overdue ? c.danger : c.lineStrong, width: 2),
-                            ),
-                            child: r.isCompleted ? Icon(AppIcons.check, size: 17, color: c.onOlive) : null,
-                          ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => showTaskSheet(context, r),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 64),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: c.border),
+            ),
+            padding: const EdgeInsets.fromLTRB(4, 4, 8, 4),
+            child: Row(
+              children: [
+                // Checkbox — alohida 48 px bosish maydoni; holat server tasdig'idan keyin
+                // container: alohida semantik tugun — aks holda butun qator "checkbox" bo'lib, bosish A03 ni ochadi
+                Semantics(
+                  container: true,
+                  checked: r.isCompleted,
+                  button: true,
+                  label: r.isCompleted ? trf('{0}: bajarilgan. Qaytarish', [r.title]) : trf('{0}: bajarildi deb belgilash', [r.title]),
+                  excludeSemantics: true,
+                  child: InkResponse(
+                    radius: 24,
+                    onTap: _busy || widget.readOnly
+                        ? null
+                        : () async {
+                            setState(() => _busy = true);
+                            await toggleTask(context, ref, r);
+                            if (mounted) setState(() => _busy = false);
+                          },
+                    child: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Center(
+                        child: _busy
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                            : AnimatedContainer(
+                                duration: const Duration(milliseconds: 160),
+                                width: 26,
+                                height: 26,
+                                decoration: BoxDecoration(
+                                  color: r.isCompleted ? c.olive : Colors.transparent,
+                                  shape: BoxShape.circle,
+                                  border: r.isCompleted ? null : Border.all(color: overdue ? c.danger : c.lineStrong, width: 2),
+                                ),
+                                child: r.isCompleted ? Icon(AppIcons.check, size: 17, color: c.onOlive) : null,
+                              ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                SizedBox(
+                  width: 64,
+                  child: Text(
+                    time,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: overdue ? c.danger : c.muted,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          r.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                            color: r.isCompleted ? c.muted : c.text,
+                            decoration: r.isCompleted ? TextDecoration.lineThrough : null,
+                          ),
+                        ),
+                        if (meta.isNotEmpty)
+                          Text(
+                            meta,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 14, color: overdue ? c.danger : c.muted),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                Icon(AppIcons.chevron, color: c.muted),
+              ],
             ),
-            SizedBox(
-              width: 64,
-              child: Text(time,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: overdue ? c.danger : c.muted, fontFeatures: const [FontFeature.tabularFigures()])),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(r.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                        color: r.isCompleted ? c.muted : c.text,
-                        decoration: r.isCompleted ? TextDecoration.lineThrough : null,
-                      )),
-                  if (meta.isNotEmpty) Text(meta, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, color: overdue ? c.danger : c.muted)),
-                ]),
-              ),
-            ),
-            Icon(AppIcons.chevron, color: c.muted),
-          ]),
+          ),
         ),
       ),
     );
   }
 }
-
