@@ -119,7 +119,7 @@ async def share_diagnosis(diag_id: uuid.UUID, body: ShareIn | None = None,
 async def _plan(db: AsyncSession, d: Diagnosis, start: date) -> CarePlanOut:
     disease = await db.get(Disease, d.disease_id) if d.disease_id else None
     plant = await db.get(Plant, d.plant_id) if d.plant_id else None
-    meds = [(m.name, rec) for m, rec in await DiseaseRepository(db).medicines_for(disease.id)] if disease else []
+    meds = [(m.name, rec, m.label_verified) for m, rec in await DiseaseRepository(db).medicines_for(disease.id)] if disease else []
     healthy = disease is None and d.risk_level == "low"
     duration, tasks = build_plan(disease, plant, meds, healthy)
     return CarePlanOut(

@@ -115,7 +115,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         GoRoute(path: 'expert', builder: (_, __) => const ExpertApplicationScreen()),
       ]),
 
-      GoRoute(path: '/diagnose', builder: (_, s) => DiagnoseScreen(cropId: s.uri.queryParameters['crop'], source: s.uri.queryParameters['source'])),
+      GoRoute(path: '/diagnose', builder: (_, s) => DiagnoseScreen(cropId: s.uri.queryParameters['crop'], plantId: s.uri.queryParameters['plant'], source: s.uri.queryParameters['source'])),
       GoRoute(path: '/diagnosis/:id', builder: (_, s) => DiagnosisDetailScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!), routes: [
         GoRoute(path: 'plan', builder: (_, s) => CarePlanScreen(key: ValueKey(s.matchedLocation), diagnosisId: s.pathParameters['id']!)),
       ]),

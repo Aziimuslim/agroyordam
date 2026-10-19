@@ -22,8 +22,11 @@ enum _Step { pick, preview, uploading, analyzing, error }
 /// Ekin turi ixtiyoriy, "Bog'imga bog'lash" — o'z ekinlari ro'yxati. Tanlangan rasm bilan chiqishda tasdiq.
 /// `source` = camera | gallery berilsa, ekran ochilishi bilan tanlash oynasi chiqadi.
 class DiagnoseScreen extends ConsumerStatefulWidget {
-  const DiagnoseScreen({super.key, this.cropId, this.source});
+  const DiagnoseScreen({super.key, this.cropId, this.plantId, this.source});
   final String? cropId;
+
+  /// Ekin turi konteksti (S21 "Ekinni tekshirish")
+  final String? plantId;
   final String? source;
   @override
   ConsumerState<DiagnoseScreen> createState() => _DiagnoseState();
@@ -32,7 +35,7 @@ class DiagnoseScreen extends ConsumerStatefulWidget {
 class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
   _Step _step = _Step.pick;
   late String? _cropId = widget.cropId;
-  String? _plantId;
+  late String? _plantId = widget.plantId;
   Uint8List? _image;
   String _name = 'leaf.jpg';
   ApiException? _error;

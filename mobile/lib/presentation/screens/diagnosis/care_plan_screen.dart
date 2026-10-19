@@ -233,7 +233,8 @@ class _About extends StatelessWidget {
         row(tr('Sababi'), d.causes),
         row(tr('Davolash'), d.treatment ?? d.recommendations),
         row(tr("Oldini olish"), d.prevention),
-        if (med != null) InfoBox(label: tr('Tavsiya etilgan dori'), value: '${med.name}${med.recommendation != null ? ', ${med.recommendation}' : ''}'),
+        if (med != null)
+          InfoBox(label: tr('Tavsiya etilgan dori'), value: '${med.name}${med.labelVerified && med.recommendation != null ? ', ${med.recommendation}' : ''}'),
       ]),
     );
   }

@@ -6,7 +6,13 @@ from pydantic import BaseModel, Field
 from app.schemas.common import ORMModel
 
 
+PCAT = r"^(vegetable|fruit|vine|grain|berry|melon)$"
+MCAT = r"^(fungicide|insecticide|acaricide|biological|other)$"
+MKIND = r"^(active|product|mixture)$"
+
+
 class PlantIn(BaseModel):
+    category: str | None = Field(default=None, pattern=PCAT)
     name: str = Field(max_length=100)
     scientific_name: str | None = None
     description: str | None = None
@@ -15,6 +21,7 @@ class PlantIn(BaseModel):
 
 
 class PlantUpdate(BaseModel):
+    category: str | None = Field(default=None, pattern=PCAT)
     name: str | None = Field(default=None, max_length=100)
     scientific_name: str | None = None
     description: str | None = None
@@ -29,6 +36,7 @@ class PlantOut(ORMModel):
     description: str | None = None
     care_info: str | None = None
     image_url: str | None = None
+    category: str | None = None
     created_at: datetime | None = None
 
 
@@ -46,6 +54,7 @@ class DiseaseIn(BaseModel):
     prevention: str | None = None
     risk_level: str | None = Field(default=None, pattern=RISK)
     image_url: str | None = None
+    source: str | None = None
 
 
 class DiseaseUpdate(BaseModel):
@@ -59,6 +68,7 @@ class DiseaseUpdate(BaseModel):
     prevention: str | None = None
     risk_level: str | None = Field(default=None, pattern=RISK)
     image_url: str | None = None
+    source: str | None = None
 
 
 class MedicineIn(BaseModel):
@@ -69,6 +79,10 @@ class MedicineIn(BaseModel):
     precautions: str | None = None
     manufacturer: str | None = None
     image_url: str | None = None
+    category: str | None = Field(default=None, pattern=MCAT)
+    kind: str | None = Field(default=None, pattern=MKIND)
+    label_verified: bool = False
+    source: str | None = None
 
 
 class MedicineUpdate(BaseModel):
@@ -79,6 +93,10 @@ class MedicineUpdate(BaseModel):
     precautions: str | None = None
     manufacturer: str | None = None
     image_url: str | None = None
+    category: str | None = Field(default=None, pattern=MCAT)
+    kind: str | None = Field(default=None, pattern=MKIND)
+    label_verified: bool | None = None
+    source: str | None = None
 
 
 class MedicineOut(ORMModel):
@@ -90,6 +108,11 @@ class MedicineOut(ORMModel):
     precautions: str | None = None
     manufacturer: str | None = None
     image_url: str | None = None
+    category: str | None = None
+    kind: str | None = None
+    label_verified: bool = False
+    source: str | None = None
+    updated_at: datetime | None = None
 
 
 class MedicineRecommendation(MedicineOut):
@@ -109,6 +132,8 @@ class DiseaseOut(ORMModel):
     prevention: str | None = None
     risk_level: str | None = None
     image_url: str | None = None
+    source: str | None = None
+    updated_at: datetime | None = None
 
 
 class DiseaseDetail(DiseaseOut):

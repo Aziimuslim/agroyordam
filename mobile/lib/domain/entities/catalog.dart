@@ -1,7 +1,12 @@
+import '../../core/utils/format.dart';
+
 class Plant {
-  Plant({required this.id, required this.name, this.scientificName, this.description, this.careInfo, this.imageUrl});
+  Plant({required this.id, required this.name, this.scientificName, this.description, this.careInfo, this.imageUrl, this.category});
   final String id, name;
   final String? scientificName, description, careInfo, imageUrl;
+
+  /// vegetable | fruit | vine | grain | berry | melon (null — tasniflanmagan)
+  final String? category;
 
   factory Plant.fromJson(Map<String, dynamic> j) => Plant(
         id: j['id'],
@@ -10,6 +15,7 @@ class Plant {
         description: j['description'],
         careInfo: j['care_info'],
         imageUrl: j['image_url'],
+        category: j['category'],
       );
 
   Map<String, dynamic> toJson() => {
@@ -30,9 +36,25 @@ class Medicine {
     this.precautions,
     this.manufacturer,
     this.recommendation,
+    this.category,
+    this.kind,
+    this.labelVerified = false,
+    this.source,
+    this.updatedAt,
   });
   final String id, name;
   final String? activeIngredient, description, usage, precautions, manufacturer, recommendation;
+
+  /// fungicide | insecticide | acaricide | biological | other
+  final String? category;
+
+  /// active (faol modda) | product (tayyor mahsulot) | mixture
+  final String? kind;
+
+  /// Me'yor aniq mahsulot yorlig'i bo'yicha tasdiqlangan. false — doza dehqonga ko'rsatilmaydi (TZ S22).
+  final bool labelVerified;
+  final String? source;
+  final DateTime? updatedAt;
 
   factory Medicine.fromJson(Map<String, dynamic> j) => Medicine(
         id: j['id'],
@@ -43,6 +65,11 @@ class Medicine {
         precautions: j['precautions'],
         manufacturer: j['manufacturer'],
         recommendation: j['recommendation'],
+        category: j['category'],
+        kind: j['kind'],
+        labelVerified: j['label_verified'] ?? false,
+        source: j['source'],
+        updatedAt: parseDate(j['updated_at']),
       );
 }
 
@@ -62,9 +89,13 @@ class Disease {
     this.medicines = const [],
     this.recommendation,
     this.imageUrl,
+    this.source,
+    this.updatedAt,
   });
   final String id, name;
   final String? plantId, plantName, aiLabel, description, symptoms, causes, treatment, prevention, riskLevel, imageUrl;
+  final String? source;
+  final DateTime? updatedAt;
 
   /// Dori sahifasida: shu kasallikka qarshi me'yor.
   final String? recommendation;
@@ -85,5 +116,7 @@ class Disease {
         riskLevel: j['risk_level'],
         medicines: [for (final m in (j['medicines'] as List? ?? [])) Medicine.fromJson(m)],
         recommendation: j['recommendation'],
+        source: j['source'],
+        updatedAt: parseDate(j['updated_at']),
       );
 }

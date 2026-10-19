@@ -210,17 +210,34 @@ DEMO_USERS = [
 ]
 
 
+# TZ S17: uzum — "tok" (mevali daraxt emas); qovoq — poliz ekini, sabzavotlar bilan
+PLANT_CATEGORY = {
+    "Pomidor": "vegetable", "Kartoshka": "vegetable", "Bolgar qalampiri": "vegetable", "Bodring": "vegetable", "Qovoq": "vegetable",
+    "Olma": "fruit", "Shaftoli": "fruit", "Olcha": "fruit", "Uzum": "vine", "Makkajo'xori": "grain", "Qulupnay": "berry",
+}
+# Seed dorilari faol modda nomi bilan (tayyor mahsulot emas); Bordo suyuqligi — aralashma
+MEDICINE_META = {
+    "Mis oksixlorid": ("fungicide", "active"), "Bordo suyuqligi": ("fungicide", "mixture"),
+    "Oltingugurt kukuni": ("fungicide", "active"), "Mankoseb": ("fungicide", "active"),
+    "Trichoderma (bio)": ("biological", "active"), "Bioinsektitsid (Bt)": ("biological", "active"),
+    "Abamektin": ("insecticide", "active"), "Tebukonazol": ("fungicide", "active"),
+    "Azoksistrobin": ("fungicide", "active"), "Imidakloprid": ("insecticide", "active"),
+}
+
+
 async def seed_catalog(db: AsyncSession) -> None:
     """Idempotent: mavjud bazaga faqat yetishmayotgan o'simlik/dori/kasalliklarni qo'shadi."""
     plants = {p.name: p for p in (await db.scalars(select(Plant))).all()}
     for name, sci, desc, care in PLANTS:
         if name not in plants:
-            plants[name] = Plant(name=name, scientific_name=sci, description=desc, care_info=care)
+            plants[name] = Plant(name=name, scientific_name=sci, description=desc, care_info=care, category=PLANT_CATEGORY.get(name))
             db.add(plants[name])
     meds = {m.name: m for m in (await db.scalars(select(Medicine))).all()}
     for name, ai, desc, usage, prec, man in MEDICINES:
         if name not in meds:
-            meds[name] = Medicine(name=name, active_ingredient=ai, description=desc, usage=usage, precautions=prec, manufacturer=man)
+            cat, kind = MEDICINE_META.get(name, (None, None))
+            meds[name] = Medicine(name=name, active_ingredient=ai, description=desc, usage=usage, precautions=prec, manufacturer=man,
+                                  category=cat, kind=kind)
             db.add(meds[name])
     await db.flush()
     labels = set((await db.scalars(select(Disease.ai_label))).all())

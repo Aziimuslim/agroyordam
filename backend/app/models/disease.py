@@ -5,7 +5,7 @@ from sqlalchemy import ForeignKey, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
-from app.models._base import created_at_col, uuid_pk
+from app.models._base import created_at_col, updated_at_col, uuid_pk
 
 
 class Disease(Base):
@@ -22,4 +22,6 @@ class Disease(Base):
     prevention: Mapped[str | None] = mapped_column(Text)
     risk_level: Mapped[str | None] = mapped_column(String(20))  # low | medium | high
     image_url: Mapped[str | None] = mapped_column(String(255))
+    source: Mapped[str | None] = mapped_column(Text)  # manba (adabiyot, tashkilot); bo'sh — ko'rsatilmagan
     created_at: Mapped[datetime] = created_at_col()
+    updated_at: Mapped[datetime] = updated_at_col()

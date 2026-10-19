@@ -342,7 +342,8 @@ class _MedicineCard extends StatelessWidget {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(m.name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: c.text)),
             const SizedBox(height: 2),
-            Text(m.recommendation ?? m.activeIngredient ?? '', style: TextStyle(color: c.muted, fontSize: 14, height: 1.35)),
+            // Me'yor faqat yorliq bo'yicha tasdiqlangan bo'lsa (TZ S22)
+            Text((m.labelVerified ? m.recommendation : null) ?? m.activeIngredient ?? '', style: TextStyle(color: c.muted, fontSize: 14, height: 1.35)),
           ]),
         ),
         if (primary) ...[const SizedBox(width: 8), Tag(tr('Asosiy'), bg: c.primaryLight, fg: c.primaryDark)],

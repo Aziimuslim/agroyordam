@@ -1,7 +1,7 @@
 # Tabiiy Agro — ekranlar xaritasi va yetishmayotgan imkoniyatlar
 
 Manba: «AgroYordam dizayn va funksional texnik topshiriq» v1.1 (19.10.2026), Tabiiy Agro light/dark maketlari.
-Holat: 0.8.3 (dizayn tizimi, S01; bog' S02/S05/S06; tashxis S03/S04/S07/S08; vazifalar S25/S26/S27). Agronom va admin panellari bu bosqichda o'zgarmaydi.
+Holat: 0.8.4 (dizayn tizimi, S01; bog' S02/S05/S06; tashxis S03/S04/S07/S08; vazifalar S25–S27; ma'lumotnoma S17–S22). Agronom va admin panellari bu bosqichda o'zgarmaydi.
 
 ## Mavjud arxitektura (saqlanadi)
 
@@ -37,12 +37,12 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S14 | Fermer profili | `/users/:id` | 🟡 | «Haqida» tabi; bloklash ⛔ |
 | S15 | Xabarlar | `/messages` | 🟡 | Suhbat qidiruvi; A07 foydalanuvchi qidiruvi ⛔ |
 | S16 | Shaxsiy chat | `/messages/:id` | 🟡 | Rasm yuborish UI (backend `messages.image_url` bor) |
-| S17 | O'simliklar | `/catalog?tab=plants` | 🟡 | Sabzavot/Mevali/Donli filtri — `plants.category` ⛔ |
-| S18 | Kasalliklar | `/catalog?tab=diseases` | 🟡 | — |
-| S19 | Dorilar | `/catalog?tab=medicines` | 🟡 | — |
-| S20 | O'simlik tafsiloti | `/catalog/plant/:id` | 🟡 | Tablar; bookmark ⛔; «Bog'imga qo'shish» → S05 tur bilan |
-| S21 | Kasallik tafsiloti | `/catalog/disease/:id` | 🟡 | Manbalar tabi (backend'da manba maydoni ⛔) |
-| S22 | Dori tafsiloti | `/catalog/medicine/:id` | 🟡 | Yorliq hujjati ⛔ |
+| S17 | O'simliklar | `/catalog?tab=plants` | ✅ 0.8.4 | — |
+| S18 | Kasalliklar | `/catalog?tab=diseases` | ✅ 0.8.4 | «Belgilarni solishtirish» alohida oqimi yo'q (solishtirish S21 ichida) |
+| S19 | Dorilar | `/catalog?tab=medicines` | ✅ 0.8.4 | Mintaqaviy ro'yxatdan o'tish ma'lumoti ⛔ |
+| S20 | O'simlik tafsiloti | `/catalog/plant/:id` | ✅ 0.8.4 | Bookmark (A02) ⛔ |
+| S21 | Kasallik tafsiloti | `/catalog/disease/:id` | ✅ 0.8.4 | Manba matni hali to'ldirilmagan (agronom KB tahririda kiritiladi); bookmark ⛔ |
+| S22 | Dori tafsiloti | `/catalog/medicine/:id` | ✅ 0.8.4 | Yorliq hujjati (PDF) ⛔; `label_verified`ni belgilash UI agronom/admin panelida yo'q |
 | S23 | Profil | `/profile` | 🟡 | Saqlanganlar (A02) ⛔ |
 | S24 | Shaxsiy ma'lumotlar | `/profile/edit` | ✅ (0.7.0) | Username tahriri; aloqa tasdiqlash (S35) ⛔ |
 | S25 | Eslatmalar | `/reminders?crop=` | ✅ 0.8.3 | — |
@@ -86,6 +86,11 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 - `reminders`: `completed_at`, `series_id`, `repeat` (daily/weekly/monthly/custom), `repeat_every`, `repeat_until`, `remind_before` (migratsiya 0010). Takrorlash har sana uchun alohida yozuv yaratadi (≤ 200, ≤ 1 yil); oylikda oyning oxirgi kuni qoidasi.
 - `GET /reminders/{id}`; `PUT`/`DELETE /reminders/{id}?scope=one|future`.
 - Scheduler endi sana/vaqtni `APP_TIMEZONE` (Asia/Tashkent) bo'yicha talqin qiladi — avval UTC deb olinib, eslatma 5 soat kech kelardi. Kun bo'yi vazifa 08:00 da, `remind_before` hisobga olinadi.
+
+## 0.8.4 da backend'ga qo'shilgan
+
+- Migratsiya 0011: `plants.category` (vegetable/fruit/vine/grain/berry/melon; uzum — `vine`), `medicines.category`, `medicines.kind` (active/product/mixture), `medicines.label_verified`, `diseases/medicines.source` va `updated_at`. Seed yozuvlari nom bo'yicha tasniflandi.
+- Doza siyosati (TZ S22): `label_verified = false` bo'lsa me'yor dehqonga ko'rsatilmaydi (katalog, S08, reja yaratish); parvarish rejasi vazifalariga ham tasdiqlanmagan doza yozilmaydi — purkash jadvali saqlanadi.
 
 ## Ekin holati qoidasi (TZ 1-bo'lim)
 

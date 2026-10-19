@@ -117,3 +117,19 @@ async def test_crop_photo_validation_and_archive(client, user_headers):
     assert len((await client.get(f"/api/v1/reminders?crop_id={crop['id']}", headers=user_headers)).json()) == 1
     archived = (await client.get("/api/v1/crops?status=archived", headers=user_headers)).json()
     assert [c["id"] for c in archived] == [crop["id"]]
+
+
+async def test_catalog_meta(client, admin_headers):
+    plants = {p["name"]: p for p in (await client.get("/api/v1/plants")).json()}
+    # TZ S17: uzum — tok, mevali daraxt emas
+    assert plants["Uzum"]["category"] == "vine" and plants["Olma"]["category"] == "fruit" and plants["Pomidor"]["category"] == "vegetable"
+    meds = {m["name"]: m for m in (await client.get("/api/v1/medicines")).json()}
+    assert meds["Bordo suyuqligi"]["kind"] == "mixture" and meds["Mankoseb"]["category"] == "fungicide"
+    # Seed me'yorlari yorliq bo'yicha tasdiqlanmagan — ilova ularni dehqonga ko'rsatmaydi
+    assert all(m["label_verified"] is False for m in meds.values())
+    d = (await client.get("/api/v1/diseases")).json()[0]
+    assert "source" in d and d["updated_at"] is not None
+    r = await client.put(f"/api/v1/medicines/{meds['Mankoseb']['id']}", json={"label_verified": True, "category": "fungicide", "kind": "active",
+                                                                            "source": "Davlat kimyo komissiyasi ro'yxati"}, headers=admin_headers)
+    assert r.status_code == 200 and r.json()["label_verified"] is True
+    assert (await client.put(f"/api/v1/medicines/{meds['Mankoseb']['id']}", json={"category": "zahar"}, headers=admin_headers)).status_code == 422

@@ -42,9 +42,9 @@ def _spray_schedule(recommendation: str | None, duration: int) -> list[int]:
     return days[:times] if times else days
 
 
-def build_plan(disease: Disease | None, plant: Plant | None, medicines: list[tuple[str, str | None]],
+def build_plan(disease: Disease | None, plant: Plant | None, medicines: list[tuple[str, str | None, bool]],
                healthy: bool) -> tuple[int, list[Task]]:
-    """→ (davomiylik kunlarda, vazifalar). medicines: [(dori nomi, tavsiya)]."""
+    """→ (davomiylik kunlarda, vazifalar). medicines: [(dori nomi, tavsiya, yorliq tasdiqlanganmi)]."""
     plant_name = plant.name if plant else "Ekin"
     care = plant.care_info if plant and plant.care_info else None
     tasks: list[Task] = []
@@ -65,8 +65,9 @@ def build_plan(disease: Disease | None, plant: Plant | None, medicines: list[tup
                       + (disease.treatment or ""), "treatment", time(8, 0)))
 
     if medicines:
-        med, rec = medicines[0]
-        dose = rec or "Yo'riqnomaga ko'ra"
+        med, rec, verified = medicines[0]
+        # TZ S22: me'yor faqat mahsulot yorlig'i bo'yicha tasdiqlangan bo'lsa yoziladi; jadval (oraliq) baribir rejadan
+        dose = rec if (verified and rec) else "Me'yorni mahsulot yorlig'idan oling"
         days = _spray_schedule(rec, duration)
         for i, d in enumerate(days, 1):
             tasks.append(Task(d, f"{med} bilan ishlov berish ({i}/{len(days)})",

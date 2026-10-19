@@ -17,4 +17,6 @@ class Plant(Base):
     description: Mapped[str | None] = mapped_column(Text)
     care_info: Mapped[str | None] = mapped_column(Text)
     image_url: Mapped[str | None] = mapped_column(String(255))
+    # vegetable | fruit | vine | grain | berry | melon (TZ S17: uzum — "tok", mevali daraxt emas)
+    category: Mapped[str | None] = mapped_column(String(20))
     created_at: Mapped[datetime] = created_at_col()
