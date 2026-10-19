@@ -19,11 +19,14 @@ class ChatMessage {
 }
 
 class Conversation {
-  Conversation({required this.id, required this.participants, this.lastMessage, this.unread = 0});
+  Conversation({required this.id, required this.participants, this.lastMessage, this.unread = 0, this.blocked = false});
   final String id;
   final List<AppUser> participants;
   final ChatMessage? lastMessage;
   final int unread;
+
+  /// A08: bloklash bor — yozib bo'lmaydi.
+  final bool blocked;
 
   AppUser? get other => participants.isEmpty ? null : participants.first;
 
@@ -32,6 +35,7 @@ class Conversation {
         participants: [for (final u in (j['participants'] as List? ?? [])) AppUser.fromJson(u)],
         lastMessage: j['last_message'] == null ? null : ChatMessage.fromJson(j['last_message']),
         unread: j['unread_count'] ?? 0,
+        blocked: j['blocked'] ?? false,
       );
 }
 

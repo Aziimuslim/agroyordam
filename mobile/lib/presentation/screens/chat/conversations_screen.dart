@@ -36,14 +36,20 @@ class _ConversationsState extends ConsumerState<ConversationsScreen> {
       body = Column(children: [
         EmptyNote(tr("Hali xabar yo'q. Jamoatdagi fermer profiliga kirib suhbat boshlang."), icon: AppIcons.chat),
         const SizedBox(height: 8),
-        Center(
-          child: OutlinedButton.icon(
+        Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48), foregroundColor: c.primaryDark, side: BorderSide(color: c.primary, width: 1.5)),
+            onPressed: () => context.push('/users/search'),
+            icon: const Icon(Icons.person_search_outlined),
+            label: Text(tr('Foydalanuvchi qidirish')),
+          ),
+          OutlinedButton.icon(
             style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48), foregroundColor: c.primaryDark, side: BorderSide(color: c.primary, width: 1.5)),
             onPressed: () => context.go('/help?tab=comm'),
             icon: const Icon(Icons.groups_outlined),
             label: Text(tr("Jamoatga o'tish")),
           ),
-        ),
+        ]),
       ]);
     } else {
       final q = _q.trim().toLowerCase();
@@ -61,7 +67,9 @@ class _ConversationsState extends ConsumerState<ConversationsScreen> {
       maxWidth: 760,
       onRefresh: () async => ref.invalidate(conversationsProvider),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        TopBar(title: tr('Xabarlar')),
+        TopBar(title: tr('Xabarlar'), actions: [
+          IconButton(tooltip: tr('Yangi suhbat'), onPressed: () => context.push('/users/search'), icon: Icon(Icons.edit_square, color: c.text)),
+        ]),
         if ((list?.length ?? 0) > 0) ...[
           TextField(
             onChanged: (s) => setState(() => _q = s),

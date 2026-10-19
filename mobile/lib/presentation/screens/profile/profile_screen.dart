@@ -118,6 +118,7 @@ class ProfileScreen extends ConsumerWidget {
           ListRow(icon: AppIcons.chat, label: tr('Xabarlar'), onTap: () => context.push('/messages')),
           ListRow(icon: Icons.notifications_none_rounded, label: tr('Bildirishnomalar'), onTap: () => context.push('/notifications')),
           ListRow(icon: Icons.article_outlined, label: tr('Mening postlarim'), onTap: () => context.push('/users/${user.id}')),
+          ListRow(icon: Icons.bookmark_border_rounded, label: tr('Saqlanganlar'), onTap: () => context.push('/saved')),
           ListRow(icon: AppIcons.book, label: tr("Ma'lumotnoma"), value: tr("O'simlik, kasallik, dori"), onTap: () => context.push('/catalog')),
         ]),
         group(tr('Sozlamalar'), [
@@ -128,6 +129,7 @@ class ProfileScreen extends ConsumerWidget {
             onTap: () => context.push('/settings/appearance'),
           ),
           ListRow(icon: AppIcons.globe, label: tr('Ilova tili'), value: ref.watch(langProvider).label, onTap: () => context.push('/settings/language')),
+          ListRow(icon: Icons.block_outlined, label: tr('Bloklanganlar'), onTap: () => context.push('/settings/blocked')),
           ListRow(icon: Icons.info_outline_rounded, label: tr('Ilova haqida'), value: AppConfig.version, onTap: () => context.push('/settings/about')),
           if (user.isAdmin)
             ListRow(

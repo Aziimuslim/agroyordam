@@ -16,6 +16,7 @@ import '../../../domain/entities/entities.dart';
 import '../reminders/task_row.dart';
 import '../reminders/today_tasks.dart' show dueTasks;
 import 'crop_actions.dart';
+import 'diary.dart';
 import 'crop_photo.dart';
 
 /// S06 Ekin tafsiloti: surat-header, holat (foizsiz), Umumiy / Vazifalar / Kundalik tablari.
@@ -540,7 +541,7 @@ class _DiaryTab extends ConsumerWidget {
       else if (list.isEmpty)
         EmptyNote(tr("Hali kuzatuv yozilmagan"), icon: Icons.edit_note_rounded)
       else
-        for (final l in list) _LogTile(log: l),
+        for (final l in list) DiaryTile(cropId: crop.id, log: l, editable: !crop.isArchived),
     ]);
   }
 }

@@ -48,6 +48,7 @@ class UserProfile(UserPublic):
     following_count: int = 0
     posts_count: int = 0
     is_following: bool = False
+    is_blocked: bool = False  # men bloklaganman (A08)
 
 
 Tag = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=40)]

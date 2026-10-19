@@ -6,8 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.security import utcnow
 from app.models import Crop, CropLog, Diagnosis, Disease, Plant, User
-from app.schemas.crop import CropIn, CropLogIn, CropLogOut, CropOut, CropUpdate, HealthPoint
+from app.schemas.crop import CropIn, CropLogIn, CropLogOut, CropLogUpdate, CropOut, CropUpdate, HealthPoint
 from app.services.limits import ensure_can_add_crop
 from app.services.storage import get_storage, read_image
 
@@ -103,18 +104,55 @@ async def health_history(crop_id: uuid.UUID, user: User = Depends(get_current_us
 @router.get("/{crop_id}/logs", response_model=list[CropLogOut])
 async def list_logs(crop_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     await own_crop(db, crop_id, user)
-    stmt = select(CropLog).where(CropLog.crop_id == crop_id).order_by(CropLog.created_at.desc())
+    stmt = select(CropLog).where(CropLog.crop_id == crop_id).order_by(CropLog.observed_at.desc(), CropLog.created_at.desc())
     return list((await db.scalars(stmt)).all())
+
+
+def _apply_log(log: CropLog, body: CropLogIn) -> None:
+    log.content = body.content
+    log.images = body.images or None
+    log.image_url = body.images[0] if body.images else None
+    log.observed_at = body.observed_at or log.observed_at or utcnow().date()
 
 
 @router.post("/{crop_id}/logs", response_model=CropLogOut, status_code=201)
 async def add_log(crop_id: uuid.UUID, body: CropLogIn, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """A04: kundalik yozuvi. Sog'liq holatini avtomatik o'zgartirmaydi (tashxis emas)."""
     await own_crop(db, crop_id, user)
-    log = CropLog(crop_id=crop_id, user_id=user.id, **body.model_dump())
+    log = CropLog(crop_id=crop_id, user_id=user.id, content="", version=1)
+    _apply_log(log, body)
     db.add(log)
     await db.commit()
     await db.refresh(log)
     return log
+
+
+async def _own_log(db: AsyncSession, crop_id: uuid.UUID, log_id: uuid.UUID, user: User) -> CropLog:
+    await own_crop(db, crop_id, user)
+    log = await db.get(CropLog, log_id)
+    if log is None or log.crop_id != crop_id or log.user_id != user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Yozuv topilmadi")
+    return log
+
+
+@router.put("/{crop_id}/logs/{log_id}", response_model=CropLogOut)
+async def update_log(crop_id: uuid.UUID, log_id: uuid.UUID, body: CropLogUpdate,
+                     user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    log = await _own_log(db, crop_id, log_id, user)
+    if body.version != (log.version or 1):
+        raise HTTPException(status.HTTP_409_CONFLICT, "Yozuv boshqa joyda o'zgartirilgan. Sahifani yangilab, qayta tahrirlang.")
+    _apply_log(log, body)
+    log.version = (log.version or 1) + 1
+    await db.commit()
+    await db.refresh(log)
+    return log
+
+
+@router.delete("/{crop_id}/logs/{log_id}", status_code=204)
+async def delete_log(crop_id: uuid.UUID, log_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    log = await _own_log(db, crop_id, log_id, user)
+    await db.delete(log)
+    await db.commit()
 
 
 @router.post("/{crop_id}/photo", response_model=CropOut)

@@ -28,6 +28,17 @@ class GardenRepository extends BaseRepository {
   Future<List<CropLog>> logs(String id) => call(() async => list((await dio.get('/crops/$id/logs')).data, CropLog.fromJson));
   Future<void> addLog(String id, String content) => call(() => dio.post('/crops/$id/logs', data: {'content': content}));
 
+  static String _day(DateTime d) => '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  Future<CropLog> saveLog(String cropId, {String? logId, int? version, required String content, required List<String> images, required DateTime observedAt}) =>
+      call(() async {
+        final data = {'content': content, 'images': images, 'observed_at': _day(observedAt), if (version != null) 'version': version};
+        final r = logId == null ? await dio.post('/crops/$cropId/logs', data: data) : await dio.put('/crops/$cropId/logs/$logId', data: data);
+        return CropLog.fromJson(r.data);
+      });
+
+  Future<void> deleteLog(String cropId, String logId) => call(() => dio.delete('/crops/$cropId/logs/$logId'));
+
   Future<Weather> weather() => call(() async => Weather.fromJson((await dio.get('/weather')).data));
 
   // Tashxis

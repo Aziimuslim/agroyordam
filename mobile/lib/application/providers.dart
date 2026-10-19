@@ -149,6 +149,10 @@ final postProvider = FutureProvider.autoDispose.family<Post, String>((ref, id) =
 final commentsProvider = FutureProvider.autoDispose.family<List<Comment>, String>((ref, id) => ref.watch(communityRepoProvider).comments(id));
 final profileProvider = FutureProvider.autoDispose.family<UserProfile, String>((ref, id) => ref.watch(communityRepoProvider).profile(id));
 final conversationsProvider = FutureProvider.autoDispose<List<Conversation>>((ref) => ref.watch(communityRepoProvider).conversations());
+/// A02: barcha saqlanganlar (kalit: "kind:id") — tugmalar holati shundan olinadi.
+final bookmarksProvider = FutureProvider.autoDispose<List<Bookmark>>((ref) => ref.watch(communityRepoProvider).bookmarks());
+final blocksProvider = FutureProvider.autoDispose<List<AppUser>>((ref) => ref.watch(communityRepoProvider).blocks());
+final userSearchProvider = FutureProvider.autoDispose.family<List<AppUser>, String>((ref, q) => ref.watch(communityRepoProvider).searchUsers(q));
 final notificationsProvider = FutureProvider.autoDispose<List<AppNotification>>((ref) => ref.watch(communityRepoProvider).notifications());
 
 final authOptionsProvider = FutureProvider.autoDispose<AuthOptions>((ref) => ref.watch(authRepoProvider).options());

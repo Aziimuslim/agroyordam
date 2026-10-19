@@ -44,6 +44,7 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
   Object? _error;
   Timer? _typingTimer;
   AppUser? _other;
+  bool _blocked = false;
 
   String? get _myId => ref.read(currentUserProvider)?.id;
 
@@ -64,7 +65,9 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
       final msgs = await repo.messages(widget.id);
       if (!mounted) return;
       setState(() {
-        _other = convs.where((c) => c.id == widget.id).firstOrNull?.other;
+        final conv = convs.where((c) => c.id == widget.id).firstOrNull;
+        _other = conv?.other;
+        _blocked = conv?.blocked ?? false;
         _messages
           ..clear()
           ..addAll(msgs);
@@ -293,8 +296,12 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
                 onSend: _send,
                 onChanged: _onChanged,
                 maxLength: 4000,
-                enabled: !_loading && _error == null,
-                disabledText: notFound ? tr("Suhbat mavjud emas — xabar yozib bo'lmaydi") : null,
+                enabled: !_loading && _error == null && !_blocked,
+                disabledText: notFound
+                    ? tr("Suhbat mavjud emas — xabar yozib bo'lmaydi")
+                    : _blocked
+                        ? tr("Bloklash sababli bu suhbatda yozib bo'lmaydi")
+                        : null,
               ),
             ]),
           ),

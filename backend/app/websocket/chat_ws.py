@@ -58,6 +58,10 @@ async def chat_ws(websocket: WebSocket, conversation_id: uuid.UUID, token: str =
             if not content and not data.get("image_url"):
                 continue
             async with SessionLocal() as db:
+                from app.api.v1.chat import blocked_conversation
+
+                if await blocked_conversation(db, conversation_id, user_id):
+                    continue  # A08: bloklangan suhbatga yozilmaydi
                 await save_message(db, conversation_id, user_id, content[:4000], data.get("image_url"))
                 await db.commit()
     except WebSocketDisconnect:

@@ -60,14 +60,31 @@ class HealthPoint {
       HealthPoint(parseDate(j['date']) ?? DateTime.now(), j['health_score'] ?? 0, j['disease']);
 }
 
+/// A04 Kundalik yozuvi: kuzatuv sanasi, matn va/yoki 5 tagacha rasm; `version` — tahrir konflikti uchun.
 class CropLog {
-  CropLog({required this.id, required this.content, this.imageUrl, this.createdAt});
+  CropLog({required this.id, required this.content, this.imageUrl, this.images = const [], this.observedAt, this.version = 1, this.createdAt, this.updatedAt});
   final String id, content;
   final String? imageUrl;
-  final DateTime? createdAt;
+  final List<String> images;
+  final DateTime? observedAt, createdAt, updatedAt;
+  final int version;
 
-  factory CropLog.fromJson(Map<String, dynamic> j) =>
-      CropLog(id: j['id'], content: j['content'], imageUrl: j['image_url'], createdAt: parseDate(j['created_at']));
+  DateTime? get date => observedAt ?? createdAt;
+  bool get edited => updatedAt != null && createdAt != null && updatedAt!.difference(createdAt!).inSeconds > 5 && version > 1;
+
+  factory CropLog.fromJson(Map<String, dynamic> j) {
+    final imgs = List<String>.from(j['images'] ?? const []);
+    return CropLog(
+      id: j['id'],
+      content: j['content'] ?? '',
+      imageUrl: j['image_url'],
+      images: imgs.isEmpty && j['image_url'] != null ? [j['image_url']] : imgs,
+      observedAt: j['observed_at'] == null ? null : DateTime.tryParse(j['observed_at']),
+      version: j['version'] ?? 1,
+      createdAt: parseDate(j['created_at']),
+      updatedAt: parseDate(j['updated_at']),
+    );
+  }
 }
 
 /// Ob-havo va zamburug' kasalliklari xavfi (backend: GET /weather, manba — Open-Meteo).

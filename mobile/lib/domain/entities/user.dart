@@ -116,10 +116,13 @@ class FarmBrief {
 }
 
 class UserProfile {
-  UserProfile({required this.user, this.followers = 0, this.following = 0, this.posts = 0, this.isFollowing = false});
+  UserProfile({required this.user, this.followers = 0, this.following = 0, this.posts = 0, this.isFollowing = false, this.isBlocked = false});
   final AppUser user;
   final int followers, following, posts;
   final bool isFollowing;
+
+  /// A08: men bu foydalanuvchini bloklaganman.
+  final bool isBlocked;
 
   factory UserProfile.fromJson(Map<String, dynamic> j) => UserProfile(
         user: AppUser.fromJson(j),
@@ -127,6 +130,7 @@ class UserProfile {
         following: j['following_count'] ?? 0,
         posts: j['posts_count'] ?? 0,
         isFollowing: j['is_following'] ?? false,
+        isBlocked: j['is_blocked'] ?? false,
       );
 }
 

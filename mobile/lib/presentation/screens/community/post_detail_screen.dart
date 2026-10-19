@@ -12,6 +12,7 @@ import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 import '../chat/chat_widgets.dart';
 import 'post_card.dart';
+import '../saved/bookmark_button.dart';
 import 'report_sheet.dart';
 
 /// S13 Post tafsiloti: post, izohlar (agronom javoblari tepada), izoh 1–1000 belgi — server tasdig'idan keyin
@@ -99,7 +100,7 @@ class _PostDetailState extends ConsumerState<PostDetailScreen> {
             child: Column(children: [
               Expanded(
                 child: ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 16), children: [
-                  TopBar(title: tr('Post')),
+                  TopBar(title: tr('Post'), actions: [if (!missing) BookmarkButton(kind: 'post', targetId: widget.id)]),
                   if (missing)
                     Column(children: [
                       EmptyNote(tr("Post topilmadi yoki o'chirilgan"), icon: Icons.search_off_rounded),

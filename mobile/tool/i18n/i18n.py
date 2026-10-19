@@ -24,6 +24,10 @@ EXTRA = ['Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba', 'Y
          "Ro'yxatdan o'tish ma'lumotlari kerak", "Qoidalarga rozilik kerak", "Kodni qayta yuborish uchun biroz kuting",
          "Bu foydalanuvchi nomi allaqachon ro'yxatdan o'tgan", "Bu email allaqachon ro'yxatdan o'tgan",
          "Bu telefon raqami allaqachon ro'yxatdan o'tgan",
+         # 0.8.8 (bloklash, kundalik, saqlanganlar)
+         "Bu foydalanuvchi bilan yozishib bo'lmaydi", "Bu foydalanuvchiga obuna bo'lib bo'lmaydi", "O'zingizni bloklab bo'lmaydi",
+         "Yozuv topilmadi", "Yozuv boshqa joyda o'zgartirilgan. Sahifani yangilab, qayta tahrirlang.",
+         "Matn yoki kamida bitta rasm kerak", "Kuzatuv sanasi kelajakda bo'lmasin", "Rasm ilovaga yuklangan bo'lishi kerak",
          "AI tashxis — cheksiz", "\"Mening bog'im\" — cheksiz ekin", "AI Yordamchi — cheksiz va ustuvor javob", "Batafsil sog'liq tarixi"]
 
 

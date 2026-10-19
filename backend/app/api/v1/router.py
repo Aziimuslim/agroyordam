@@ -1,12 +1,12 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
-    admin, admin_panel, ai, auth, catalog, chat, community, crops, dataset, diagnoses, experts, notifications, questions, reminders, reports,
+    admin, admin_panel, ai, auth, bookmarks, catalog, chat, community, crops, dataset, diagnoses, experts, notifications, questions, reminders, reports,
     subscriptions, payments, uploads, users, weather,
 )
 
 api_router = APIRouter(prefix="/api/v1")
-for r in (auth, users, catalog, crops, diagnoses, community, chat, reminders, notifications, ai, reports,
+for r in (auth, users, bookmarks, catalog, crops, diagnoses, community, chat, reminders, notifications, ai, reports,
           subscriptions, admin, admin_panel, uploads, payments, weather, experts, questions):
     api_router.include_router(r.router)
 api_router.include_router(dataset.router)

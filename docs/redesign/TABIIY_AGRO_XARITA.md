@@ -34,7 +34,7 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S11 | Jamoat | `/help?tab=comm` | ✅ 0.8.5 | Barchasi/Obunalar/Tajriba/Savollar; like optimistik (xatoda qaytadi). Bookmark ⛔ |
 | S12 | Yangi post | `/community/new`, `?edit=` | ✅ 0.8.5 | Tur majburiy, sarlavha 3–100, matn 10–3000 (server ham tekshiradi); tahrirlash. 5 tagacha rasm ⛔ (backend bitta `image_url`) |
 | S13 | Post tafsiloti | `/community/:id?comment=1` | ✅ 0.8.5 | Agronom javoblari tepada; izoh o'chirish/shikoyat (sabab majburiy); o'chirilgan post holati. Izohga javob ⛔, bookmark ⛔ |
-| S14 | Fermer profili | `/users/:id` | ✅ 0.8.5 | Postlar/Haqida, obuna, xabar yozish, o'z profilida tahrirlash; telefon/manzil ko'rsatilmaydi. Bloklash ⛔ |
+| S14 | Fermer profili | `/users/:id` | ✅ 0.8.5 | Postlar/Haqida, obuna, xabar yozish, o'z profilida tahrirlash; telefon/manzil ko'rsatilmaydi. Bloklash ✅ 0.8.8 |
 | S15 | Xabarlar | `/messages` | ✅ 0.8.5 | Ism bo'yicha qidiruv, o'qilmaganlar, «Rasm» preview. A07 foydalanuvchi qidiruvi ⛔, suhbatni o'chirish/ovozsiz ⛔ |
 | S16 | Shaxsiy chat | `/messages/:id` | ✅ 0.8.5 | Yuborish REST orqali: yuborilmoqda → yuborildi/o'qildi yoki xato + qayta yuborish; «yozmoqda...»; soxta «Onlayn» olib tashlandi (backend'da presence yo'q). Rasm yuborish UI ⛔ |
 | S17 | O'simliklar | `/catalog?tab=plants` | ✅ 0.8.4 | — |
@@ -43,7 +43,7 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S20 | O'simlik tafsiloti | `/catalog/plant/:id` | ✅ 0.8.4 | Bookmark (A02) ⛔ |
 | S21 | Kasallik tafsiloti | `/catalog/disease/:id` | ✅ 0.8.4 | Manba matni hali to'ldirilmagan (agronom KB tahririda kiritiladi); bookmark ⛔ |
 | S22 | Dori tafsiloti | `/catalog/medicine/:id` | ✅ 0.8.4 | Yorliq hujjati (PDF) ⛔; `label_verified`ni belgilash UI agronom/admin panelida yo'q |
-| S23 | Profil | `/profile` | ✅ 0.8.6 | Hisob/Faoliyat/Sozlamalar guruhlari; Ekin/Post serverdan. Saqlanganlar (A02) ⛔; agronom/admin bandlari faqat shu rolga ega foydalanuvchiga |
+| S23 | Profil | `/profile` | ✅ 0.8.6 | Hisob/Faoliyat/Sozlamalar guruhlari; Ekin/Post serverdan; Saqlanganlar va Bloklanganlar (0.8.8); agronom/admin bandlari faqat shu rolga ega foydalanuvchiga |
 | S24 | Shaxsiy ma'lumotlar | `/profile/edit` | ✅ (0.7.0) | Username tahriri; aloqa tasdiqlash (S35) ⛔ |
 | S25 | Eslatmalar | `/reminders?crop=` | ✅ 0.8.3 | — |
 | S26 | Yangi eslatma | `/reminders/add`, `/reminders/:id/edit` | ✅ 0.8.3 | Qurilma push'i ⛔ (ilovada FCM yo'q — eslatma ilova ichidagi Bildirishnomalarda); takrorlash turini tahrirda o'zgartirish yo'q |
@@ -58,13 +58,13 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S35 | Kodni tasdiqlash | `/auth/verify` | ✅ 0.8.7 (sinov rejimida) | 6 raqam, TTL 5 daq, qayta yuborish 60 s, 5 urinish, eski kod yaroqsiz, noto'g'ri/eskirgan farqlanadi. Haqiqiy SMS/email yuborish ⛔ (provayder) |
 | S36 | Parolni tiklash | `/auth/recovery` (`/forgot`) | ✅ 0.8.7 | Kod → yangi parol (recovery token 10 daq, bir martalik, login emas, barcha seanslar tugaydi). Kanal yo'q bo'lsa — administrator orqali yo'l ko'rsatiladi |
 | A01 | Tahlil jarayoni | S03 ichida bosqichlar | 🟡 | Yuklash → tahlil bosqichlari, yuklashda bekor qilish, 60 s xabari ✅; server job holatlari (queued/processing) ⛔ — backend sinxron |
-| A02 | Saqlanganlar | — | ⛔ | Bookmark API ⛔ |
+| A02 | Saqlanganlar | `/saved` | ✅ 0.8.8 | Post/O'simlik/Kasallik/Vosita tablari, qidiruv; saqlash tugmasi S13/S20/S21/S22 da (optimistik, xatoda qaytadi); o'chirilgan element — placeholder |
 | A03 | Vazifa tafsiloti | pastki oyna | ✅ 0.8.3 | — (tahrir, seriya: faqat shu / shu va keyingilar) |
-| A04 | Kuzatuv/kundalik | S06 «Kundalik» tabi | 🟡 | Matn ✅ (2000 belgi); rasm biriktirish va yozuvni tahrirlash/o'chirish API ⛔ |
+| A04 | Kuzatuv/kundalik | S06 «Kundalik», `/garden/:id/log` | ✅ 0.8.8 | Sana, matn 0–2000, 5 tagacha rasm (jami 25 MB), tahrirlash/o'chirish, versiya konflikti (409), saqlanmagan o'zgarish dialogi |
 | A05 | Sozlamalar va hujjatlar | `/settings/about` | 🟡 0.8.6 | Versiya, yordam, manbalar, maxfiylik qoidalari; server manzili productionda yashirildi. Rasmiy shartlar/maxfiylik hujjati ⛔ (matn tasdiqlanmagan); bildirishnoma turlari sozlamasi ⛔ |
 | A06 | Hudud va ob-havo | — | ✅ 0.8.0 | Soatlik/kunlik prognoz (provayder qo'llaydi, keyingi bosqich) |
-| A07 | Foydalanuvchi qidiruvi | — | ⛔ | Ommaviy qidiruv API ⛔ |
-| A08 | Modal oqimlar | shikoyat ✅, agronomga yuborish ✅ | 🟡 | Bloklash ⛔, buyurtma xulosasi |
+| A07 | Foydalanuvchi qidiruvi | `/users/search` (S15 «Yangi suhbat») | ✅ 0.8.8 | Ism/@username, 2 belgidan; minimal ommaviy profil; bloklangan va faol bo'lmaganlar chiqmaydi; telefon bo'yicha qidiruv yo'q |
+| A08 | Modal oqimlar | shikoyat, bloklash, buyurtma xulosasi, tiklash, agronomga yuborish | ✅ 0.8.8 | Bloklash: ta'sir tushuntiriladi, tasdiq, `/settings/blocked` da blokdan chiqarish; shikoyat dublikati yaratilmaydi |
 
 ## 0.8.0 da backend'ga qo'shilgan (mavjud API kengaytirildi, almashtirilmadi)
 
@@ -111,6 +111,15 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 - `GET /auth/options` (kanallar, sinov rejimi, qoidalar versiyasi), `POST /auth/challenges`, `/challenges/{id}/resend`, `/challenges/{id}/verify`, `POST /auth/recovery/reset`.
 - Kod yuborish provayderi yo'q: productionda kanallar e'lon qilinmaydi (`OTP_DEV_CODES`), development/test'da kod javobda qaytadi. Provayder ulanganda faqat `otp_service.deliver()` o'zgaradi.
 - `/auth/register`: username ixtiyoriy (server yaratadi), `accept_terms`. 429 javoblarida `Retry-After`; CORS `Retry-After`, `X-Attempts-Left` ni ochadi.
+
+## 0.8.8 da backend'ga qo'shilgan
+
+- Migratsiya 0014: `bookmarks`, `user_blocks`; `crop_logs.images` (≤5), `observed_at`, `version`, `updated_at`.
+- `GET/POST /bookmarks`, `DELETE /bookmarks/{kind}/{id}` — o'chirilgan obyekt `exists=false` bilan qaytadi.
+- `GET /users/search?q=` (≥2 belgi, ism/username, minimal profil), `POST/DELETE /users/{id}/block`, `GET /users/me/blocks`; profilda `is_blocked`, suhbatda `blocked`.
+- Bloklash ikki tomonlama: lenta va izohlarda yashiriladi, yangi suhbat/xabar (REST va WebSocket) va obuna taqiqlanadi, mavjud obunalar o'chadi.
+- `PUT/DELETE /crops/{id}/logs/{log_id}`: versiya mos kelmasa 409; rasm faqat serverga yuklangan media manzilidan.
+- Shikoyat: bir obyektga ko'rib chiqilmagan ikkinchi shikoyat yaratilmaydi.
 
 ## Ekin holati qoidasi (TZ 1-bo'lim)
 

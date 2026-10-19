@@ -2,15 +2,17 @@ import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.rate_limit import enforce
 from app.core.security import hash_password, hash_refresh_token, verify_password
-from app.models import Follower, Post, RefreshToken, User
+from app.models import Follower, Post, RefreshToken, User, UserBlock
 from app.schemas.user import EXPERT_FIELDS, UserMe, UserProfile, UserPublic, UserUpdate
+from app.services import block_service
 from app.services.notification_service import notify
 from app.services.storage import get_storage, read_image
 
@@ -81,6 +83,30 @@ async def upload_avatar(file: UploadFile = File(...), user: User = Depends(get_c
     return user
 
 
+@router.get("/search", response_model=list[UserPublic])
+async def search_users(q: str = "", me_: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """A07: ism yoki foydalanuvchi nomi bo'yicha (kamida 2 belgi). Telefon/email bo'yicha qidirilmaydi;
+    bloklangan va faol bo'lmagan hisoblar chiqmaydi. Faqat ommaviy minimal profil."""
+    term = q.strip().lstrip("@")
+    if len(term) < 2:
+        return []
+    await enforce(f"user-search:{me_.id}", 60)
+    like = f"%{term.replace('%', '').replace('_', '')}%"
+    hidden = await block_service.hidden_ids(db, me_.id)
+    stmt = (select(User).where(User.is_active.is_(True), User.id != me_.id,
+                               or_(User.full_name.ilike(like), User.username.ilike(like)))
+            .order_by(User.full_name).limit(20))
+    if hidden:
+        stmt = stmt.where(User.id.not_in(hidden))
+    return list((await db.scalars(stmt)).all())
+
+
+@router.get("/me/blocks", response_model=list[UserPublic])
+async def my_blocks(me_: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    stmt = select(User).join(UserBlock, UserBlock.blocked_id == User.id).where(UserBlock.blocker_id == me_.id).order_by(UserBlock.created_at.desc())
+    return list((await db.scalars(stmt)).all())
+
+
 async def _get_user(db: AsyncSession, user_id: uuid.UUID) -> User:
     u = await db.get(User, user_id)
     if u is None or not u.is_active:
@@ -100,7 +126,28 @@ async def get_user(user_id: uuid.UUID, me_: User = Depends(get_current_user), db
         following_count=await cnt(Follower.follower_id == u.id),
         posts_count=await cnt(Post.user_id == u.id),
         is_following=bool(await db.scalar(select(Follower.id).where(Follower.follower_id == me_.id, Follower.following_id == u.id))),
+        is_blocked=await block_service.i_blocked(db, me_.id, u.id),
     )
+
+
+@router.post("/{user_id}/block", status_code=204)
+async def block_user(user_id: uuid.UUID, me_: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """A08: postlar, izohlar va qidiruvda bir-birini ko'rmaydi; yozishma va obuna to'xtaydi."""
+    if user_id == me_.id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "O'zingizni bloklab bo'lmaydi")
+    await _get_user(db, user_id)
+    if not await block_service.i_blocked(db, me_.id, user_id):
+        db.add(UserBlock(blocker_id=me_.id, blocked_id=user_id))
+        await db.execute(delete(Follower).where(or_(
+            (Follower.follower_id == me_.id) & (Follower.following_id == user_id),
+            (Follower.follower_id == user_id) & (Follower.following_id == me_.id))))
+        await db.commit()
+
+
+@router.delete("/{user_id}/block", status_code=204)
+async def unblock_user(user_id: uuid.UUID, me_: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await db.execute(delete(UserBlock).where(UserBlock.blocker_id == me_.id, UserBlock.blocked_id == user_id))
+    await db.commit()
 
 
 @router.post("/{user_id}/follow", status_code=204)
@@ -108,6 +155,8 @@ async def follow(user_id: uuid.UUID, me_: User = Depends(get_current_user), db: 
     if user_id == me_.id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "O'zingizga obuna bo'lolmaysiz")
     await _get_user(db, user_id)
+    if await block_service.between(db, me_.id, user_id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Bu foydalanuvchiga obuna bo'lib bo'lmaydi")
     exists = await db.scalar(select(Follower.id).where(Follower.follower_id == me_.id, Follower.following_id == user_id))
     if not exists:
         db.add(Follower(follower_id=me_.id, following_id=user_id))

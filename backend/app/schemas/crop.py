@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.schemas.common import ORMModel
 
@@ -80,8 +80,42 @@ class CropOut(ORMModel):
 
 
 class CropLogIn(BaseModel):
-    content: str = Field(min_length=1)
-    image_url: str | None = None
+    """A04: matn 1–2000 belgi yoki kamida bitta rasm; 5 tagacha rasm (faqat serverga yuklangan /media/...)."""
+
+    content: str = Field(default="", max_length=2000)
+    image_url: str | None = None  # eski ilovalar
+    images: list[str] = Field(default_factory=list, max_length=5)
+    observed_at: date | None = None
+
+    @field_validator("content", mode="before")
+    @classmethod
+    def strip_content(cls, v):
+        return v.strip() if isinstance(v, str) else v
+
+    @field_validator("images")
+    @classmethod
+    def media_only(cls, v: list[str]) -> list[str]:
+        from app.core.config import settings
+
+        allowed = tuple(p for p in (f"{settings.MEDIA_URL}/", settings.S3_PUBLIC_URL and f"{settings.S3_PUBLIC_URL}/") if p)
+        for url in v:
+            if not url.startswith(allowed) or ".." in url:
+                raise ValueError("Rasm ilovaga yuklangan bo'lishi kerak")
+        return v
+
+    @model_validator(mode="after")
+    def need_something(self):
+        if self.image_url and not self.images:
+            self.images = [self.image_url]
+        if not self.content and not self.images:
+            raise ValueError("Matn yoki kamida bitta rasm kerak")
+        if self.observed_at and self.observed_at > date.today():
+            raise ValueError("Kuzatuv sanasi kelajakda bo'lmasin")
+        return self
+
+
+class CropLogUpdate(CropLogIn):
+    version: int  # tahrir boshlangandagi versiya — boshqa qurilmada o'zgargan bo'lsa 409
 
 
 class CropLogOut(ORMModel):
@@ -89,7 +123,11 @@ class CropLogOut(ORMModel):
     crop_id: uuid.UUID
     content: str
     image_url: str | None = None
+    images: list[str] | None = None
+    observed_at: date | None = None
+    version: int = 1
     created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class HealthPoint(BaseModel):

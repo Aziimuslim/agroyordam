@@ -38,3 +38,4 @@ class ConversationOut(BaseModel):
     last_message: MessageOut | None = None
     unread_count: int = 0
     updated_at: datetime | None = None
+    blocked: bool = False  # A08: bloklash bor — yozib bo'lmaydi

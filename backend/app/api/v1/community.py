@@ -8,6 +8,7 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models import Comment, Follower, Like, Post, User
 from app.schemas.community import CommentIn, CommentOut, PostIn, PostOut, PostUpdate
+from app.services.block_service import hidden_ids
 from app.services.community_service import comment_out, post_out
 from app.services.notification_service import notify
 
@@ -42,6 +43,9 @@ async def list_posts(
         stmt = stmt.where(~expert_comment.exists())
     if feed == "following":
         stmt = stmt.where(Post.user_id.in_(select(Follower.following_id).where(Follower.follower_id == user.id)))
+    hidden = await hidden_ids(db, user.id)
+    if hidden:  # A08: bloklangan foydalanuvchilar postlari ko'rinmaydi
+        stmt = stmt.where(Post.user_id.not_in(hidden))
     return [await post_out(db, p, user) for p in (await db.scalars(stmt)).all()]
 
 
@@ -102,9 +106,12 @@ async def unlike_post(post_id: uuid.UUID, user: User = Depends(get_current_user)
 
 
 @router.get("/posts/{post_id}/comments", response_model=list[CommentOut])
-async def list_comments(post_id: uuid.UUID, _: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def list_comments(post_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     await get_post(db, post_id)
     stmt = select(Comment).where(Comment.post_id == post_id).order_by(Comment.created_at)
+    hidden = await hidden_ids(db, user.id)
+    if hidden:
+        stmt = stmt.where(Comment.user_id.not_in(hidden))
     return [await comment_out(db, c) for c in (await db.scalars(stmt)).all()]
 
 

@@ -25,6 +25,17 @@ class CommunityRepository extends BaseRepository {
   Future<void> report({String? postId, String? commentId, required String reason}) =>
       call(() => dio.post('/reports', data: {'post_id': postId, 'comment_id': commentId, 'reason': reason}));
 
+  // A02 Saqlanganlar
+  Future<List<Bookmark>> bookmarks() => call(() async => list((await dio.get('/bookmarks')).data, Bookmark.fromJson));
+  Future<void> addBookmark(String kind, String targetId) => call(() => dio.post('/bookmarks', data: {'kind': kind, 'target_id': targetId}));
+  Future<void> removeBookmark(String kind, String targetId) => call(() => dio.delete('/bookmarks/$kind/$targetId'));
+
+  // A07 qidiruv, A08 bloklash
+  Future<List<AppUser>> searchUsers(String q) =>
+      call(() async => list((await dio.get('/users/search', queryParameters: {'q': q})).data, AppUser.fromJson));
+  Future<void> block(String userId, bool block) => call(() => block ? dio.post('/users/$userId/block') : dio.delete('/users/$userId/block'));
+  Future<List<AppUser>> blocks() => call(() async => list((await dio.get('/users/me/blocks')).data, AppUser.fromJson));
+
   Future<UserProfile> profile(String userId) => call(() async => UserProfile.fromJson((await dio.get('/users/$userId')).data));
   Future<void> follow(String userId, bool follow) =>
       call(() => follow ? dio.post('/users/$userId/follow') : dio.delete('/users/$userId/follow'));

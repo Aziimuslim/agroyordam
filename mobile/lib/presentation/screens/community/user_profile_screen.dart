@@ -9,6 +9,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/widgets/blocks.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../../domain/entities/entities.dart';
 import 'post_card.dart';
 
 /// S14 Fermer profili: Postlar / Haqida, obuna (ikki marta bosish sonni buzmaydi), xabar yozish (mavjud
@@ -45,6 +46,35 @@ class _UserProfileState extends ConsumerState<UserProfileScreen> {
     try {
       final conv = await ref.read(communityRepoProvider).startConversation(widget.id);
       if (mounted) context.push('/messages/${conv.id}');
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// A08: ta'siri tushuntiriladi, tasdiq bilan.
+  Future<void> _block(UserProfile p, bool block) async {
+    if (_busy) return;
+    final name = p.user.fullName;
+    final bool ok;
+    if (block) {
+      ok = await confirm(context, trf('{0} bloklansinmi?', [name]),
+          tr("Bir-biringizning postlari, izohlari va qidiruvdagi profilingiz ko'rinmaydi, yozishib bo'lmaydi, obunalar bekor qilinadi. Blokdan chiqarish: Profil → Bloklanganlar."),
+          ok: tr('Bloklash'), danger: true);
+    } else {
+      ok = await confirm(context, tr('Blokdan chiqarasizmi?'), trf("{0} postlari va izohlari yana ko'rinadi, u sizga yoza oladi.", [name]), ok: tr('Blokdan chiqarish'));
+    }
+    if (!ok || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await ref.read(communityRepoProvider).block(widget.id, block);
+      ref.invalidate(profileProvider(widget.id));
+      ref.invalidate(userPostsProvider(widget.id));
+      ref.invalidate(feedProvider);
+      ref.invalidate(blocksProvider);
+      ref.invalidate(conversationsProvider);
+      if (mounted) showToast(context, block ? trf('{0} bloklandi', [name]) : trf('{0} blokdan chiqarildi', [name]));
     } catch (e) {
       if (mounted) showError(context, e);
     } finally {
@@ -107,7 +137,7 @@ class _UserProfileState extends ConsumerState<UserProfileScreen> {
             : postList == null
                 ? const Skeleton(height: 180)
                 : postList.isEmpty
-                    ? EmptyNote(tr("Hali post yo'q"), icon: AppIcons.chat)
+                    ? EmptyNote(p.isBlocked ? tr("Bloklangan foydalanuvchi postlari ko'rsatilmaydi") : tr("Hali post yo'q"), icon: p.isBlocked ? Icons.block_outlined : AppIcons.chat)
                     : Column(children: [for (final post in postList) PostCard(key: ValueKey(post.id), post: post)]);
 
     return PageShell(
@@ -118,7 +148,15 @@ class _UserProfileState extends ConsumerState<UserProfileScreen> {
         ref.invalidate(userPostsProvider(widget.id));
       },
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        TopBar(title: mine ? tr('Mening profilim') : tr('Fermer profili')),
+        TopBar(title: mine ? tr('Mening profilim') : tr('Fermer profili'), actions: [
+          if (!mine)
+            PopupMenuButton<String>(
+              tooltip: tr('Amallar'),
+              icon: Icon(Icons.more_vert_rounded, color: c.text),
+              onSelected: (_) => _block(p, !p.isBlocked),
+              itemBuilder: (_) => [PopupMenuItem(value: 'block', child: Text(p.isBlocked ? tr('Blokdan chiqarish') : tr('Bloklash')))],
+            ),
+        ]),
         Row(children: [
           Avatar(name: u.fullName, url: u.avatarUrl, size: 80, color: c.olive, textColor: c.onOlive),
           const SizedBox(width: 16),
@@ -149,6 +187,18 @@ class _UserProfileState extends ConsumerState<UserProfileScreen> {
               icon: const Icon(AppIcons.edit),
               label: Text(tr('Profilni tahrirlash'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             ),
+          )
+        else if (p.isBlocked)
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: c.cream2, borderRadius: BorderRadius.circular(14)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Text(tr('Siz bu foydalanuvchini bloklagansiz'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: c.text)),
+              const SizedBox(height: 4),
+              Text(tr("Uning postlari va izohlari sizga ko'rinmaydi, yozishib bo'lmaydi."), style: TextStyle(fontSize: 14.5, color: c.muted)),
+              const SizedBox(height: 10),
+              OutlinedButton(style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)), onPressed: _busy ? null : () => _block(p, false), child: Text(tr('Blokdan chiqarish'))),
+            ]),
           )
         else
           Row(children: [

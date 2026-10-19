@@ -21,6 +21,13 @@ async def create_report(body: ReportIn, user: User = Depends(get_current_user), 
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Post topilmadi")
     if body.comment_id and await db.get(Comment, body.comment_id) is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Izoh topilmadi")
+    # A08: bir obyektga ikkinchi shikoyat yaratilmaydi — avvalgisi qaytadi
+    dup = await db.scalar(select(Report).where(
+        Report.reporter_id == user.id, Report.status == "pending",
+        Report.post_id == body.post_id if body.post_id else Report.post_id.is_(None),
+        Report.comment_id == body.comment_id if body.comment_id else Report.comment_id.is_(None)).limit(1))
+    if dup is not None:
+        return dup
     r = Report(reporter_id=user.id, **body.model_dump())
     db.add(r)
     await db.commit()

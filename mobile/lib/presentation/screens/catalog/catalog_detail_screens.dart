@@ -13,6 +13,7 @@ import '../../../core/widgets/blocks.dart';
 import '../../../core/widgets/ds.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
+import '../saved/bookmark_button.dart';
 import 'catalog_common.dart';
 import 'catalog_screen.dart' show DiseaseCard, MedicineCard, showSafetySheet;
 
@@ -34,6 +35,7 @@ class _DetailScaffold extends StatelessWidget {
     this.bottom,
     this.fallbackRoute = '/catalog',
     this.icon,
+    this.bookmark,
   });
   final String title;
   final String? subtitle, asset, url, imageLabel, fallbackRoute;
@@ -44,6 +46,7 @@ class _DetailScaffold extends StatelessWidget {
   final Widget body;
   final Widget? bottom;
   final IconData? icon; // rasm o'rniga katta ikonka (dorilar)
+  final Widget? bookmark; // A02 saqlash tugmasi
 
   @override
   Widget build(BuildContext context) {
@@ -116,10 +119,16 @@ class _DetailScaffold extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (bookmark != null)
+                    Positioned(
+                      top: top + 8,
+                      right: 12,
+                      child: Material(color: const Color(0xE6FFFFFF), shape: const CircleBorder(), child: bookmark),
+                    ),
                   if (imageLabel != null && hasImage)
                     Positioned(
                       right: 12,
-                      top: top + 16,
+                      top: top + (bookmark != null ? 64 : 16),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(color: const Color(0x99000000), borderRadius: BorderRadius.circular(999)),
@@ -255,6 +264,7 @@ class _PlantScreenState extends ConsumerState<PlantScreen> {
         ]),
     };
     return _DetailScaffold(
+      bookmark: BookmarkButton(kind: 'plant', targetId: widget.id, color: _ink),
       title: p.name,
       subtitle: p.scientificName,
       asset: asset,
@@ -347,6 +357,7 @@ class _DiseaseScreenState extends ConsumerState<DiseaseScreen> {
         ]),
     };
     return _DetailScaffold(
+      bookmark: BookmarkButton(kind: 'disease', targetId: widget.id, color: _ink),
       title: d.name,
       subtitle: d.plantName,
       asset: img,
@@ -426,6 +437,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
         ]),
     };
     return _DetailScaffold(
+      bookmark: BookmarkButton(kind: 'medicine', targetId: widget.id, color: _ink),
       title: m.name,
       subtitle: m.activeIngredient,
       icon: cat.icon,

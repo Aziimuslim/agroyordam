@@ -9,6 +9,7 @@ from app.core.deps import get_current_user
 from app.models import Conversation, ConversationParticipant, Message, User
 from app.schemas.chat import ConversationIn, ConversationOut, MessageIn, MessageOut
 from app.schemas.user import UserPublic
+from app.services import block_service
 from app.services.chat_service import save_message
 
 router = APIRouter(tags=["Chat"])
@@ -23,15 +24,27 @@ async def ensure_member(db: AsyncSession, conv_id: uuid.UUID, user: User) -> Con
     return conv
 
 
+async def blocked_conversation(db: AsyncSession, conv_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+    others = (await db.scalars(select(ConversationParticipant.user_id).where(
+        ConversationParticipant.conversation_id == conv_id, ConversationParticipant.user_id != user_id))).all()
+    for o in others:
+        if await block_service.between(db, user_id, o):
+            return True
+    return False
+
+
 async def conv_out(db: AsyncSession, conv: Conversation, me: User) -> ConversationOut:
     users = (await db.scalars(select(User).join(ConversationParticipant, ConversationParticipant.user_id == User.id)
                               .where(ConversationParticipant.conversation_id == conv.id))).all()
     last = await db.scalar(select(Message).where(Message.conversation_id == conv.id).order_by(Message.created_at.desc()).limit(1))
+    others = [u for u in users if u.id != me.id]
+    blocked = bool(others) and await block_service.between(db, me.id, others[0].id)
     unread = await db.scalar(select(func.count()).select_from(Message).where(
         Message.conversation_id == conv.id, Message.sender_id != me.id, Message.is_read.is_(False))) or 0
     return ConversationOut(
         id=conv.id, participants=[UserPublic.model_validate(u) for u in users if u.id != me.id],
         last_message=MessageOut.model_validate(last) if last else None, unread_count=unread, updated_at=conv.updated_at,
+        blocked=blocked,
     )
 
 
@@ -49,6 +62,8 @@ async def start_conversation(body: ConversationIn, user: User = Depends(get_curr
     other = await db.get(User, body.user_id)
     if other is None or not other.is_active:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Foydalanuvchi topilmadi")
+    if await block_service.between(db, user.id, other.id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, block_service.BLOCKED_MSG)
     # Mavjud 1:1 suhbatni qayta ishlatamiz
     mine = select(ConversationParticipant.conversation_id).where(ConversationParticipant.user_id == user.id)
     existing = await db.scalar(select(Conversation).join(ConversationParticipant, ConversationParticipant.conversation_id == Conversation.id)
@@ -74,6 +89,8 @@ async def list_messages(conv_id: uuid.UUID, limit: int = 100, user: User = Depen
 @router.post("/conversations/{conv_id}/messages", response_model=MessageOut, status_code=201)
 async def send_message(conv_id: uuid.UUID, body: MessageIn, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     await ensure_member(db, conv_id, user)
+    if await blocked_conversation(db, conv_id, user.id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, block_service.BLOCKED_MSG)
     if not (body.content or "").strip() and not body.image_url:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Bo'sh xabar")
     msg = await save_message(db, conv_id, user.id, (body.content or "").strip() or None, body.image_url)

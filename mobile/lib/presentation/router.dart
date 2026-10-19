@@ -5,6 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../application/app_mode.dart';
 import '../application/providers.dart';
 import '../core/widgets/brand.dart';
+import '../domain/entities/entities.dart';
+import 'screens/garden/diary.dart';
+import 'screens/people/blocked_screen.dart';
+import 'screens/people/user_search_screen.dart';
+import 'screens/saved/saved_screen.dart';
 import 'screens/settings/about_screen.dart';
 import 'screens/settings/appearance_screen.dart';
 import 'screens/settings/language_screen.dart';
@@ -123,6 +128,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           builder: (_, s) => CropDetailScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!, tab: s.uri.queryParameters['tab']),
           routes: [
             GoRoute(path: 'edit', builder: (_, s) => EditCropRoute(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
+            GoRoute(
+              path: 'log',
+              builder: (_, s) => LogEditorScreen(key: ValueKey(s.matchedLocation), cropId: s.pathParameters['id']!, log: s.extra is CropLog ? s.extra as CropLog : null),
+            ),
             GoRoute(path: 'care', builder: (_, s) => CareScreen(key: ValueKey(s.matchedLocation), cropId: s.pathParameters['id']!)),
           ],
         ),
@@ -164,6 +173,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         GoRoute(path: 'medicine/:id', builder: (_, s) => MedicineScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
       ]),
 
+      GoRoute(path: '/users/search', builder: (_, __) => const UserSearchScreen()),
       GoRoute(path: '/users/:id', builder: (_, s) => UserProfileScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
       GoRoute(path: '/messages', builder: (_, __) => const ConversationsScreen(), routes: [
         GoRoute(path: ':id', builder: (_, s) => ThreadScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
@@ -172,6 +182,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings/appearance', builder: (_, __) => const AppearanceScreen()),
       GoRoute(path: '/settings/language', builder: (_, __) => const LanguageScreen()),
       GoRoute(path: '/settings/about', builder: (_, __) => const AboutScreen()),
+      GoRoute(path: '/settings/blocked', builder: (_, __) => const BlockedScreen()),
+      GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
       GoRoute(path: '/subscription', redirect: (_, __) => '/premium'),
       GoRoute(path: '/payments', redirect: (_, __) => '/premium/payments'),
       GoRoute(path: '/weather', builder: (_, __) => const WeatherScreen()),

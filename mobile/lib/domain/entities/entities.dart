@@ -8,3 +8,4 @@ export 'reminder.dart';
 export 'subscription.dart';
 export 'user.dart';
 export 'auth.dart';
+export 'bookmark.dart';
