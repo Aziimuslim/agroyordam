@@ -117,3 +117,22 @@ class CarePlan {
         tasks: [for (final t in (j['tasks'] as List? ?? [])) CarePlanTask.fromJson(t)],
       );
 }
+
+/// TZ A01: fon tahlili holati — queued | processing | finishing | done | failed | cancelled.
+class AnalysisJob {
+  AnalysisJob({required this.id, required this.status, this.diagnosisId, this.error, this.errorCode});
+  final String id, status;
+  final String? diagnosisId, error;
+  final int? errorCode;
+
+  bool get isActive => status == 'queued' || status == 'processing' || status == 'finishing';
+  bool get isDone => status == 'done' && diagnosisId != null;
+
+  factory AnalysisJob.fromJson(Map<String, dynamic> j) => AnalysisJob(
+        id: j['id'],
+        status: j['status'] ?? 'queued',
+        diagnosisId: j['diagnosis_id'],
+        error: j['error'],
+        errorCode: j['error_code'],
+      );
+}

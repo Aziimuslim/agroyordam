@@ -1,5 +1,6 @@
 from app.models.admin import AppSetting, AuditLog
 from app.models.ai_chat_message import AIChatMessage
+from app.models.analysis_job import AnalysisJob
 from app.models.auth_challenge import AuthChallenge
 from app.models.bookmark import Bookmark
 from app.models.comment import Comment
@@ -26,7 +27,7 @@ from app.models.user import User
 from app.models.user_block import UserBlock
 
 __all__ = [
-    "AuthChallenge", "Bookmark", "UserBlock",
+    "AnalysisJob", "AuthChallenge", "Bookmark", "UserBlock",
     "AppSetting", "AuditLog",
     "AIChatMessage", "CatalogChange", "Comment", "ExpertApplication", "Question", "QuestionMessage", "Conversation", "ConversationParticipant", "Crop", "CropLog",
     "Diagnosis", "Disease", "DiseaseMedicine", "Follower", "Like", "Medicine", "Message",

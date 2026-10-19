@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.security import utcnow
-from app.models import AIChatMessage, Crop, Diagnosis, User
+from app.models import AIChatMessage, AnalysisJob, Crop, Diagnosis, User
 from app.services.app_settings import get_int
 
 
@@ -16,9 +16,16 @@ def _today_start() -> datetime:
 
 
 async def diagnoses_today(db: AsyncSession, user: User) -> int:
-    return await db.scalar(
+    """Bugungi tashxislar + hali tugamagan fon tahlillari (A01): navbatdagi so'rovlar limitni chetlab o'tmaydi.
+    Bekor qilingan yoki xato bilan tugagan tahlil limitdan hisoblanmaydi."""
+    done = await db.scalar(
         select(func.count()).select_from(Diagnosis).where(Diagnosis.user_id == user.id, Diagnosis.diagnosed_at >= _today_start())
     ) or 0
+    active = await db.scalar(
+        select(func.count()).select_from(AnalysisJob).where(
+            AnalysisJob.user_id == user.id, AnalysisJob.status.in_(("queued", "processing", "finishing")))
+    ) or 0
+    return done + active
 
 
 async def ai_chats_today(db: AsyncSession, user: User) -> int:

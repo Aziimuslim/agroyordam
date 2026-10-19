@@ -9,14 +9,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.security import utcnow
-from app.models import Crop, CropLog, Diagnosis, Disease, Plant, Post, Reminder, User
+from app.models import AnalysisJob, Crop, CropLog, Diagnosis, Disease, Plant, Post, Reminder, User
 from app.repositories.catalog_repo import DiseaseRepository
 from app.schemas.community import PostOut
-from app.schemas.diagnosis import CarePlanApplied, CarePlanApply, CarePlanOut, CarePlanTask, DiagnosisOut, FeedbackIn, ReviewRequestIn, ShareIn
+from app.schemas.diagnosis import AnalysisJobOut, CarePlanApplied, CarePlanApply, CarePlanOut, CarePlanTask, DiagnosisOut, FeedbackIn, ReviewRequestIn, ShareIn
 from app.services.care_plan import build_plan
 from app.services.community_service import post_out
 from app.services.diagnosis_service import health_from, run_diagnosis, to_out
-from app.services.limits import ensure_can_add_crop
+from app.services import analysis_jobs
+from app.services.limits import ensure_can_add_crop, ensure_can_diagnose
+from app.services.storage import get_storage, read_image
 
 router = APIRouter(prefix="/diagnoses", tags=["Diagnoses"])
 
@@ -38,6 +40,59 @@ async def create_diagnosis(
 ):
     """plant_id — ixtiyoriy ekin turi: AI faqat shu ekin kasalliklari ichidan tanlaydi (aniqroq natija)."""
     return await run_diagnosis(db, user, image, crop_id, plant_id)
+
+
+@router.post("/jobs", response_model=AnalysisJobOut, status_code=202)
+async def create_job(
+    image: UploadFile = File(...),
+    client_key: str = Form(min_length=8, max_length=64),
+    crop_id: uuid.UUID | None = Form(default=None),
+    plant_id: uuid.UUID | None = Form(default=None),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """TZ A01: rasm tekshiriladi va saqlanadi, tahlil fonda boradi. Holat — GET /diagnoses/jobs/{id}.
+    `client_key` — ilova har bir tanlangan rasm uchun yaratadi: qayta yuborilsa o'sha ish qaytadi (dublikat yo'q)."""
+    existing = await db.scalar(select(AnalysisJob).where(AnalysisJob.user_id == user.id, AnalysisJob.client_key == client_key))
+    if existing is not None:
+        return existing
+    await ensure_can_diagnose(db, user)
+    if crop_id:
+        crop = await db.get(Crop, crop_id)
+        if crop is None or crop.user_id != user.id:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Ekin topilmadi")
+    if plant_id and await db.get(Plant, plant_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "O'simlik turi topilmadi")
+    data, ext = await read_image(image)
+    job = AnalysisJob(user_id=user.id, client_key=client_key, image_url=get_storage().save(data, ext, "diagnoses"), ext=ext,
+                      crop_id=crop_id, plant_id=None if crop_id else plant_id)
+    db.add(job)
+    await db.commit()
+    await db.refresh(job)
+    analysis_jobs.schedule(job.id)
+    return job
+
+
+async def own_job(db: AsyncSession, job_id: uuid.UUID, user: User) -> AnalysisJob:
+    job = await db.get(AnalysisJob, job_id)
+    if job is None or job.user_id != user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Tahlil topilmadi")
+    return job
+
+
+@router.get("/jobs/{job_id}", response_model=AnalysisJobOut)
+async def get_job(job_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    return await own_job(db, job_id, user)
+
+
+@router.post("/jobs/{job_id}/cancel", response_model=AnalysisJobOut)
+async def cancel_job(job_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """TZ S03: bekor qilish server holatini tekshiradi. Natija allaqachon tayyor bo'lsa, ish "done" bo'lib qaytadi
+    (ilova natijani ochadi); bekor qilingan tahlil tashxis yaratmaydi va limitdan hisoblanmaydi."""
+    job = await own_job(db, job_id, user)
+    await analysis_jobs.cancel(db, job.id)
+    await db.refresh(job)
+    return job
 
 
 @router.get("", response_model=list[DiagnosisOut])

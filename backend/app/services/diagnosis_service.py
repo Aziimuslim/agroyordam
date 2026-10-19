@@ -58,6 +58,14 @@ async def run_diagnosis(db: AsyncSession, user: User, upload: UploadFile, crop_i
         )
 
     image_url = get_storage().save(data, ext, "diagnoses")
+    diag = await build_diagnosis(db, user, crop, hint_plant, pred, image_url)
+    await db.commit()
+    return await to_out(db, diag, ai_label=pred.ai_label)
+
+
+async def build_diagnosis(db: AsyncSession, user: User, crop: Crop | None, hint_plant: Plant | None, pred, image_url: str) -> Diagnosis:
+    """AI natijasidan tashxis yozuvi (commit qilinmaydi): KB bog'lash, ekin holati, "Tashxis tayyor" bildirishnomasi.
+    Sinxron so'rov ham, A01 fon jarayoni ham shuni ishlatadi."""
     repo = DiseaseRepository(db)
     healthy = is_healthy_label(pred.ai_label)
     low_conf = pred.confidence < settings.AI_MIN_CONFIDENCE
@@ -90,8 +98,7 @@ async def run_diagnosis(db: AsyncSession, user: User, upload: UploadFile, crop_i
     title = "Tashxis tayyor"
     body = f"{disease.name} {'(taxminiy) ' if low_conf else ''}aniqlandi ({pred.confidence:.0f}%)" if disease else ("O'simlik sog'lom" if healthy else "Natija aniq emas")
     await notify(db, user.id, "diagnosis_ready", title, body, diag.id)
-    await db.commit()
-    return await to_out(db, diag, ai_label=pred.ai_label)
+    return diag
 
 
 async def to_out(db: AsyncSession, diag: Diagnosis, ai_label: str | None = None) -> DiagnosisOut:

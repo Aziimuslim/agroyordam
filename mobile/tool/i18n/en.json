@@ -1326,5 +1326,18 @@
  "{0} ga javob": "Reply to {0}",
  "Javobni bekor qilish": "Cancel reply",
  "Izoh o'chirilgan": "Comment deleted",
- "Javob berish": "Reply"
+ "Javob berish": "Reply",
+ "Tahlil bekor qilindi": "Analysis cancelled",
+ "Natija allaqachon tayyor": "The result is already ready",
+ "Natija yozilmoqda — endi bekor qilib bo'lmaydi": "Saving the result — it can no longer be cancelled",
+ "Tahlil fonda davom etadi": "Analysis continues in the background",
+ "Natija tayyor bo'lganda bildirishnoma keladi va u tashxislar tarixida ko'rinadi.": "You'll get a notification when the result is ready, and it will appear in diagnosis history.",
+ "Navbatda": "Queued",
+ "Ekrandan chiqsangiz ham tahlil davom etadi — natija bildirishnoma bo'lib keladi.": "Even if you leave this screen, analysis continues — the result arrives as a notification.",
+ "Bekor qilinmoqda...": "Cancelling...",
+ "Rasm topilmadi. Qayta yuklang.": "Photo not found. Please upload again.",
+ "Tahlilda kutilmagan xato. Qayta urinib ko'ring.": "Unexpected analysis error. Please try again.",
+ "Tahlil topilmadi": "Analysis not found",
+ "Rasm sifati past. Yorug' joyda, bargga yaqinroq qilib qayta suratga oling.": "Low photo quality. Retake it in good light, closer to the leaf.",
+ "Tahlil amalga oshmadi. Qayta urinib ko'ring.": "Analysis failed. Please try again."
 }

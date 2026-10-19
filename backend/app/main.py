@@ -27,6 +27,9 @@ async def lifespan(app: FastAPI):
         from app.seed import run_seed  # KB har doim yangilanadi; demo foydalanuvchilar faqat SEED_DEMO_DATA=true
 
         await run_seed()
+        from app.services import analysis_jobs  # A01: tugallanmagan fon tahlillarini davom ettirish
+
+        await analysis_jobs.resume_pending()
         if settings.ENABLE_SCHEDULER:
             from app.tasks import scheduler
 

@@ -42,20 +42,21 @@ class GardenRepository extends BaseRepository {
   Future<Weather> weather() => call(() async => Weather.fromJson((await dio.get('/weather')).data));
 
   // Tashxis
-  /// [onUploaded] — rasm serverga to'liq yetib borganda (A01: "yuklanmoqda" → "tahlil qilinmoqda").
-  /// [cancel] — faqat yuklash bosqichida bekor qilish uchun.
-  Future<Diagnosis> diagnose(List<int> bytes, String filename,
-          {String? cropId, String? plantId, void Function()? onUploaded, CancelToken? cancel}) =>
+  /// TZ A01: tahlilni fonda boshlash. [clientKey] — tanlangan rasm uchun bir marta yaratiladi: qayta yuborilsa
+  /// server o'sha ishni qaytaradi (dublikat tahlil yo'q).
+  Future<AnalysisJob> startAnalysis(List<int> bytes, String filename,
+          {required String clientKey, String? cropId, String? plantId, void Function()? onUploaded, CancelToken? cancel}) =>
       call(() async {
         final ext = filename.split('.').last.toLowerCase();
         final mime = ext == 'png' ? 'png' : (ext == 'webp' ? 'webp' : 'jpeg');
         final form = FormData.fromMap({
           'image': MultipartFile.fromBytes(bytes, filename: filename, contentType: DioMediaType('image', mime)),
+          'client_key': clientKey,
           if (cropId != null) 'crop_id': cropId,
           if (cropId == null && plantId != null) 'plant_id': plantId,
         });
         var notified = false;
-        return Diagnosis.fromJson((await dio.post('/diagnoses',
+        return AnalysisJob.fromJson((await dio.post('/diagnoses/jobs',
                 data: form,
                 cancelToken: cancel,
                 onSendProgress: (sent, total) {
@@ -66,6 +67,9 @@ class GardenRepository extends BaseRepository {
                 }))
             .data);
       });
+  Future<AnalysisJob> analysisJob(String id) => call(() async => AnalysisJob.fromJson((await dio.get('/diagnoses/jobs/$id')).data));
+  Future<AnalysisJob> cancelAnalysis(String id) => call(() async => AnalysisJob.fromJson((await dio.post('/diagnoses/jobs/$id/cancel')).data));
+
   /// Tarixdan yashirish (yozuv serverda saqlanadi) va qaytarish — TZ S07.
   Future<void> hideDiagnosis(String id) => call(() => dio.delete('/diagnoses/$id'));
   Future<Diagnosis> restoreDiagnosis(String id) => call(() async => Diagnosis.fromJson((await dio.post('/diagnoses/$id/restore')).data));

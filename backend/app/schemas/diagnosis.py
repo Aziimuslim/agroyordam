@@ -35,6 +35,17 @@ class DiagnosisOut(ORMModel):
     diagnosed_at: datetime | None = None
 
 
+class AnalysisJobOut(ORMModel):
+    """TZ A01: queued | processing | finishing | done | failed | cancelled."""
+    id: uuid.UUID
+    status: str
+    diagnosis_id: uuid.UUID | None = None
+    error: str | None = None
+    error_code: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
 class ReviewRequestIn(BaseModel):
     note: str | None = Field(default=None, max_length=1000)
 

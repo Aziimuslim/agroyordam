@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -15,8 +16,8 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 
-/// S03 jarayoni: tanlash → preview → A01 (yuklanmoqda → tahlil qilinmoqda) → S08 yoki xato.
-enum _Step { pick, preview, uploading, analyzing, error }
+/// S03 jarayoni: tanlash → preview → A01 (yuklanmoqda → navbatda → tahlil → natija yozilmoqda) → S08 yoki xato.
+enum _Step { pick, preview, uploading, queued, analyzing, finishing, error }
 
 /// S03 AI tashxis: rasm (kamera yoki galereya) → preview → "Tahlil qilish" → A01 → S08 natija.
 /// Ekin turi ixtiyoriy, "Bog'imga bog'lash" — o'z ekinlari ro'yxati. Tanlangan rasm bilan chiqishda tasdiq.
@@ -41,7 +42,16 @@ class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
   ApiException? _error;
   CancelToken? _cancel;
   Timer? _slow;
-  bool _isSlow = false;
+  bool _isSlow = false, _cancelling = false;
+
+  /// A01: tanlangan rasm uchun idempotentlik kaliti — qayta yuborish o'sha server ishini qaytaradi.
+  String? _key;
+  AnalysisJob? _job;
+
+  static String _newKey() {
+    final r = Random.secure();
+    return List.generate(24, (_) => r.nextInt(16).toRadixString(16)).join();
+  }
 
   @override
   void initState() {
@@ -82,11 +92,15 @@ class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
       _name = file!.name.contains('.') ? file.name : '${file.name}.jpg';
       _step = _Step.preview;
       _error = null;
+      _key = null; // yangi rasm — yangi tahlil
     });
   }
 
+  /// A01: rasm yuklanadi → server ishi (navbat) → holat so'rab turiladi. Tarmoq uzilsa "Qayta urinish" o'sha
+  /// kalit bilan yuboradi — server dublikat tahlil yaratmaydi.
   Future<void> _analyze() async {
-    if (_image == null || _step == _Step.uploading || _step == _Step.analyzing) return; // bitta so'rov
+    if (_image == null || _busy) return; // bitta so'rov
+    _key ??= _newKey();
     final cancel = CancelToken();
     setState(() {
       _cancel = cancel;
@@ -97,26 +111,19 @@ class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
     _slow?.cancel();
     _slow = Timer(const Duration(seconds: 60), () => mounted ? setState(() => _isSlow = true) : null);
     try {
-      final d = await ref.read(gardenRepoProvider).diagnose(
+      final job = await ref.read(gardenRepoProvider).startAnalysis(
             _image!,
             _name,
+            clientKey: _key!,
             cropId: _cropId,
             plantId: _plantId,
             cancel: cancel,
             onUploaded: () {
-              if (mounted && _step == _Step.uploading) setState(() => _step = _Step.analyzing);
+              if (mounted && _step == _Step.uploading) setState(() => _step = _Step.queued);
             },
           );
-      _slow?.cancel();
-      ref.invalidate(mySubscriptionProvider);
-      ref.invalidate(cropsProvider);
-      ref.invalidate(diagnosesProvider);
-      if (_cropId != null) {
-        ref.invalidate(cropProvider(_cropId!));
-        ref.invalidate(cropDiagnosesProvider(_cropId!));
-      }
-      // Natija ekrani o'rniga qo'yiladi: Back tahlilni qayta ishga tushirmaydi (TZ S08)
-      if (mounted) context.pushReplacement('/diagnosis/${d.id}');
+      _job = job;
+      await _follow(job);
     } catch (e) {
       _slow?.cancel();
       if (!mounted) return;
@@ -132,9 +139,78 @@ class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
     }
   }
 
+  /// Server ishini kuzatish: har 1,5 s holat so'raladi; ketma-ket 5 ta tarmoq xatosida to'xtaydi.
+  Future<void> _follow(AnalysisJob job) async {
+    var j = job;
+    var fails = 0;
+    while (mounted && _job?.id == job.id && j.isActive) {
+      final next = switch (j.status) { 'queued' => _Step.queued, 'finishing' => _Step.finishing, _ => _Step.analyzing };
+      if (_step != next) setState(() => _step = next);
+      await Future<void>.delayed(const Duration(milliseconds: 1500));
+      if (!mounted || _job?.id != job.id) return; // ekrandan chiqildi yoki bekor qilindi
+      try {
+        j = await ref.read(gardenRepoProvider).analysisJob(job.id);
+        fails = 0;
+      } catch (e) {
+        if (++fails >= 5) rethrow;
+      }
+    }
+    if (mounted && _job?.id == job.id) _finish(j);
+  }
+
+  void _finish(AnalysisJob j) {
+    _slow?.cancel();
+    _job = null;
+    if (j.isDone) {
+      ref.invalidate(mySubscriptionProvider);
+      ref.invalidate(cropsProvider);
+      ref.invalidate(diagnosesProvider);
+      ref.invalidate(notificationsProvider);
+      if (_cropId != null) {
+        ref.invalidate(cropProvider(_cropId!));
+        ref.invalidate(cropDiagnosesProvider(_cropId!));
+      }
+      // Natija ekrani o'rniga qo'yiladi: Back tahlilni qayta ishga tushirmaydi (TZ S08)
+      context.pushReplacement('/diagnosis/${j.diagnosisId}');
+      return;
+    }
+    _key = null; // bekor qilingan / xato bilan tugagan ish — keyingi urinish yangi tahlil
+    ref.invalidate(mySubscriptionProvider);
+    if (j.status == 'cancelled') {
+      setState(() => _step = _Step.preview);
+      return;
+    }
+    setState(() {
+      _error = ApiException(tr(j.error ?? "Tahlil amalga oshmadi. Qayta urinib ko'ring."), statusCode: j.errorCode);
+      _step = _Step.error;
+    });
+  }
+
   void _cancelUpload() => _cancel?.cancel();
 
-  bool get _busy => _step == _Step.uploading || _step == _Step.analyzing;
+  /// TZ S03: bekor qilish server holatini tekshiradi — natija tayyor bo'lsa u ochiladi, aks holda tahlil to'xtaydi.
+  Future<void> _cancelJob() async {
+    final job = _job;
+    if (job == null || _cancelling) return;
+    setState(() => _cancelling = true);
+    try {
+      final j = await ref.read(gardenRepoProvider).cancelAnalysis(job.id);
+      if (!mounted) return;
+      if (j.status == 'cancelled' || j.isDone || j.status == 'failed') {
+        if (j.status == 'cancelled') showToast(context, tr('Tahlil bekor qilindi'));
+        if (j.isDone) showToast(context, tr('Natija allaqachon tayyor'));
+        _finish(j);
+      } else {
+        showToast(context, tr("Natija yozilmoqda — endi bekor qilib bo'lmaydi"));
+      }
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
+    }
+  }
+
+  bool get _busy => const {_Step.uploading, _Step.queued, _Step.analyzing, _Step.finishing}.contains(_step);
   bool get _hasImage => _image != null && _step != _Step.pick;
 
   Future<bool> _confirmLeave() => confirm(context, tr('Rasm tanlangan'), tr("Chiqsangiz, tanlangan rasm tahlil qilinmaydi."), ok: tr('Chiqish'), danger: true);
@@ -181,10 +257,19 @@ class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
           Text(tr("Yuklangan rasmlar mutaxassis tekshiruvidan so'ng AI'ni yaxshilash uchun anonim ishlatilishi mumkin."),
               textAlign: TextAlign.center, style: TextStyle(color: c.muted, fontSize: 14)),
         ],
-      _Step.uploading || _Step.analyzing => [
+      _Step.uploading || _Step.queued || _Step.analyzing || _Step.finishing => [
           _Preview(image: _image!, scanning: true),
           const SizedBox(height: 16),
-          _Progress(uploading: _step == _Step.uploading, slow: _isSlow, onCancel: _step == _Step.uploading ? _cancelUpload : null),
+          _Progress(
+            stage: switch (_step) { _Step.uploading => 0, _Step.queued => 1, _Step.analyzing => 2, _ => 3 },
+            slow: _isSlow,
+            cancelling: _cancelling,
+            onCancel: switch (_step) {
+              _Step.uploading => _cancelUpload,
+              _Step.queued || _Step.analyzing => _cancelJob,
+              _ => null, // natija yozilmoqda — bekor qilinmaydi
+            },
+          ),
         ],
       _Step.error => [
           if (_image != null) _Preview(image: _image!),
@@ -200,8 +285,22 @@ class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
       canPop: !_hasImage || _step == _Step.error,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
+        if (_step == _Step.uploading) {
+          showToast(context, tr('Avval yuborishni bekor qiling'));
+          return;
+        }
         if (_busy) {
-          showToast(context, _step == _Step.uploading ? tr('Avval yuborishni bekor qiling') : tr("Tahlil yakunlanmoqda, biroz kuting"));
+          // A01: tahlil serverda davom etadi — chiqish uni to'xtatmaydi, natija bildirishnoma bo'lib keladi
+          final leave = await confirm(context, tr('Tahlil fonda davom etadi'),
+              tr("Natija tayyor bo'lganda bildirishnoma keladi va u tashxislar tarixida ko'rinadi."), ok: tr('Chiqish'));
+          if (!leave || !context.mounted) return;
+          _job = null;
+          _slow?.cancel();
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/home');
+          }
           return;
         }
         if (await _confirmLeave() && context.mounted) {
@@ -438,39 +537,50 @@ class _PreviewState extends State<_Preview> with SingleTickerProviderStateMixin 
   }
 }
 
-/// A01 Tahlil jarayoni: foiz o'rniga bosqich nomi (server foiz bermaydi).
+/// A01 Tahlil jarayoni: foiz o'rniga server holatiga mos bosqich nomi (server foiz bermaydi).
 class _Progress extends StatelessWidget {
-  const _Progress({required this.uploading, required this.slow, this.onCancel});
-  final bool uploading, slow;
+  const _Progress({required this.stage, required this.slow, this.cancelling = false, this.onCancel});
+
+  /// 0 — yuklanmoqda, 1 — navbatda, 2 — AI tahlil qilmoqda, 3 — natija tayyorlanmoqda.
+  final int stage;
+  final bool slow, cancelling;
   final VoidCallback? onCancel;
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    Widget stage(String label, bool done, bool active) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Row(children: [
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: done
-                  ? Icon(Icons.check_circle_rounded, color: c.success)
-                  : active
-                      ? CircularProgressIndicator(strokeWidth: 2.6, color: c.primary)
-                      : Icon(Icons.radio_button_unchecked_rounded, color: c.lineStrong),
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Text(label, style: TextStyle(fontSize: 16, fontWeight: active ? FontWeight.w700 : FontWeight.w500, color: done || active ? c.text : c.muted))),
-          ]),
-        );
+    final labels = [tr('Rasm yuklanmoqda'), tr('Navbatda'), tr('AI tahlil qilmoqda'), tr('Natija tayyorlanmoqda')];
+    Widget row(int i) {
+      final done = i < stage, active = i == stage;
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: done
+                ? Icon(Icons.check_circle_rounded, color: c.success)
+                : active
+                    ? CircularProgressIndicator(strokeWidth: 2.6, color: c.primary)
+                    : Icon(Icons.radio_button_unchecked_rounded, color: c.lineStrong),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text(labels[i], style: TextStyle(fontSize: 16, fontWeight: active ? FontWeight.w700 : FontWeight.w500, color: done || active ? c.text : c.muted))),
+        ]),
+      );
+    }
+
     return Semantics(
       liveRegion: true,
-      label: uploading ? tr('Rasm yuklanmoqda') : tr('AI tahlil qilmoqda'),
+      label: labels[stage],
       child: AppCard(
         margin: EdgeInsets.zero,
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          stage(tr('Rasm yuklanmoqda'), !uploading, uploading),
-          stage(tr('AI tahlil qilmoqda'), false, !uploading),
-          stage(tr('Natija tayyorlanmoqda'), false, false),
+          for (var i = 0; i < labels.length; i++) row(i),
+          if (stage >= 1) ...[
+            const SizedBox(height: 8),
+            Text(tr("Ekrandan chiqsangiz ham tahlil davom etadi — natija bildirishnoma bo'lib keladi."),
+                style: TextStyle(color: c.muted, fontSize: 14, height: 1.4)),
+          ],
           if (slow) ...[
             const SizedBox(height: 8),
             Text(tr("Jarayon davom etmoqda. Natija tayyor bo'lgach tashxislar tarixida ko'rinadi."),
@@ -478,7 +588,13 @@ class _Progress extends StatelessWidget {
           ],
           if (onCancel != null) ...[
             const SizedBox(height: 8),
-            Align(alignment: Alignment.centerLeft, child: TextButton(onPressed: onCancel, child: Text(tr('Bekor qilish')))),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: cancelling ? null : onCancel,
+                child: Text(cancelling ? tr('Bekor qilinmoqda...') : tr('Bekor qilish')),
+              ),
+            ),
           ],
         ]),
       ),

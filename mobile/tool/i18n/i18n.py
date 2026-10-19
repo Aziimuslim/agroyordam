@@ -19,6 +19,9 @@ EXTRA = ['Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba', 'Y
          "Topilmadi", "Xabar bo'sh", "Xabar topilmadi", "Yozuv o'chirilgan", "Email yoki telefon raqamidan kamida bittasi kerak",
          # Tarif imkoniyatlari (backend payment_service.PREMIUM_FEATURES, premium_screen: tr(f))
          "Joriy parol noto'g'ri", "Yangi parol eskisidan farq qilishi kerak",
+         # 0.8.12 A01 fon tahlili (analysis_jobs.py)
+         "Rasm topilmadi. Qayta yuklang.", "Tahlil amalga oshmadi. Qayta urinib ko'ring.", "Tahlilda kutilmagan xato. Qayta urinib ko'ring.", "Tahlil topilmadi",
+         "Rasm sifati past. Yorug' joyda, bargga yaqinroq qilib qayta suratga oling.",
          # 0.8.7 kirish (auth.py)
          "Kod yuborish xizmati hozircha ulanmagan", "Telefon raqami +998901234567 ko'rinishida bo'lsin",
          "Ro'yxatdan o'tish ma'lumotlari kerak", "Qoidalarga rozilik kerak", "Kodni qayta yuborish uchun biroz kuting",

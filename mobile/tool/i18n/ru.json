@@ -1326,5 +1326,18 @@
  "{0} ga javob": "Ответ: {0}",
  "Javobni bekor qilish": "Отменить ответ",
  "Izoh o'chirilgan": "Комментарий удалён",
- "Javob berish": "Ответить"
+ "Javob berish": "Ответить",
+ "Tahlil bekor qilindi": "Анализ отменён",
+ "Natija allaqachon tayyor": "Результат уже готов",
+ "Natija yozilmoqda — endi bekor qilib bo'lmaydi": "Результат сохраняется — отменить уже нельзя",
+ "Tahlil fonda davom etadi": "Анализ продолжится в фоне",
+ "Natija tayyor bo'lganda bildirishnoma keladi va u tashxislar tarixida ko'rinadi.": "Когда результат будет готов, придёт уведомление, и он появится в истории диагнозов.",
+ "Navbatda": "В очереди",
+ "Ekrandan chiqsangiz ham tahlil davom etadi — natija bildirishnoma bo'lib keladi.": "Даже если вы уйдёте с экрана, анализ продолжится — результат придёт уведомлением.",
+ "Bekor qilinmoqda...": "Отмена...",
+ "Rasm topilmadi. Qayta yuklang.": "Фото не найдено. Загрузите снова.",
+ "Tahlilda kutilmagan xato. Qayta urinib ko'ring.": "Непредвиденная ошибка анализа. Попробуйте снова.",
+ "Tahlil topilmadi": "Анализ не найден",
+ "Rasm sifati past. Yorug' joyda, bargga yaqinroq qilib qayta suratga oling.": "Низкое качество фото. Переснимите при хорошем свете, ближе к листу.",
+ "Tahlil amalga oshmadi. Qayta urinib ko'ring.": "Анализ не выполнен. Попробуйте снова."
 }

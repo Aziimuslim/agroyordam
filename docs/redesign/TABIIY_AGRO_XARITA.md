@@ -31,7 +31,7 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S08 | Tashxis natijasi | `/diagnosis/:id` | ✅ 0.8.2 | Fikrga ixtiyoriy sabab yozish ⛔ (API faqat ha/yo'q) |
 | S09 | Maslahat (AI) | `/help?tab=ai` | ✅ 0.8.5 | Bugungi bepul limit ko'rsatiladi; tayyor savol faqat yozish maydoniga qo'yiladi. Suhbatlar ro'yxati ⛔ — backend'da bitta AI tarix |
 | S10 | AI suhbat | `/assistant?q=` | ✅ 0.8.5 | Yuborilmoqda/xato + qayta urinish, qoralama saqlanadi, avto-scroll faqat pastda bo'lsa. Streaming, to'xtatish, bir nechta suhbat ⛔ (backend) |
-| S11 | Jamoat | `/help?tab=comm` | ✅ 0.8.5 | Barchasi/Obunalar/Tajriba/Savollar; like optimistik (xatoda qaytadi). Bookmark ⛔ |
+| S11 | Jamoat | `/help?tab=comm` | ✅ 0.8.5 | Barchasi/Obunalar/Tajriba/Savollar; like optimistik (xatoda qaytadi). |
 | S12 | Yangi post | `/community/new`, `?edit=` | ✅ 0.8.11 | Tur majburiy, sarlavha 3–100, matn 10–3000 (server ham tekshiradi); tahrirlash. 0–5 rasm (har biri ≤ 10 MB, jami ≤ 25 MB): preview, olib tashlash; rasm yuklanmasa post e'lon qilinmaydi, yuklanmagan rasm belgilanadi |
 | S13 | Post tafsiloti | `/community/:id?comment=1` | ✅ 0.8.11 | Agronom javoblari tepada; rasmlar — grid va swipe/zoom ko'ruvchi (←/→); izohga javob (bir daraja, composer ustida kontekst + bekor qilish); o'z izohini tahrirlash; o'chirilgan ota izoh «Izoh o'chirilgan», javoblari saqlanadi; shikoyat |
 | S14 | Fermer profili | `/users/:id` | ✅ 0.8.5 | Postlar/Haqida, obuna, xabar yozish, o'z profilida tahrirlash; telefon/manzil ko'rsatilmaydi. Bloklash ✅ 0.8.8 |
@@ -40,14 +40,14 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S17 | O'simliklar | `/catalog?tab=plants` | ✅ 0.8.4 | — |
 | S18 | Kasalliklar | `/catalog?tab=diseases` | ✅ 0.8.4 | «Belgilarni solishtirish» alohida oqimi yo'q (solishtirish S21 ichida) |
 | S19 | Dorilar | `/catalog?tab=medicines` | ✅ 0.8.4 | Mintaqaviy ro'yxatdan o'tish ma'lumoti ⛔ |
-| S20 | O'simlik tafsiloti | `/catalog/plant/:id` | ✅ 0.8.4 | Bookmark (A02) ⛔ |
-| S21 | Kasallik tafsiloti | `/catalog/disease/:id` | ✅ 0.8.4 | Manba matni hali to'ldirilmagan (agronom KB tahririda kiritiladi); bookmark ⛔ |
+| S20 | O'simlik tafsiloti | `/catalog/plant/:id` | ✅ 0.8.4 | Bookmark — A02 (0.8.8) |
+| S21 | Kasallik tafsiloti | `/catalog/disease/:id` | ✅ 0.8.4 | Manba matni hali to'ldirilmagan (agronom KB tahririda kiritiladi); bookmark — A02 (0.8.8) |
 | S22 | Dori tafsiloti | `/catalog/medicine/:id` | ✅ 0.8.4 | Yorliq hujjati (PDF) ⛔; `label_verified`ni belgilash UI agronom/admin panelida yo'q |
 | S23 | Profil | `/profile` | ✅ 0.8.6 | Hisob/Faoliyat/Sozlamalar guruhlari; Ekin/Post serverdan; Saqlanganlar va Bloklanganlar (0.8.8); agronom/admin bandlari faqat shu rolga ega foydalanuvchiga |
 | S24 | Shaxsiy ma'lumotlar | `/profile/edit` | ✅ (0.7.0) | Username tahriri; aloqa tasdiqlash (S35) ⛔ |
 | S25 | Eslatmalar | `/reminders?crop=` | ✅ 0.8.3 | — |
 | S26 | Yangi eslatma | `/reminders/add`, `/reminders/:id/edit` | ✅ 0.8.3 | Qurilma push'i ⛔ (ilovada FCM yo'q — eslatma ilova ichidagi Bildirishnomalarda); takrorlash turini tahrirda o'zgartirish yo'q |
-| S27 | Bildirishnomalar | `/notifications` | ✅ 0.8.3 | Bildirishnoma sozlamalari (A05) ⛔ |
+| S27 | Bildirishnomalar | `/notifications` | ✅ 0.8.3 | Bildirishnoma sozlamalari — A05 (0.8.9) |
 | S28 | Parolni o'zgartirish | `/profile/password` | ✅ 0.8.6 | Har maydonda ko'z, 8–128, yangi ≠ joriy, kuch yordamchisi, «boshqa qurilmalardan chiqish» ixtiyoriy (standart o'chiq), chiqish tasdig'i |
 | S29 | Obunam | `/premium` (`/subscription`) | ✅ 0.8.6 | Narx faqat serverdan; A08 buyurtma xulosasi; qaytishda buyurtma holati tekshiriladi; avto-yangilanish va'dasi olib tashlandi (yechish amalga oshirilmagan) |
 | S30 | To'lovlar tarixi | `/premium/payments` (`/payments`) | ✅ 0.8.6 | Filtr, tafsilot, kutilayotganini yangilash; to'langan/kutilmoqda/amalga oshmagan/qaytarilgan alohida. Chek ⛔ (provayder integratsiyasida yo'q) |
@@ -57,7 +57,7 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S34 | Ro'yxatdan o'tish | `/auth/register` | ✅ 0.8.7 | Ism 2–80, kanal tanlovi, parol+tasdiq, rozilik (belgilanmagan, versiya va vaqt saqlanadi). Kanal bo'lsa hisob kod tasdig'idan keyin; productionda kanal yo'q — darhol yaratiladi va bu ochiq yoziladi |
 | S35 | Kodni tasdiqlash | `/auth/verify` | ✅ 0.8.7 (sinov rejimida) | 6 raqam, TTL 5 daq, qayta yuborish 60 s, 5 urinish, eski kod yaroqsiz, noto'g'ri/eskirgan farqlanadi. Haqiqiy SMS/email yuborish ⛔ (provayder) |
 | S36 | Parolni tiklash | `/auth/recovery` (`/forgot`) | ✅ 0.8.7 | Kod → yangi parol (recovery token 10 daq, bir martalik, login emas, barcha seanslar tugaydi). Kanal yo'q bo'lsa — administrator orqali yo'l ko'rsatiladi |
-| A01 | Tahlil jarayoni | S03 ichida bosqichlar | 🟡 | Yuklash → tahlil bosqichlari, yuklashda bekor qilish, 60 s xabari ✅; server job holatlari (queued/processing) ⛔ — backend sinxron (AI bir necha soniyada javob beradi). Fon jarayoniga o'tkazish tashxis, agronom navbati, dataset va limit hisoblarini o'zgartiradi — alohida bosqich |
+| A01 | Tahlil jarayoni | S03 ichida bosqichlar | ✅ 0.8.12 | Fon jarayoni: yuklanmoqda → navbatda → AI tahlil → natija tayyorlanmoqda (server holati, 1,5 s); bekor qilish serverni tekshiradi (natija tayyor bo'lsa ochiladi, bekor qilingan tahlil tashxis/bildirishnoma/limit sarfi qoldirmaydi); qayta yuborish `client_key` bilan dublikatsiz; ekrandan chiqilsa tahlil davom etadi, natija bildirishnoma bo'lib keladi; server qayta ishga tushsa tugallanmagan ishlar davom etadi |
 | A02 | Saqlanganlar | `/saved` | ✅ 0.8.8 | Post/O'simlik/Kasallik/Vosita tablari, qidiruv; saqlash tugmasi S13/S20/S21/S22 da (optimistik, xatoda qaytadi); o'chirilgan element — placeholder |
 | A03 | Vazifa tafsiloti | pastki oyna | ✅ 0.8.3 | — (tahrir, seriya: faqat shu / shu va keyingilar) |
 | A04 | Kuzatuv/kundalik | S06 «Kundalik», `/garden/:id/log` | ✅ 0.8.8 | Sana, matn 0–2000, 5 tagacha rasm (jami 25 MB), tahrirlash/o'chirish, versiya konflikti (409), saqlanmagan o'zgarish dialogi |
@@ -138,6 +138,14 @@ Migratsiya `0016`: `posts.image_urls`, `comments.parent_id/reply_to_id/deleted_a
 `PUT /conversations/{id}/read`, `PUT /conversations/{id}/mute`, `DELETE /conversations/{id}` (faqat o'zidan yashirish).
 «Yetkazildi»: qabul qiluvchi realtime ulangan bo'lsa darhol, aks holda u suhbatlar/xabarlarni olganda; WS `delivered` event.
 Ovozsiz suhbatdan bildirishnoma yuborilmaydi. Eski klientlar uchun `image_url` (birinchi rasm) saqlanadi.
+
+## 0.8.12 — AI tahlil fon jarayoni (A01)
+
+Migratsiya `0017`: `analysis_jobs` (`queued → processing → finishing → done | failed | cancelled`, `(user_id, client_key)` yagona).
+API: `POST /diagnoses/jobs` (multipart: `image`, `client_key`, ixtiyoriy `crop_id`/`plant_id`) → 202;
+`GET /diagnoses/jobs/{id}`; `POST /diagnoses/jobs/{id}/cancel`. Worker shu jarayonda (asyncio, bir vaqtda 2 ta AI so'rov);
+natija yozishdan oldin `finishing` shartli UPDATE bilan egallanadi — bekor qilish bilan poyga bo'lmaydi.
+Limit: bugungi tashxislar + tugallanmagan ishlar (bekor qilingan/xato hisoblanmaydi). Eski `POST /diagnoses` (sinxron) eski ilovalar uchun qoldi.
 
 ## Ekin holati qoidasi (TZ 1-bo'lim)
 

@@ -400,4 +400,15 @@ void main() {
     expect(find.text('Yetkazildi'), findsOneWidget);
     expect(kMaxPhotos, 5);
   });
+
+  test('0.8.12: A01 fon tahlili holati', () {
+    final q = AnalysisJob.fromJson({'id': 'j', 'status': 'queued'});
+    expect([q.isActive, q.isDone], [true, false]);
+    expect(AnalysisJob.fromJson({'id': 'j', 'status': 'finishing'}).isActive, isTrue);
+    final d = AnalysisJob.fromJson({'id': 'j', 'status': 'done', 'diagnosis_id': 'd1'});
+    expect([d.isActive, d.isDone, d.diagnosisId], [false, true, 'd1']);
+    final f = AnalysisJob.fromJson({'id': 'j', 'status': 'failed', 'error': 'x', 'error_code': 422});
+    expect([f.isActive, f.errorCode], [false, 422]);
+    expect(AnalysisJob.fromJson({'id': 'j', 'status': 'cancelled'}).isActive, isFalse);
+  });
 }
