@@ -7,7 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/widgets.dart';
 
 /// A08 Shikoyat: sabab majburiy, izoh ixtiyoriy (≤ 1000). Yuborilgandan keyin tasdiq.
-Future<void> showReportSheet(BuildContext context, WidgetRef ref, {String? postId, String? commentId}) async {
+Future<void> showReportSheet(BuildContext context, WidgetRef ref, {String? postId, String? commentId, String? messageId}) async {
   final reasons = [tr('Spam yoki reklama'), tr("Haqoratli yoki hurmatsiz so'z"), tr("Noto'g'ri yoki xavfli maslahat"), tr('Boshqa sabab')];
   String? reason;
   final note = TextEditingController();
@@ -46,9 +46,10 @@ Future<void> showReportSheet(BuildContext context, WidgetRef ref, {String? postI
     }),
   );
   if (sent != true || reason == null) return;
-  final text = note.text.trim().isEmpty ? reason! : '${reason!}: ${note.text.trim()}';
+  // sabab (≤ 100) va izoh (≤ 1000) alohida maydonlarda — uzun izoh shikoyatni rad ettirmaydi
   try {
-    await ref.read(communityRepoProvider).report(postId: postId, commentId: commentId, reason: text);
+    await ref.read(communityRepoProvider).report(
+        postId: postId, commentId: commentId, messageId: messageId, reason: reason!, description: note.text.trim().isEmpty ? null : note.text.trim());
     if (context.mounted) showToast(context, tr("Shikoyat yuborildi. Moderator ko'rib chiqadi."));
   } catch (e) {
     if (context.mounted) showError(context, e);

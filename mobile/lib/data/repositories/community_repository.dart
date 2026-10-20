@@ -30,8 +30,14 @@ class CommunityRepository extends BaseRepository {
       call(() => dio.post('/posts/$id/comments', data: {'content': text, if (replyTo != null) 'reply_to_id': replyTo}));
   Future<void> editComment(String id, String text) => call(() => dio.put('/comments/$id', data: {'content': text}));
   Future<void> deleteComment(String id) => call(() => dio.delete('/comments/$id'));
-  Future<void> report({String? postId, String? commentId, required String reason}) =>
-      call(() => dio.post('/reports', data: {'post_id': postId, 'comment_id': commentId, 'reason': reason}));
+  Future<void> report({String? postId, String? commentId, String? messageId, required String reason, String? description}) =>
+      call(() => dio.post('/reports', data: {
+            if (postId != null) 'post_id': postId,
+            if (commentId != null) 'comment_id': commentId,
+            if (messageId != null) 'message_id': messageId,
+            'reason': reason,
+            if (description != null) 'description': description,
+          }));
 
   // A02 Saqlanganlar
   Future<List<Bookmark>> bookmarks() => call(() async => list((await dio.get('/bookmarks')).data, Bookmark.fromJson));

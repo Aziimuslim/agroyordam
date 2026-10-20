@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../application/providers.dart';
 import '../../../core/i18n/i18n.dart';
@@ -51,12 +54,53 @@ class _CreatePostState extends ConsumerState<CreatePostScreen> {
 
   bool get _editing => widget.post != null;
 
+  /// TZ S12: yangi post qoralamasi — hisob va qurilma bo'yicha lokal (tur, sarlavha, matn; rasmlar saqlanmaydi).
+  String get _draftKey => 'post_draft_${ref.read(currentUserProvider)?.id ?? ''}';
+
   @override
   void initState() {
     super.initState();
     for (final t in [_title, _content]) {
-      t.addListener(() => _dirty ? null : setState(() => _dirty = true));
+      t.addListener(() {
+        if (!_dirty) setState(() => _dirty = true);
+        _saveDraft();
+      });
     }
+    if (!_editing) _loadDraft();
+  }
+
+  Future<void> _loadDraft() async {
+    try {
+      final raw = (await SharedPreferences.getInstance()).getString(_draftKey);
+      if (raw == null || !mounted) return;
+      final d = jsonDecode(raw) as Map<String, dynamic>;
+      if ('${d['title'] ?? ''}${d['content'] ?? ''}'.trim().isEmpty) return;
+      setState(() {
+        _title.text = d['title'] ?? '';
+        _content.text = d['content'] ?? '';
+        _category = d['category'] as String?;
+        _dirty = false;
+      });
+      showToast(context, tr('Qoralama tiklandi'));
+    } catch (_) {}
+  }
+
+  Future<void> _saveDraft() async {
+    if (_editing) return;
+    try {
+      final p = await SharedPreferences.getInstance();
+      if (_title.text.trim().isEmpty && _content.text.trim().isEmpty) {
+        await p.remove(_draftKey);
+      } else {
+        await p.setString(_draftKey, jsonEncode({'title': _title.text, 'content': _content.text, 'category': _category}));
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _clearDraft() async {
+    try {
+      await (await SharedPreferences.getInstance()).remove(_draftKey);
+    } catch (_) {}
   }
 
   @override
@@ -102,6 +146,7 @@ class _CreatePostState extends ConsumerState<CreatePostScreen> {
       ref.invalidate(feedProvider);
       ref.invalidate(userPostsProvider);
       ref.invalidate(postProvider(post.id));
+      if (!_editing) await _clearDraft();
       if (!mounted) return;
       setState(() => _dirty = false);
       showToast(context, _editing ? tr('Saqlandi') : tr('Post joylandi'));
@@ -125,10 +170,13 @@ class _CreatePostState extends ConsumerState<CreatePostScreen> {
           child: Text(t, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: c.text)),
         );
     return PopScope(
-      canPop: !_dirty,
+      // yangi postda matn qoralamada qoladi — faqat tanlangan rasmlar yo'qolsa yoki tahrirda so'raladi
+      canPop: !_dirty || (!_editing && !_photos.any((p) => p.bytes != null)),
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
-        final leave = await confirm(context, tr("O'zgarishlar saqlanmagan"), tr("Chiqsangiz, kiritilgan ma'lumotlar yo'qoladi."), ok: tr('Chiqish'), danger: true);
+        final leave = await confirm(context, tr("O'zgarishlar saqlanmagan"),
+            _editing ? tr("Chiqsangiz, kiritilgan ma'lumotlar yo'qoladi.") : tr("Matn qoralamada qoladi, lekin tanlangan rasmlar saqlanmaydi."),
+            ok: tr('Chiqish'), danger: true);
         if (leave && context.mounted) {
           setState(() => _dirty = false);
           if (context.canPop()) {
@@ -150,10 +198,13 @@ class _CreatePostState extends ConsumerState<CreatePostScreen> {
             ChipTabs(
               tabs: [for (final e in postCategoryLabels.entries) (e.key, e.value)],
               selected: _category ?? '',
-              onSelect: (v) => setState(() {
-                _category = v;
-                _dirty = true;
-              }),
+              onSelect: (v) {
+                setState(() {
+                  _category = v;
+                  _dirty = true;
+                });
+                _saveDraft();
+              },
             ),
             if (_submitted && _category == null) Text(tr('Post turini tanlang'), style: TextStyle(color: c.danger, fontSize: 14)),
             label(tr('Sarlavha')),

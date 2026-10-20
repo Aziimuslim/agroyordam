@@ -79,6 +79,28 @@ class _LanguageState extends ConsumerState<LanguageScreen> {
               ),
             ),
             const SizedBox(height: 8),
+            // TZ S32: katalog va AI matnlari serverda faqat o'zbek (lotin) tilida — tanlangan tilda ochiq aytiladi
+            if (_lang != AppLang.uz)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Semantics(
+                  liveRegion: true,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: c.warningBg, borderRadius: BorderRadius.circular(12)),
+                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Icon(Icons.translate_rounded, size: 20, color: c.warning),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          trIn(_lang, "Ilova menyulari shu tilda bo'ladi. O'simliklar, kasalliklar va dorilar katalogi hamda AI javoblari hozircha faqat o'zbek (lotin) tilida."),
+                          style: TextStyle(fontSize: 14, color: c.text, height: 1.4),
+                        ),
+                      ),
+                    ]),
+                  ),
+                ),
+              ),
             Text(tr("Siz va boshqalar yozgan postlar, ismlar tarjima qilinmaydi."), style: TextStyle(fontSize: 13.5, color: c.muted)),
             const SizedBox(height: 18),
             SaveBar(enabled: _dirty && !_saving, onSave: _save),

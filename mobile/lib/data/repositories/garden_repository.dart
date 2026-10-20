@@ -90,8 +90,9 @@ class GardenRepository extends BaseRepository {
   Future<Diagnosis> requestReview(String id, {String? note}) => call(() async =>
       Diagnosis.fromJson((await dio.post('/diagnoses/$id/request-review', data: {if (note != null && note.isNotEmpty) 'note': note})).data));
 
-  Future<Diagnosis> feedback(String id, bool correct) =>
-      call(() async => Diagnosis.fromJson((await dio.post('/diagnoses/$id/feedback', data: {'correct': correct})).data));
+  /// [reason] — "Yo'q" uchun ixtiyoriy sabab (TZ S08).
+  Future<Diagnosis> feedback(String id, bool correct, {String? reason}) => call(() async => Diagnosis.fromJson(
+      (await dio.post('/diagnoses/$id/feedback', data: {'correct': correct, if (reason != null && reason.isNotEmpty) 'reason': reason})).data));
   Future<Post> shareDiagnosis(String id) => call(() async => Post.fromJson((await dio.post('/diagnoses/$id/share')).data));
 
   // Eslatmalar

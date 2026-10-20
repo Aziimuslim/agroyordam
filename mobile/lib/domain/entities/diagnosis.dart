@@ -22,6 +22,7 @@ class Diagnosis {
     this.lowConfidence = false,
     this.medicines = const [],
     this.userFeedback,
+    this.feedbackReason,
     this.diagnosedAt,
     this.aiLabel,
     this.diseaseLabel,
@@ -35,6 +36,7 @@ class Diagnosis {
   final bool isHealthy, lowConfidence;
   final List<Medicine> medicines;
   final bool? userFeedback;
+  final String? feedbackReason;
   final DateTime? diagnosedAt;
 
   /// AI sinfi (ma'lumotnoma rasmi uchun) va agronom tekshiruvi: pending | confirmed | corrected | rejected.
@@ -69,6 +71,7 @@ class Diagnosis {
         lowConfidence: j['low_confidence'] ?? false,
         medicines: [for (final m in (j['medicines'] as List? ?? [])) Medicine.fromJson(m)],
         userFeedback: j['user_feedback'],
+        feedbackReason: j['feedback_reason'],
         diagnosedAt: parseDate(j['diagnosed_at']),
         aiLabel: j['ai_label'],
         diseaseLabel: j['disease_label'],
@@ -97,13 +100,16 @@ class CarePlanTask {
 
 /// Tashxis bo'yicha kunlik parvarish/davolash rejasi (backend: GET /diagnoses/{id}/care-plan).
 class CarePlan {
-  CarePlan({required this.diagnosisId, required this.durationDays, required this.tasks, this.cropId, this.plantId, this.plantName, this.diseaseName, this.confidence = 0, this.isHealthy = false});
+  CarePlan({required this.diagnosisId, required this.durationDays, required this.tasks, this.cropId, this.plantId, this.plantName, this.diseaseName, this.confidence = 0, this.isHealthy = false, this.replaces = const []});
   final String diagnosisId;
   final String? cropId, plantId, plantName, diseaseName;
   final double confidence;
   final bool isHealthy;
   final int durationDays;
   final List<CarePlanTask> tasks;
+
+  /// TZ S04: qayta yaratilsa almashtiriladigan, hali bajarilmagan vazifalar (sarlavha, sana).
+  final List<(String, DateTime)> replaces;
 
   factory CarePlan.fromJson(Map<String, dynamic> j) => CarePlan(
         diagnosisId: j['diagnosis_id'],
@@ -115,6 +121,7 @@ class CarePlan {
         isHealthy: j['is_healthy'] ?? false,
         durationDays: j['duration_days'],
         tasks: [for (final t in (j['tasks'] as List? ?? [])) CarePlanTask.fromJson(t)],
+        replaces: [for (final r in (j['replaces'] as List? ?? [])) ('${r['title']}', DateTime.parse(r['date']))],
       );
 }
 

@@ -12,7 +12,8 @@ from app.core.security import utcnow
 from app.models import AnalysisJob, Crop, CropLog, Diagnosis, Disease, Plant, Post, Reminder, User
 from app.repositories.catalog_repo import DiseaseRepository
 from app.schemas.community import PostOut
-from app.schemas.diagnosis import AnalysisJobOut, CarePlanApplied, CarePlanApply, CarePlanOut, CarePlanTask, DiagnosisOut, FeedbackIn, ReviewRequestIn, ShareIn
+from app.schemas.diagnosis import (AnalysisJobOut, CarePlanApplied, CarePlanApply, CarePlanOut, CarePlanTask, DiagnosisOut, FeedbackIn,
+                                   ReplacedTask, ReviewRequestIn, ShareIn)
 from app.services.care_plan import build_plan
 from app.services.community_service import post_out
 from app.services.diagnosis_service import health_from, run_diagnosis, to_out
@@ -133,6 +134,8 @@ async def diagnosis_feedback(diag_id: uuid.UUID, body: FeedbackIn,
     """"AI to'g'ri topdimi?" — xato deb belgilanganlar dataset tekshiruvida birinchi ko'rsatiladi."""
     d = await own(db, diag_id, user)
     d.user_feedback = body.correct
+    reason = (body.reason or "").strip()
+    d.feedback_reason = (reason or None) if not body.correct else None  # sabab faqat "Yo'q" uchun
     await db.commit()
     return await to_out(db, d)
 
@@ -188,8 +191,13 @@ async def _plan(db: AsyncSession, d: Diagnosis, start: date) -> CarePlanOut:
 
 @router.get("/{diag_id}/care-plan", response_model=CarePlanOut)
 async def care_plan(diag_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    """Tashxis bo'yicha kunlik parvarish/davolash rejasi (ko'rish uchun, hech narsa saqlanmaydi)."""
-    return await _plan(db, await own(db, diag_id, user), date.today())
+    """Tashxis bo'yicha kunlik parvarish/davolash rejasi (ko'rish uchun, hech narsa saqlanmaydi).
+    `replaces` — qayta yaratilsa almashtiriladigan, hali bajarilmagan vazifalar (TZ S04 farq previewi)."""
+    d = await own(db, diag_id, user)
+    plan = await _plan(db, d, date.today())
+    old = (await db.scalars(select(Reminder).where(Reminder.diagnosis_id == d.id, Reminder.user_id == user.id,
+                                                   Reminder.is_completed.is_(False)).order_by(Reminder.reminder_date))).all()
+    return plan.model_copy(update={"replaces": [ReplacedTask(title=r.title, date=r.reminder_date) for r in old]})
 
 
 @router.post("/{diag_id}/care-plan", response_model=CarePlanApplied, status_code=201)

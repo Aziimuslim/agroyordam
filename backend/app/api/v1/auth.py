@@ -19,8 +19,7 @@ from app.core.security import (
 from app.models import AuthChallenge, RefreshToken, User
 from app.repositories.user_repo import UserRepository
 from app.schemas.auth import (
-    AuthOptions, ChallengeIn, ChallengeOut, ForgotPasswordIn, LoginIn, RecoveryResetIn, RefreshIn, RegisterIn,
-    ResetPasswordIn, TokenPair, VerifyIn, VerifyOut,
+    AuthOptions, ChallengeIn, ChallengeOut, ContactIn, ForgotPasswordIn, LoginIn, RecoveryResetIn, RefreshIn, RegisterIn, ResetPasswordIn, TokenPair, VerifyIn, VerifyOut,
 )
 from app.schemas.user import UserMe
 from app.services import otp_service
@@ -250,6 +249,8 @@ def _recovery_token(user: User, cid: uuid.UUID) -> str:
 async def verify_challenge(cid: uuid.UUID, body: VerifyIn, request: Request, db: AsyncSession = Depends(get_db)):
     await enforce(f"otp-verify:{client_ip(request)}", 30)
     ch = await _challenge(db, cid)
+    if ch.purpose == "contact":  # kontakt kodi faqat o'z (avtorizatsiyali) endpointida tekshiriladi
+        raise HTTPException(status.HTTP_410_GONE, "Kod muddati tugagan. Yangi kod so'rang.")
     if ch.expires_at < utcnow():
         raise HTTPException(status.HTTP_410_GONE, "Kod muddati tugagan. Yangi kod so'rang.")
     if ch.attempts >= settings.OTP_MAX_ATTEMPTS:
@@ -289,6 +290,56 @@ async def verify_challenge(cid: uuid.UUID, body: VerifyIn, request: Request, db:
         return VerifyOut(result="session", **tokens.model_dump(exclude={"token_type"}))
     await db.commit()
     return VerifyOut(result="recovery", recovery_token=_recovery_token(user, ch.id), expires_in=settings.RECOVERY_TOKEN_MINUTES * 60)
+
+
+@router.post("/contact", response_model=ChallengeOut, status_code=201)
+async def request_contact_change(body: ContactIn, request: Request, user: User = Depends(get_current_user),
+                                 db: AsyncSession = Depends(get_db)):
+    """TZ S24: telefon/email o'zgarishi yangi manzilga yuborilgan kod bilan tasdiqlanadi (S35 qoidalari: TTL, qayta
+    yuborish — /auth/challenges/{id}/resend, urinishlar)."""
+    if body.channel not in otp_service.available_channels():
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Kod yuborish xizmati hozircha ulanmagan")
+    dest = _normalize(body.channel, body.destination)
+    field = "phone" if body.channel == "sms" else "email"
+    if (getattr(user, field) or "").lower() == dest.lower():
+        raise HTTPException(status.HTTP_409_CONFLICT, "Bu manzil allaqachon profilingizda")
+    await enforce(f"otp:{client_ip(request)}", 10)
+    await enforce(f"otp-dest:{dest}", 5, 600)
+    if await UserRepository(db).by_login(dest) is not None:
+        raise HTTPException(status.HTTP_409_CONFLICT, TAKEN[field])
+    ch = AuthChallenge(id=uuid.uuid4(), purpose="contact", channel=body.channel, destination=dest, user_id=user.id,
+                       code_hash="", resend_at=utcnow(), expires_at=utcnow())
+    code = otp_service.set_code(ch)
+    db.add(ch)
+    await db.commit()
+    otp_service.deliver(body.channel, dest, code)
+    return _out(ch, code)
+
+
+@router.post("/contact/{cid}/verify", response_model=UserMe)
+async def verify_contact_change(cid: uuid.UUID, body: VerifyIn, request: Request, user: User = Depends(get_current_user),
+                                db: AsyncSession = Depends(get_db)):
+    await enforce(f"otp-verify:{client_ip(request)}", 30)
+    ch = await _challenge(db, cid)
+    if ch.purpose != "contact" or ch.user_id != user.id or ch.expires_at < utcnow():
+        raise HTTPException(status.HTTP_410_GONE, "Kod muddati tugagan. Yangi kod so'rang.")
+    if ch.attempts >= settings.OTP_MAX_ATTEMPTS:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Urinishlar tugadi. Yangi kod so'rang.",
+                            headers={"Retry-After": str(max(0, int((ch.resend_at - utcnow()).total_seconds())))})
+    if not otp_service.check(ch, body.code):
+        ch.attempts += 1
+        await db.commit()
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Kod noto'g'ri",
+                            headers={"X-Attempts-Left": str(max(0, settings.OTP_MAX_ATTEMPTS - ch.attempts))})
+    ch.consumed_at = utcnow()
+    field = "phone" if ch.channel == "sms" else "email"
+    if await UserRepository(db).by_login(ch.destination) is not None:
+        await db.commit()
+        raise HTTPException(status.HTTP_409_CONFLICT, TAKEN[field])
+    setattr(user, field, ch.destination)
+    await db.commit()
+    await db.refresh(user)
+    return user
 
 
 @router.post("/recovery/reset")

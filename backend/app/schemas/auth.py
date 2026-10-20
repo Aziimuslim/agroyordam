@@ -72,6 +72,12 @@ class ChallengeOut(BaseModel):
     dev_code: str | None = None  # faqat sinov rejimida
 
 
+class ContactIn(BaseModel):
+    """TZ S24: yangi telefon yoki email — kod shu manzilga yuboriladi."""
+    channel: str = Field(pattern=r"^(sms|email)$")
+    destination: str = Field(min_length=3, max_length=150)
+
+
 class VerifyIn(BaseModel):
     code: str = Field(pattern=r"^\s*\d{6}\s*$")
 

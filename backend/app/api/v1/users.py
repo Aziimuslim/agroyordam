@@ -12,7 +12,7 @@ from app.core.rate_limit import enforce
 from app.core.security import hash_password, hash_refresh_token, verify_password
 from app.models import Follower, Post, RefreshToken, User, UserBlock
 from app.schemas.user import EXPERT_FIELDS, UserMe, UserProfile, UserPublic, UserUpdate
-from app.services import block_service
+from app.services import block_service, otp_service
 from app.services.notification_service import notify, prefs_of
 from app.services.storage import get_storage, read_image
 
@@ -31,6 +31,11 @@ async def update_me(body: UserUpdate, user: User = Depends(get_current_user), db
         data.pop("full_name", None)  # ismni o'chirib bo'lmaydi
     if "email" in data and data["email"]:
         data["email"] = data["email"].lower()
+    # TZ S24: kod yuborish kanali bor bo'lsa, yangi telefon/email faqat kod bilan (POST /auth/contact). Olib tashlash mumkin.
+    for field, channel in (("phone", "sms"), ("email", "email")):
+        new = data.get(field)
+        if new and new != getattr(user, field) and channel in otp_service.available_channels():
+            raise HTTPException(status.HTTP_409_CONFLICT, "Telefon va email'ni o'zgartirish kod bilan tasdiqlanadi")
     if user.role != "agronomist":
         for k in EXPERT_FIELDS:
             data.pop(k, None)

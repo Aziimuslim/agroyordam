@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -16,6 +17,7 @@ import '../../../core/widgets/blocks.dart';
 import '../../../core/widgets/photos.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
+import '../community/report_sheet.dart';
 import 'chat_widgets.dart';
 
 class _Out {
@@ -246,6 +248,16 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
     }
   }
 
+  /// TZ S16 menyusi: shikoyat suhbatdoshning oxirgi xabari bo'yicha (alohida xabar — uni uzoq bosib).
+  Future<void> _reportLast() async {
+    final last = _messages.lastWhere((m) => m.senderId != _myId, orElse: () => ChatMessage(id: '', senderId: ''));
+    if (last.id.isEmpty) {
+      showToast(context, tr("Shikoyat qilish uchun suhbatdoshdan xabar yo'q"));
+      return;
+    }
+    await showReportSheet(context, ref, messageId: last.id);
+  }
+
   /// A08: suhbatdan turib bloklash (tasdiq bilan). Blokdan chiqarish — profil yoki "Bloklanganlar".
   Future<void> _block() async {
     final other = _other;
@@ -332,13 +344,17 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
           if (_messages.isEmpty && _out.isEmpty)
             EmptyNote(trf('{0} bilan suhbatni boshlang', [other?.fullName ?? tr('Suhbatdosh')]), icon: Icons.waving_hand_outlined),
           for (final m in _messages)
-            MessageBubble(
+            _Reportable(
+              enabled: m.senderId != me?.id,
+              onReport: () => showReportSheet(context, ref, messageId: m.id),
+              child: MessageBubble(
               text: m.content ?? '',
               images: m.imageUrls,
               onImageTap: (i) => showPhotoViewer(context, m.imageUrls, initial: i, label: other?.fullName ?? ''),
               me: m.senderId == me?.id,
               time: m.createdAt,
               state: m.senderId == me?.id ? (m.isRead ? MsgState.read : (m.delivered ? MsgState.delivered : MsgState.sent)) : null,
+              ),
             ),
           for (final o in _out)
             MessageBubble(
@@ -406,12 +422,14 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
                       onSelected: (v) => switch (v) {
                         'mute' => _toggleMute(),
                         'block' => _block(),
+                        'report' => _reportLast(),
                         _ => other == null ? null : context.push('/users/${other.id}'),
                       },
                       itemBuilder: (_) => [
                         PopupMenuItem(value: 'mute', child: Text(_muted ? tr('Ovozni yoqish') : tr('Ovozsiz qilish'))),
                         if (other != null) PopupMenuItem(value: 'profile', child: Text(tr('Profilni ko\'rish'))),
                         if (other != null && !_blocked) PopupMenuItem(value: 'block', child: Text(tr('Bloklash'))),
+                        if (other != null) PopupMenuItem(value: 'report', child: Text(tr('Shikoyat qilish'))),
                       ],
                     ),
                 ]),
@@ -469,6 +487,33 @@ class _ThreadState extends ConsumerState<ThreadScreen> {
             ]),
           ),
         ),
+      ),
+    );
+  }
+}
+
+
+/// Kelgan xabarni uzoq bosish → "Shikoyat qilish" (ekran o'quvchisi uchun ham amal sifatida).
+class _Reportable extends StatelessWidget {
+  const _Reportable({required this.enabled, required this.onReport, required this.child});
+  final bool enabled;
+  final VoidCallback onReport;
+  final Widget child;
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) return child;
+    return Semantics(
+      customSemanticsActions: {CustomSemanticsAction(label: tr('Shikoyat qilish')): onReport},
+      child: GestureDetector(
+        onLongPress: () async {
+          final go = await showSheet<bool>(context, title: tr('Xabar'), builder: (ctx) => ListRow(
+                icon: Icons.flag_outlined,
+                label: tr('Shikoyat qilish'),
+                onTap: () => Navigator.pop(ctx, true),
+              ));
+          if (go == true) onReport();
+        },
+        child: child,
       ),
     );
   }

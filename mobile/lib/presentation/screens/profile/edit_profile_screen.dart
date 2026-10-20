@@ -12,6 +12,7 @@ import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/widgets.dart';
+import 'contact_sheet.dart';
 
 /// "Ma'lumotlarim": umumiy qism + dehqon uchun xo'jalik, agronom uchun mutaxassis ma'lumotlari.
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -76,12 +77,14 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
     final phone = _phone.text.replaceAll(RegExp(r'[\s\-()]'), '');
     if (phone.isNotEmpty && !RegExp(r'^\+?[0-9]{9,15}$').hasMatch(phone)) return showToast(context, tr("Telefon raqam noto'g'ri"));
     if (_area.text.trim().isNotEmpty && _areaHa == null) return showToast(context, tr("Yer maydonini raqamda yozing"));
+    // TZ S24: kod kanali bor bo'lsa telefon/email faqat kod bilan o'zgaradi (alohida oyna) — bu yerda yuborilmaydi
+    final opts = ref.read(authOptionsProvider).value;
     setState(() => _loading = true);
     try {
       await ref.read(authProvider.notifier).updateProfile({
         'full_name': _name.text.trim(),
-        'phone': phone.isEmpty ? null : phone,
-        'email': _clean(_email),
+        if (!(opts?.sms ?? false)) 'phone': phone.isEmpty ? null : phone,
+        if (!(opts?.email ?? false)) 'email': _clean(_email),
         'region': _region,
         'district': _district,
         'address': _clean(_address),
@@ -107,6 +110,12 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
       if (mounted) showError(context, e);
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _changeContact(String channel) async {
+    if (await showContactChange(context, channel: channel) && mounted) {
+      showToast(context, channel == 'sms' ? tr('Telefon raqami tasdiqlandi va saqlandi') : tr('Email tasdiqlandi va saqlandi'));
     }
   }
 
@@ -155,6 +164,7 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
   Widget build(BuildContext context) {
     final c = context.c;
     final me = ref.watch(currentUserProvider) ?? user;
+    final opts = ref.watch(authOptionsProvider).value;
     final accent = _expert ? c.expert : c.primary;
     final plants = ref.watch(plantsProvider).value?.map((p) => p.name).toList() ?? const <String>[];
     final place = placeText(_region, _district);
@@ -231,9 +241,15 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
         FieldLabel(tr('F.I.O')),
         TextField(controller: _name, textCapitalization: TextCapitalization.words, decoration: InputDecoration(hintText: tr('Familiya Ism Otasining ismi'))),
         FieldLabel(tr('Telefon raqam')),
-        TextField(controller: _phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(hintText: '+998 90 123 45 67')),
+        if (opts?.sms ?? false)
+          _VerifiedContact(value: me.phone, onChange: () => _changeContact('sms'))
+        else
+          TextField(controller: _phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(hintText: '+998 90 123 45 67')),
         FieldLabel(tr('Email (ixtiyoriy)')),
-        TextField(controller: _email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(hintText: 'pochta@misol.uz')),
+        if (opts?.email ?? false)
+          _VerifiedContact(value: me.email, onChange: () => _changeContact('email'))
+        else
+          TextField(controller: _email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(hintText: 'pochta@misol.uz')),
         FieldLabel(tr('Hudud')),
         _PlaceField(text: place, accent: accent, onTap: _pickPlace),
         FieldLabel(tr("Qo'shimcha manzil")),
@@ -605,5 +621,28 @@ class _TagsEditorState extends State<_TagsEditor> {
         ]),
       ],
     ]);
+  }
+}
+
+
+/// Kod bilan tasdiqlanadigan aloqa: joriy qiymat + "O'zgartirish" (TZ S24).
+class _VerifiedContact extends StatelessWidget {
+  const _VerifiedContact({required this.value, required this.onChange});
+  final String? value;
+  final VoidCallback onChange;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final has = value != null && value!.isNotEmpty;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 6, 6, 6),
+      decoration: BoxDecoration(color: c.cream2, borderRadius: BorderRadius.circular(12), border: Border.all(color: c.border)),
+      child: Row(children: [
+        Expanded(
+          child: Text(has ? value! : tr('Kiritilmagan'), style: TextStyle(fontSize: 16, color: has ? c.text : c.muted)),
+        ),
+        TextButton(onPressed: onChange, child: Text(has ? tr("O'zgartirish") : tr("Qo'shish"))),
+      ]),
+    );
   }
 }

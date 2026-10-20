@@ -24,19 +24,19 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S01 | Bosh sahifa | `/home` · `HomeScreen` | ✅ 0.8.0 da yangilandi | A03, A06 (pastda) |
 | S02 | Mening bog'im | `/garden` · `GardenScreen` | ✅ 0.8.1 | — (qidiruv, Barchasi/E'tibor kerak/Arxiv, ⋮ tahrir/arxiv, bekor qilish) |
 | S03 | AI tashxis | `/diagnose?crop=` · `DiagnoseScreen` | ✅ 0.8.2 | Rasmni aylantirish/kesish yo'q; tahlil limiti tugaganda qoralama saqlanmaydi |
-| S04 | Parvarish rejasi | `/garden/:id/care` · `CareScreen`; reja yaratish `/diagnosis/:id/plan` | ✅ 0.8.2 | Rejani qayta yaratishda farq previewi ⛔; vazifa seriyasi (occurrence) ⛔ |
+| S04 | Parvarish rejasi | `/garden/:id/care` · `CareScreen`; reja yaratish `/diagnosis/:id/plan` | ✅ 0.8.2 | Qayta yaratishda farq: almashtiriladigan vazifalar ro'yxati va tasdiq (0.8.14); vazifa seriyasi (occurrence) ⛔ |
 | S05 | Ekin qo'shish | `/garden/add`, `/garden/:id/edit` · `AddCropScreen` | ✅ 0.8.1 | Ekin turi serverda ixtiyoriy qoldi (eski APK mosligi uchun); ilovada majburiy |
 | S06 | Ekin tafsiloti | `/garden/:id?tab=` · `CropDetailScreen` | ✅ 0.8.1 | A04 da rasmli kuzatuv (UI); "o'chirish" TZ bo'yicha olib tashlandi |
 | S07 | Tashxislar tarixi | `/diagnoses` | ✅ 0.8.2 | Server pagination (hozir 200 tagacha bitta so'rov) |
-| S08 | Tashxis natijasi | `/diagnosis/:id` | ✅ 0.8.2 | Fikrga ixtiyoriy sabab yozish ⛔ (API faqat ha/yo'q) |
+| S08 | Tashxis natijasi | `/diagnosis/:id` | ✅ 0.8.2 | «Yo'q» uchun ixtiyoriy sabab — tayyor variant yoki matn (0.8.14) |
 | S09 | Maslahat (AI) | `/help?tab=ai` | ✅ 0.8.13 | Bugungi bepul limit; «Yangi suhbat»; «Suhbatlarim» — qidiruv (300 ms, nom va xabarlar bo'yicha), ochish, nomlash, o'chirish (tasdiq); tayyor savol faqat yozish maydoniga qo'yiladi |
 | S10 | AI suhbat | `/assistant?c=&q=` | ✅ 0.8.13 | Savol yuborilmoqda → tasdiqlandi → javob oqim (SSE) bilan; «To'xtatish» — qisman javob «to'xtatildi» deb saqlanadi; «Qayta javob» shu savolga bog'langan javobni almashtiradi (limitdan hisoblanmaydi); suhbat bo'yicha qoralama; menyu: yangi suhbat, nomlash, o'chirish. Javob hozir KB'dan bir zumda tuziladi — oqim interfeysi LLM ulanishiga tayyor |
 | S11 | Jamoat | `/help?tab=comm` | ✅ 0.8.5 | Barchasi/Obunalar/Tajriba/Savollar; like optimistik (xatoda qaytadi). |
-| S12 | Yangi post | `/community/new`, `?edit=` | ✅ 0.8.11 | Tur majburiy, sarlavha 3–100, matn 10–3000 (server ham tekshiradi); tahrirlash. 0–5 rasm (har biri ≤ 10 MB, jami ≤ 25 MB): preview, olib tashlash; rasm yuklanmasa post e'lon qilinmaydi, yuklanmagan rasm belgilanadi |
+| S12 | Yangi post | `/community/new`, `?edit=` | ✅ 0.8.11 | Tur majburiy, sarlavha 3–100, matn 10–3000 (server ham tekshiradi); tahrirlash. 0–5 rasm (har biri ≤ 10 MB, jami ≤ 25 MB): preview, olib tashlash; rasm yuklanmasa post e'lon qilinmaydi, yuklanmagan rasm belgilanadi; qoralama qurilmada (0.8.14) |
 | S13 | Post tafsiloti | `/community/:id?comment=1` | ✅ 0.8.11 | Agronom javoblari tepada; rasmlar — grid va swipe/zoom ko'ruvchi (←/→); izohga javob (bir daraja, composer ustida kontekst + bekor qilish); o'z izohini tahrirlash; o'chirilgan ota izoh «Izoh o'chirilgan», javoblari saqlanadi; shikoyat |
 | S14 | Fermer profili | `/users/:id` | ✅ 0.8.5 | Postlar/Haqida, obuna, xabar yozish, o'z profilida tahrirlash; telefon/manzil ko'rsatilmaydi. Bloklash ✅ 0.8.8 |
 | S15 | Xabarlar | `/messages` | ✅ 0.8.11 | Ism bo'yicha qidiruv, o'qilmaganlar, «Rasm»/«N ta rasm» preview; menyu (⋮/uzoq bosish): o'qilgan deb belgilash, ovozsiz, o'z ro'yxatidan yashirish (yangi xabar bilan qaytadi) |
-| S16 | Shaxsiy chat | `/messages/:id` | ✅ 0.8.11 | REST orqali: yuborilmoqda → yuborildi → yetkazildi → o'qildi (oxirgi ikkisi server event) yoki xato + qayta yuborish/olib tashlash; 5 tagacha rasm; rasm ko'ruvchi; menyu: ovozsiz, profil, bloklash; «Yangi xabar» tugmasi; qoralama suhbat bo'yicha; soxta «Onlayn» yo'q |
+| S16 | Shaxsiy chat | `/messages/:id` | ✅ 0.8.11 | REST orqali: yuborilmoqda → yuborildi → yetkazildi → o'qildi (oxirgi ikkisi server event) yoki xato + qayta yuborish/olib tashlash; 5 tagacha rasm; rasm ko'ruvchi; menyu: ovozsiz, profil, bloklash; «Yangi xabar» tugmasi; qoralama suhbat bo'yicha; soxta «Onlayn» yo'q; xabar ustidan shikoyat — uzoq bosish yoki menyu (0.8.14) |
 | S17 | O'simliklar | `/catalog?tab=plants` | ✅ 0.8.4 | — |
 | S18 | Kasalliklar | `/catalog?tab=diseases` | ✅ 0.8.4 | «Belgilarni solishtirish» alohida oqimi yo'q (solishtirish S21 ichida) |
 | S19 | Dorilar | `/catalog?tab=medicines` | ✅ 0.8.4 | Mintaqaviy ro'yxatdan o'tish ma'lumoti ⛔ |
@@ -44,15 +44,15 @@ Belgilar: ✅ bor · 🟡 bor, lekin TZ bo'yicha qayta ishlanadi · ⛔ yo'q (ya
 | S21 | Kasallik tafsiloti | `/catalog/disease/:id` | ✅ 0.8.4 | Manba matni hali to'ldirilmagan (agronom KB tahririda kiritiladi); bookmark — A02 (0.8.8) |
 | S22 | Dori tafsiloti | `/catalog/medicine/:id` | ✅ 0.8.4 | Yorliq hujjati (PDF) ⛔; `label_verified`ni belgilash UI agronom/admin panelida yo'q |
 | S23 | Profil | `/profile` | ✅ 0.8.6 | Hisob/Faoliyat/Sozlamalar guruhlari; Ekin/Post serverdan; Saqlanganlar va Bloklanganlar (0.8.8); agronom/admin bandlari faqat shu rolga ega foydalanuvchiga |
-| S24 | Shaxsiy ma'lumotlar | `/profile/edit` | ✅ (0.7.0) | Username tahriri; aloqa tasdiqlash (S35) ⛔ |
+| S24 | Shaxsiy ma'lumotlar | `/profile/edit` | ✅ (0.7.0) | Username tahriri; telefon/email o'zgarishi yangi manzilga kod bilan (0.8.14; kanal yo'q bo'lsa avvalgidek) |
 | S25 | Eslatmalar | `/reminders?crop=` | ✅ 0.8.3 | — |
-| S26 | Yangi eslatma | `/reminders/add`, `/reminders/:id/edit` | ✅ 0.8.3 | Qurilma push'i ⛔ (ilovada FCM yo'q — eslatma ilova ichidagi Bildirishnomalarda); takrorlash turini tahrirda o'zgartirish yo'q |
+| S26 | Yangi eslatma | `/reminders/add`, `/reminders/:id/edit` | ✅ 0.8.3 | Qurilma push'i ⛔ (ilovada FCM yo'q — eslatma ilova ichidagi Bildirishnomalarda); takrorlash qoidasini tahrirda o'zgartirish — shu va keyingi bajarilmaganlar qayta yaratiladi (0.8.14) |
 | S27 | Bildirishnomalar | `/notifications` | ✅ 0.8.3 | Bildirishnoma sozlamalari — A05 (0.8.9) |
 | S28 | Parolni o'zgartirish | `/profile/password` | ✅ 0.8.6 | Har maydonda ko'z, 8–128, yangi ≠ joriy, kuch yordamchisi, «boshqa qurilmalardan chiqish» ixtiyoriy (standart o'chiq), chiqish tasdig'i |
 | S29 | Obunam | `/premium` (`/subscription`) | ✅ 0.8.6 | Narx faqat serverdan; A08 buyurtma xulosasi; qaytishda buyurtma holati tekshiriladi; avto-yangilanish va'dasi olib tashlandi (yechish amalga oshirilmagan) |
 | S30 | To'lovlar tarixi | `/premium/payments` (`/payments`) | ✅ 0.8.6 | Filtr, tafsilot, kutilayotganini yangilash; to'langan/kutilmoqda/amalga oshmagan/qaytarilgan alohida. Chek ⛔ (provayder integratsiyasida yo'q) |
 | S31 | Mavzu tanlash | `/settings/appearance` | ✅ 0.8.6 | Namuna, matn Oddiy/Katta, harakat Tizimga mos/Kamaytirilgan; saqlamasdan chiqilsa eski qiymat |
-| S32 | Til tanlash | `/settings/language` | ✅ 0.8.6 | Qidiruv, tanlangan tildagi namuna, saqlamasdan chiqish dialogi. Katalog tarjimasi yo'qligi belgisi ⛔ |
+| S32 | Til tanlash | `/settings/language` | ✅ 0.8.6 | Qidiruv, tanlangan tildagi namuna, saqlamasdan chiqish dialogi. Tanlangan tilda «katalog va AI javoblari faqat o'zbekcha» belgisi (0.8.14) |
 | S33 | Kirish | `/auth/login` (`/login`) | ✅ 0.8.7 | Telefon (E.164)/Email; umumiy xato; 429 taymer; xavfsiz returnTo; kod bilan kirish faqat kanal bo'lsa. Kanal (SMS/email provayder) ⛔ |
 | S34 | Ro'yxatdan o'tish | `/auth/register` | ✅ 0.8.7 | Ism 2–80, kanal tanlovi, parol+tasdiq, rozilik (belgilanmagan, versiya va vaqt saqlanadi). Kanal bo'lsa hisob kod tasdig'idan keyin; productionda kanal yo'q — darhol yaratiladi va bu ochiq yoziladi |
 | S35 | Kodni tasdiqlash | `/auth/verify` | ✅ 0.8.7 (sinov rejimida) | 6 raqam, TTL 5 daq, qayta yuborish 60 s, 5 urinish, eski kod yaroqsiz, noto'g'ri/eskirgan farqlanadi. Haqiqiy SMS/email yuborish ⛔ (provayder) |
@@ -154,6 +154,14 @@ Migratsiya `0018`: `ai_conversations`; `ai_chat_messages.conversation_id/reply_t
 `GET /ai/conversations/{id}/messages`, `POST /ai/messages` (SSE: `user` → `delta`… → `done` | `error`),
 `POST /ai/messages/{id}/retry` (SSE). Oqim uzilsa/to'xtatilsa kelgan qism `partial` bo'lib saqlanadi.
 Eski `POST /ai/chat` va `GET /ai/chat/history` eski ilovalar uchun qoldi.
+
+## 0.8.14 — mayda bandlar
+
+Migratsiya `0019`: `diagnoses.feedback_reason`, `reports.message_id`. S04 `GET /diagnoses/{id}/care-plan` → `replaces`;
+S08 `feedback` → `reason`; S26 `PUT /reminders/{id}` → `repeat/repeat_every/repeat_until` (qoida o'zgarsa qayta yaratish);
+S24 `POST /auth/contact`, `POST /auth/contact/{id}/verify` (kanal bor bo'lsa `PUT /users/me` telefon/email'ni kodsiz o'zgartirmaydi);
+S16 `POST /reports` → `message_id` (faqat o'z suhbatidagi boshqa odam xabari), moderatsiyada «Chat xabari».
+S12 yangi post qoralamasi qurilmada hisob bo'yicha (rasmlarsiz). Tuzatildi: shikoyat izohi sabab maydoniga qo'shilib 100 belgidan oshsa rad etilardi.
 
 ## Ekin holati qoidasi (TZ 1-bo'lim)
 

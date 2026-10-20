@@ -29,6 +29,7 @@ class DiagnosisOut(ORMModel):
     low_confidence: bool = False
     medicines: list[MedicineRecommendation] = []
     user_feedback: bool | None = None
+    feedback_reason: str | None = None
     review_status: str = "pending"
     review_requested: bool = False
     expert_comment: str | None = None
@@ -52,6 +53,12 @@ class ReviewRequestIn(BaseModel):
 
 class FeedbackIn(BaseModel):
     correct: bool
+    reason: str | None = Field(default=None, max_length=500)  # TZ S08: "Yo'q" uchun ixtiyoriy sabab
+
+
+class ReplacedTask(BaseModel):
+    title: str
+    date: date
 
 
 class ShareIn(BaseModel):
@@ -78,6 +85,8 @@ class CarePlanOut(BaseModel):
     is_healthy: bool = False
     duration_days: int
     tasks: list[CarePlanTask]
+    # TZ S04: rejani qayta yaratishda almashtiriladigan (hali bajarilmagan) vazifalar — farq previewi uchun
+    replaces: list[ReplacedTask] = []
 
 
 class CarePlanApply(BaseModel):

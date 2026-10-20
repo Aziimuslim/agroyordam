@@ -419,4 +419,13 @@ void main() {
     final c = AIConversation.fromJson({'id': 'c', 'title': 'Sug\'orish', 'last_message': 'z', 'message_count': 4});
     expect([c.title, c.messageCount], ["Sug'orish", 4]);
   });
+
+  test('0.8.14: tashxis fikri sababi va reja farqi JSON', () {
+    final d = Diagnosis.fromJson({'id': '1', 'image_url': '/x.jpg', 'user_feedback': false, 'feedback_reason': 'Boshqa ekin'});
+    expect([d.userFeedback, d.feedbackReason], [false, 'Boshqa ekin']);
+    final p = CarePlan.fromJson({'diagnosis_id': 'd', 'duration_days': 14, 'tasks': [], 'replaces': [{'title': 'Purkash', 'date': '2026-10-25'}]});
+    expect(p.replaces.single.$1, 'Purkash');
+    expect(p.replaces.single.$2, DateTime(2026, 10, 25));
+    expect(CarePlan.fromJson({'diagnosis_id': 'd', 'duration_days': 7, 'tasks': []}).replaces, isEmpty);
+  });
 }

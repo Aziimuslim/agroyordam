@@ -57,6 +57,12 @@ class AuthRepository extends BaseRepository {
         return d['recovery_token'] as String?;
       });
 
+  /// TZ S24: yangi telefon/email — kod shu manzilga; tasdiqlangach profil yangilanadi.
+  Future<Challenge> requestContact(String channel, String destination) =>
+      call(() async => Challenge.fromJson((await dio.post('/auth/contact', data: {'channel': channel, 'destination': destination})).data));
+  Future<AppUser> verifyContact(String id, String code) =>
+      call(() async => AppUser.fromJson((await dio.post('/auth/contact/$id/verify', data: {'code': code})).data));
+
   Future<void> recoveryReset(String token, String password) =>
       call(() => dio.post('/auth/recovery/reset', data: {'recovery_token': token, 'new_password': password}));
 

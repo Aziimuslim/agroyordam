@@ -11,7 +11,7 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models import Crop, Diagnosis, Reminder, User
 from app.core.security import utcnow
-from app.schemas.reminder import MAX_OCCURRENCES, ReminderIn, ReminderOut, ReminderUpdate
+from app.schemas.reminder import MAX_OCCURRENCES, ReminderIn, ReminderOut, ReminderUpdate, check_repeat_rule
 
 router = APIRouter(prefix="/reminders", tags=["Reminders"])
 
@@ -118,6 +118,8 @@ async def update_reminder(rid: uuid.UUID, body: ReminderUpdate, scope: Literal["
     r = await own(db, rid, user)
     data = body.model_dump(exclude_unset=True)
     await check_refs(db, user, data.get("crop_id"), None)
+    if "repeat" in data:
+        return await _reschedule(db, user, r, data)
     if scope == "future" and r.series_id:
         # Seriyada sana har occurrence'ning o'zida qoladi; qolgan maydonlar keyingilarga ham yoziladi
         shared = {k: v for k, v in data.items() if k not in ("reminder_date", "is_completed")}
@@ -132,6 +134,35 @@ async def update_reminder(rid: uuid.UUID, body: ReminderUpdate, scope: Literal["
             setattr(r, k, v)
     if "is_completed" in data:
         r.completed_at = utcnow() if r.is_completed else None
+    await db.commit()
+    await db.refresh(r)
+    return await rem_out(db, r)
+
+
+async def _reschedule(db: AsyncSession, user: User, r: Reminder, data: dict) -> ReminderOut:
+    """TZ S26: takrorlash qoidasi o'zgardi — shu vazifa va keyingi bajarilmagan takrorlar yangi qoida bo'yicha.
+    Oldingi sanalar va bajarilganlari eski seriyada (tarix) qoladi."""
+    rule = {k: data.pop(k, None) for k in ("repeat", "repeat_every", "repeat_until")}
+    data.pop("is_completed", None)
+    start = data.get("reminder_date", r.reminder_date)
+    try:
+        check_repeat_rule(start, rule["repeat"], rule["repeat_every"], rule["repeat_until"])
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    if r.series_id:
+        await db.execute(delete(Reminder).where(
+            Reminder.user_id == user.id, Reminder.series_id == r.series_id, Reminder.id != r.id,
+            Reminder.reminder_date >= r.reminder_date, Reminder.is_completed.is_(False)))
+    for k, v in data.items():
+        setattr(r, k, v)
+    dates = occurrences(start, rule["repeat"], rule["repeat_every"], rule["repeat_until"])
+    series = uuid.uuid4() if len(dates) > 1 else None
+    r.reminder_date, r.series_id = dates[0], series
+    r.repeat, r.repeat_every, r.repeat_until = (rule["repeat"], rule["repeat_every"], rule["repeat_until"]) if series else (None, None, None)
+    copy = ("crop_id", "diagnosis_id", "title", "description", "reminder_type", "reminder_time", "remind_before",
+            "repeat", "repeat_every", "repeat_until")
+    for d in dates[1:]:
+        db.add(Reminder(user_id=user.id, reminder_date=d, series_id=series, **{k: getattr(r, k) for k in copy}))
     await db.commit()
     await db.refresh(r)
     return await rem_out(db, r)

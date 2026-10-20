@@ -32,6 +32,7 @@ class Diagnosis(Base):
 
     # Dataset yig'ish: foydalanuvchi fikri va mutaxassis (admin/moderator) tekshiruvi
     user_feedback: Mapped[bool | None] = mapped_column(Boolean)  # True — AI to'g'ri topdi, False — xato
+    feedback_reason: Mapped[str | None] = mapped_column(Text)  # TZ S08: "Yo'q" uchun ixtiyoriy sabab
     # pending — tekshirilmagan, confirmed — AI to'g'ri, corrected — mutaxassis tuzatgan, rejected — datasetga yaroqsiz
     review_status: Mapped[str] = mapped_column(String(20), default="pending", server_default="pending", index=True)
     verified_label: Mapped[str | None] = mapped_column(String(150), index=True)

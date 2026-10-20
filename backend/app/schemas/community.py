@@ -115,6 +115,7 @@ class CommentOut(ORMModel):
 class ReportIn(BaseModel):
     post_id: uuid.UUID | None = None
     comment_id: uuid.UUID | None = None
+    message_id: uuid.UUID | None = None  # TZ S16: chat xabari
     reason: str = Field(max_length=100)
     description: str | None = None
 
@@ -124,6 +125,7 @@ class ReportOut(ORMModel):
     reporter_id: uuid.UUID
     post_id: uuid.UUID | None = None
     comment_id: uuid.UUID | None = None
+    message_id: uuid.UUID | None = None
     reason: str | None = None
     description: str | None = None
     status: str

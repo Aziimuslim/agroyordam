@@ -412,7 +412,7 @@
     async load() { const r = await api('/admin/reports'); S.badges.mod = r.length; return r; },
     render(list) {
       return `${head('Jamoat moderatsiyasi', 'Shikoyat qilingan postlar va izohlar. Yashirilsa, muallifga xabar boradi.')}
-      ${list.length ? `<div class="tw"><table><thead><tr><th>Matn</th><th>Muallif</th><th>Sabab</th><th class="n">Shikoyatlar</th><th>Amal</th></tr></thead><tbody>${list.map((r, i) => `<tr><td style="max-width:420px"><span class="muted small">${r.kind === 'post' ? 'Post' : 'Izoh'} · ${ago(r.last_at)}</span><div>${esc(r.text)}</div></td><td>${esc(r.author || '—')}</td>
+      ${list.length ? `<div class="tw"><table><thead><tr><th>Matn</th><th>Muallif</th><th>Sabab</th><th class="n">Shikoyatlar</th><th>Amal</th></tr></thead><tbody>${list.map((r, i) => `<tr><td style="max-width:420px"><span class="muted small">${({ post: 'Post', comment: 'Izoh', message: 'Chat xabari' })[r.kind] || r.kind} · ${ago(r.last_at)}</span><div>${esc(r.text)}</div></td><td>${esc(r.author || '—')}</td>
         <td><div class="row">${(r.reasons.length ? r.reasons : ["Ko'rsatilmagan"]).map(x => tag('t-bad', 'flag', x)).join('')}</div></td><td class="n">${r.count}</td>
         <td><div class="row" style="flex-wrap:nowrap"><button class="btn dan sm" data-act="hide" data-v="${i}">Yashirish</button><button class="btn out sm" data-act="dismiss" data-v="${i}">Rad etish</button></div></td></tr>`).join('')}</tbody></table></div>`
         : `<div class="banner b-ok">${I('check')}<p>Ochiq shikoyat yo'q.</p><span></span></div>`}`;
@@ -573,7 +573,7 @@
         <button class="btn dan" data-act="rejectok" data-v="${v}">Rad etish</button>`); break;
       case 'rejectok': act(() => api(`/admin/expert-applications/${v}/reject`, { method: 'POST', body: { reason: document.getElementById('rj').value } }), 'Ariza rad etildi, sababi yuborildi'); break;
       case 'revert': if (confirm("O'zgarishni qaytarasizmi? Oldingi matn tiklanadi.")) act(() => api(`/admin/catalog-changes/${v}/revert`, { method: 'POST' }), "O'zgarish qaytarildi"); break;
-      case 'hide': { const r = d[+v]; if (confirm(`${r.kind === 'post' ? 'Post' : 'Izoh'} o'chiriladi va muallifga xabar boradi. Davom etasizmi?`)) act(() => api('/admin/reports/hide', { method: 'POST', body: { kind: r.kind, target_id: r.target_id } }), 'Yashirildi, muallifga xabar berildi'); } break;
+      case 'hide': { const r = d[+v]; if (confirm(`${({ post: 'Post', comment: 'Izoh', message: 'Chat xabari' })[r.kind] || r.kind} o'chiriladi va muallifga xabar boradi. Davom etasizmi?`)) act(() => api('/admin/reports/hide', { method: 'POST', body: { kind: r.kind, target_id: r.target_id } }), 'Yashirildi, muallifga xabar berildi'); } break;
       case 'dismiss': { const r = d[+v]; act(() => api('/admin/reports/dismiss', { method: 'POST', body: { kind: r.kind, target_id: r.target_id } }), 'Shikoyat rad etildi'); } break;
       case 'backup': act(() => api('/admin/system/backup-now', { method: 'POST' }), "Zaxira so'raldi: 1–5 daqiqada boshlanadi"); break;
       case 'activate': {

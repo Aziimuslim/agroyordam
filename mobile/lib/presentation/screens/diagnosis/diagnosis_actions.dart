@@ -32,6 +32,20 @@ class DiagnosisFeedback extends ConsumerStatefulWidget {
 class _DiagnosisFeedbackState extends ConsumerState<DiagnosisFeedback> {
   late bool? _value = widget.d.userFeedback;
 
+  /// "Yo'q"dan keyin ixtiyoriy sabab (TZ S08): bir marta yuboriladi yoki o'tkazib yuboriladi.
+  late bool _reasonDone = widget.d.userFeedback != false || (widget.d.feedbackReason ?? '').isNotEmpty;
+  final _reason = TextEditingController();
+  String? _chip;
+  bool _sending = false;
+
+  static List<String> get _chips => [tr('Boshqa kasallik'), tr("O'simlik sog'lom"), tr('Boshqa ekin'), tr('Rasm sifatsiz')];
+
+  @override
+  void dispose() {
+    _reason.dispose();
+    super.dispose();
+  }
+
   Future<void> _send(bool correct) async {
     setState(() => _value = correct);
     try {
@@ -41,9 +55,50 @@ class _DiagnosisFeedbackState extends ConsumerState<DiagnosisFeedback> {
     }
   }
 
+  Future<void> _sendReason() async {
+    final text = [if (_chip != null) _chip!, if (_reason.text.trim().isNotEmpty) _reason.text.trim()].join('. ');
+    if (text.isEmpty) return;
+    setState(() => _sending = true);
+    try {
+      await ref.read(gardenRepoProvider).feedback(widget.d.id, false, reason: text.length > 500 ? text.substring(0, 500) : text);
+      if (mounted) setState(() => _reasonDone = true);
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    if (_value == false && !_reasonDone) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text(tr('Nima noto\'g\'ri? (ixtiyoriy)'), style: TextStyle(color: c.text, fontSize: 14, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final ch in _chips)
+            ChoiceChip(label: Text(ch), selected: _chip == ch, onSelected: (v) => setState(() => _chip = v ? ch : null)),
+        ]),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _reason,
+          maxLength: 300,
+          minLines: 1,
+          maxLines: 3,
+          style: const TextStyle(fontSize: 15),
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(hintText: tr('Izoh (masalan, aslida qanday kasallik)'), contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10)),
+        ),
+        Wrap(alignment: WrapAlignment.end, spacing: 8, children: [
+          TextButton(onPressed: _sending ? null : () => setState(() => _reasonDone = true), child: Text(tr("O'tkazib yuborish"))),
+          FilledButton(
+            onPressed: _sending || (_chip == null && _reason.text.trim().isEmpty) ? null : _sendReason,
+            child: Text(tr('Yuborish')),
+          ),
+        ]),
+      ]);
+    }
     if (_value != null) {
       return Row(children: [
         Icon(AppIcons.check, size: 18, color: c.success),

@@ -35,6 +35,14 @@ class _CarePlanState extends ConsumerState<CarePlanScreen> {
   }
 
   Future<void> _apply(CarePlan plan) async {
+    // TZ S04: qayta yaratishda farq tasdiqlanadi — eski bajarilmagan vazifalar yangi reja bilan almashtiriladi
+    if (plan.replaces.isNotEmpty) {
+      final ok = await confirm(context, tr('Rejani yangilaysizmi?'),
+          trf("Avvalgi rejadagi {0} ta bajarilmagan vazifa o'chiriladi va {1} ta yangi vazifa qo'shiladi. Bajarilganlari tarixda qoladi.",
+              [plan.replaces.length, plan.tasks.length]),
+          ok: tr('Yangilash'));
+      if (!ok || !mounted) return;
+    }
     setState(() => _saving = true);
     try {
       final linked = plan.cropId != null;
@@ -52,6 +60,7 @@ class _CarePlanState extends ConsumerState<CarePlanScreen> {
       ref.invalidate(cropDiagnosesProvider(cropId));
       ref.invalidate(cropHealthProvider(cropId));
       ref.invalidate(cropRemindersProvider(cropId));
+      ref.invalidate(carePlanProvider(widget.diagnosisId));
       if (!mounted) return;
       showToast(context, trf('Reja boshlandi: {0} ta vazifa eslatmalarga qo\'shildi', [plan.tasks.length]));
       context.go('/garden/$cropId/care');
@@ -77,6 +86,7 @@ class _CarePlanState extends ConsumerState<CarePlanScreen> {
             TopBar(title: tr('Reja yaratish'), subtitle: tr('AI tashxis asosida — agronom tavsiyasi emas')),
             _Summary(plan: p, diagnosis: diag.value),
             if (diag.value != null) _About(d: diag.value!),
+            if (p.replaces.isNotEmpty) _ReplaceNote(plan: p),
             _PlanView(plan: p, allDays: _allDays, onToggle: () => setState(() => _allDays = !_allDays)),
             _targetSection(p),
             const SizedBox(height: 6),
@@ -299,5 +309,51 @@ class _PlanView extends StatelessWidget {
           ),
         ),
     ]);
+  }
+}
+
+
+/// TZ S04: rejani qayta yaratish farqi — almashtiriladigan eski vazifalar va yangi reja hajmi.
+class _ReplaceNote extends StatefulWidget {
+  const _ReplaceNote({required this.plan});
+  final CarePlan plan;
+  @override
+  State<_ReplaceNote> createState() => _ReplaceNoteState();
+}
+
+class _ReplaceNoteState extends State<_ReplaceNote> {
+  bool _open = false;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final old = widget.plan.replaces;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.fromLTRB(14, 12, 8, 6),
+      decoration: BoxDecoration(color: c.warningBg, borderRadius: BorderRadius.circular(14)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(Icons.compare_arrows_rounded, color: c.warning),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              trf("Bu tashxis bo'yicha reja allaqachon bor: {0} ta bajarilmagan vazifa → {1} ta yangi vazifa.", [old.length, widget.plan.tasks.length]),
+              style: TextStyle(color: c.text, fontSize: 14.5, fontWeight: FontWeight.w600, height: 1.4),
+            ),
+          ),
+        ]),
+        TextButton(
+          onPressed: () => setState(() => _open = !_open),
+          child: Text(_open ? tr('Yashirish') : tr("Almashtiriladigan vazifalar")),
+        ),
+        if (_open)
+          for (final (title, date) in old)
+            Padding(
+              padding: const EdgeInsets.only(left: 34, bottom: 6, right: 8),
+              child: Text('${formatDate(date)} · $title',
+                  style: TextStyle(color: c.muted, fontSize: 14, decoration: TextDecoration.lineThrough, decorationColor: c.muted)),
+            ),
+      ]),
+    );
   }
 }

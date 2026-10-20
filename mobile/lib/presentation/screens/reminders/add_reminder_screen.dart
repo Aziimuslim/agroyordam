@@ -11,7 +11,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
-import 'task_sheet.dart' show askSeriesScope, refreshTasks, remindBeforeLabel, repeatLabel;
+import 'task_sheet.dart' show askSeriesScope, refreshTasks, remindBeforeLabel;
 
 /// A03 → Tahrirlash: vazifa serverdan olinadi, so'ng S26 forma mavjud qiymatlar bilan ochiladi.
 class EditReminderRoute extends ConsumerWidget {
@@ -55,8 +55,19 @@ class _AddReminderState extends ConsumerState<AddReminderScreen> {
   late String _type = widget.reminder?.type ?? 'watering';
   late DateTime _date = widget.reminder?.date ?? _todayDate;
   late TimeOfDay? _time = _parseTime(widget.reminder?.time);
-  String? _repeat; // null | daily | weekly | monthly | custom (faqat yangi vazifada)
-  DateTime? _until;
+  // null | daily | weekly | monthly | custom. Tahrirda ham o'zgartiriladi (TZ S26): shu va keyingi bajarilmagan
+  // takrorlar yangi qoida bo'yicha qayta yaratiladi.
+  late String? _repeat = (widget.reminder?.isSeries ?? false) ? widget.reminder!.repeat : null;
+  late DateTime? _until = (widget.reminder?.isSeries ?? false) ? widget.reminder!.repeatUntil : null;
+
+  bool get _ruleChanged {
+    final r = widget.reminder;
+    if (r == null) return _repeat != null;
+    final was = r.isSeries ? r.repeat : null;
+    if (_repeat != was) return true;
+    if (_repeat == null) return false;
+    return _until != r.repeatUntil || (_repeat == 'custom' && int.tryParse(_every.text.trim()) != r.repeatEvery);
+  }
   late int? _before = widget.reminder?.remindBefore;
   bool _loading = false, _dirty = false, _submitted = false;
   String? _serverError;
@@ -117,7 +128,11 @@ class _AddReminderState extends ConsumerState<AddReminderScreen> {
       if (!ok || !mounted) return;
     }
     var scope = 'one';
-    if (_editing && widget.reminder!.isSeries) {
+    if (_editing && _ruleChanged) {
+      final ok = await confirm(context, tr("Takrorlash o'zgaradi"),
+          tr("Shu va keyingi bajarilmagan takrorlar yangi qoida bo'yicha qayta yaratiladi. Bajarilganlari tarixda qoladi."), ok: tr('Davom etish'));
+      if (!ok || !mounted) return;
+    } else if (_editing && widget.reminder!.isSeries) {
       final s = await askSeriesScope(context, title: tr("O'zgarish qaysi vazifalarga tegishli?"));
       if (s == null || !mounted) return;
       scope = s;
@@ -131,7 +146,8 @@ class _AddReminderState extends ConsumerState<AddReminderScreen> {
       'reminder_time': _hms(_time),
       'crop_id': _cropId,
       'remind_before': _before,
-      if (!_editing && _repeat != null) ...{
+      if (_ruleChanged && _repeat == null) 'repeat': null, // takrorlashni bekor qilish
+      if (_ruleChanged && _repeat != null) ...{
         'repeat': _repeat,
         'repeat_until': DateFormat('yyyy-MM-dd').format(_until!),
         if (_repeat == 'custom') 'repeat_every': int.tryParse(_every.text.trim()),
@@ -179,7 +195,6 @@ class _AddReminderState extends ConsumerState<AddReminderScreen> {
   Widget build(BuildContext context) {
     final c = context.c;
     final crops = ref.watch(cropsProvider);
-    final r = widget.reminder;
     Widget label(String t, [String? hint]) => Padding(
           padding: const EdgeInsets.only(top: 16, bottom: 6),
           child: Text.rich(
@@ -287,9 +302,7 @@ class _AddReminderState extends ConsumerState<AddReminderScreen> {
               return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(child: date), const SizedBox(width: 12), Expanded(child: time)]);
             }),
             label(tr('Takrorlash')),
-            if (_editing)
-              Text(r!.isSeries ? (repeatLabel(r) ?? tr('Takrorlanadi')) : tr('Takrorlanmaydi'), style: TextStyle(fontSize: 16, color: c.text))
-            else ...[
+            ...[
               DropdownButtonFormField<String?>(
                 initialValue: _repeat,
                 isExpanded: true,
@@ -346,6 +359,12 @@ class _AddReminderState extends ConsumerState<AddReminderScreen> {
                         style: TextStyle(color: c.muted, fontSize: 14)),
                   ),
               ],
+              if (_editing && _ruleChanged)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(tr("Shu va keyingi bajarilmagan takrorlar yangi qoida bo'yicha qayta yaratiladi."),
+                      style: TextStyle(color: c.warning, fontSize: 14, fontWeight: FontWeight.w600)),
+                ),
             ],
             label(tr('Oldindan eslatish')),
             DropdownButtonFormField<int?>(

@@ -133,6 +133,7 @@ async def to_out(db: AsyncSession, diag: Diagnosis, ai_label: str | None = None)
             (not healthy and disease is None) or conf < settings.AI_MIN_CONFIDENCE),
         medicines=meds,
         user_feedback=diag.user_feedback,
+        feedback_reason=diag.feedback_reason,
         review_status=diag.review_status,
         review_requested=diag.review_requested,
         expert_comment=diag.expert_comment,

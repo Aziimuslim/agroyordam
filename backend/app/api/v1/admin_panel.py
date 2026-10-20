@@ -16,7 +16,7 @@ from app.core.database import get_db
 from app.core.deps import require_admin, require_superadmin
 from app.core.security import utcnow
 from app.models import (
-    AppSetting, AuditLog, CatalogChange, Comment, Diagnosis, Disease, DiseaseMedicine, ExpertApplication, Medicine, Plant, Post,
+    AppSetting, AuditLog, CatalogChange, Comment, Diagnosis, Disease, DiseaseMedicine, ExpertApplication, Medicine, Message, Plant, Post,
     Question, QuestionMessage, Report, Subscription, User,
 )
 from app.api.v1.dataset import field_split
@@ -314,49 +314,54 @@ async def revert_change(change_id: uuid.UUID, admin: User = Depends(require_admi
 async def reports(db: AsyncSession = Depends(get_db)):
     groups: dict[tuple, dict] = {}
     for r in (await db.scalars(select(Report).where(Report.status == "pending").order_by(Report.created_at.desc()))).all():
-        key = ("comment", r.comment_id) if r.comment_id else ("post", r.post_id)
+        key = ("comment", r.comment_id) if r.comment_id else ("message", r.message_id) if r.message_id else ("post", r.post_id)
         g = groups.get(key)
         if g is None:
-            target = await db.get(Comment, r.comment_id) if r.comment_id else await db.get(Post, r.post_id)
+            target = await db.get(_MODEL[key[0]], key[1])
             if target is None:
                 continue
-            author = await db.get(User, target.user_id)
-            text = target.content if r.comment_id else " — ".join(x for x in (target.title, target.content) if x)
+            owner = target.sender_id if key[0] == "message" else target.user_id
+            author = await db.get(User, owner)
+            text = (target.content or ("📷" if key[0] == "message" else "")) if key[0] != "post" else " — ".join(x for x in (target.title, target.content) if x)
             g = groups[key] = {"kind": key[0], "target_id": key[1], "text": (text or "")[:400], "author": author.full_name if author else None,
-                               "author_id": target.user_id, "reasons": [], "count": 0, "last_at": r.created_at}
+                               "author_id": owner, "reasons": [], "count": 0, "last_at": r.created_at}
         g["count"] += 1
         if r.reason and r.reason not in g["reasons"]:
             g["reasons"].append(r.reason)
     return sorted(groups.values(), key=lambda g: -g["count"])
 
 
+_MODEL = {"post": Post, "comment": Comment, "message": Message}
+_REPORT_COL = {"post": Report.post_id, "comment": Report.comment_id, "message": Report.message_id}
+_WHAT = {"post": ("postingiz", "post"), "comment": ("izohingiz", "izoh"), "message": ("chatdagi xabaringiz", "chat xabari")}
+
+
 class ModerateIn(BaseModel):
-    kind: str = Field(pattern=r"^(post|comment)$")
+    kind: str = Field(pattern=r"^(post|comment|message)$")
     target_id: uuid.UUID
 
 
 @router.post("/reports/hide")
 async def hide_reported(body: ModerateIn, admin: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
-    target = await db.get(Comment if body.kind == "comment" else Post, body.target_id)
+    target = await db.get(_MODEL[body.kind], body.target_id)
     if target is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Topilmadi")
-    author_id = target.user_id
-    what = "izohingiz" if body.kind == "comment" else "postingiz"
-    col = Report.comment_id if body.kind == "comment" else Report.post_id
-    await db.execute(delete(Report).where(col == target.id))
+    author_id = target.sender_id if body.kind == "message" else target.user_id
+    what, noun = _WHAT[body.kind]
+    await db.execute(delete(Report).where(_REPORT_COL[body.kind] == target.id))
     if isinstance(target, Comment):
         await remove_comment(db, target)  # javoblari bo'lsa "Izoh o'chirilgan" bo'lib qoladi
     else:
         await db.delete(target)
-    await notify(db, author_id, "moderation", f"Jamoatdagi {what} olib tashlandi", "Jamoat qoidalariga mos kelmadi.")
-    await audit(db, admin, "report_hide", f"Shikoyat bo'yicha {'izoh' if body.kind == 'comment' else 'post'} olib tashlandi", author_id)
+    await notify(db, author_id, "moderation", f"Jamoatdagi {what} olib tashlandi" if body.kind != "message" else "Chatdagi xabaringiz olib tashlandi", "Jamoat qoidalariga mos kelmadi.")
+    await audit(db, admin, "report_hide", f"Shikoyat bo'yicha {noun} olib tashlandi", author_id)
     await db.commit()
     return {"ok": True}
 
 
 @router.post("/reports/dismiss")
 async def dismiss_reports(body: ModerateIn, admin: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
-    col = Report.comment_id if body.kind == "comment" else Report.post_id
+    col = _REPORT_COL[body.kind]
     n = 0
     for r in (await db.scalars(select(Report).where(col == body.target_id, Report.status == "pending"))).all():
         r.status, r.reviewed_at = "dismissed", utcnow()

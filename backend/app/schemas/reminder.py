@@ -14,6 +14,19 @@ RTYPE = r"^(watering|treatment|fertilizing|recheck|other)$"
 MAX_OCCURRENCES = 200
 
 
+def check_repeat_rule(start: date, repeat: str | None, every: int | None, until: date | None) -> None:
+    if repeat is None:
+        return
+    if until is None:
+        raise ValueError("Takrorlash uchun tugash sanasini kiriting")
+    if until < start:
+        raise ValueError("Tugash sanasi boshlanish sanasidan oldin bo'lishi mumkin emas")
+    if until > start + timedelta(days=366):
+        raise ValueError("Takrorlash ko'pi bilan 1 yilga belgilanadi")
+    if repeat == "custom" and not every:
+        raise ValueError("Necha kunda takrorlanishini kiriting")
+
+
 class ReminderIn(BaseModel):
     crop_id: uuid.UUID | None = None
     diagnosis_id: uuid.UUID | None = None
@@ -34,16 +47,7 @@ class ReminderIn(BaseModel):
 
     @model_validator(mode="after")
     def check_repeat(self):
-        if self.repeat is None:
-            return self
-        if self.repeat_until is None:
-            raise ValueError("Takrorlash uchun tugash sanasini kiriting")
-        if self.repeat_until < self.reminder_date:
-            raise ValueError("Tugash sanasi boshlanish sanasidan oldin bo'lishi mumkin emas")
-        if self.repeat_until > self.reminder_date + timedelta(days=366):
-            raise ValueError("Takrorlash ko'pi bilan 1 yilga belgilanadi")
-        if self.repeat == "custom" and not self.repeat_every:
-            raise ValueError("Necha kunda takrorlanishini kiriting")
+        check_repeat_rule(self.reminder_date, self.repeat, self.repeat_every, self.repeat_until)
         return self
 
 
@@ -56,6 +60,11 @@ class ReminderUpdate(BaseModel):
     reminder_date: date | None = None
     reminder_time: time | None = None
     is_completed: bool | None = None
+    # TZ S26: takrorlash qoidasini tahrirda o'zgartirish. `repeat` yuborilsa (null — takrorlamaslik), shu vazifadan
+    # boshlab keyingi bajarilmagan takrorlar yangi qoida bo'yicha qayta yaratiladi; bajarilganlari tarixda qoladi.
+    repeat: Literal["daily", "weekly", "monthly", "custom"] | None = None
+    repeat_every: int | None = Field(default=None, ge=1, le=60)
+    repeat_until: date | None = None
 
 
 class ReminderOut(ORMModel):
