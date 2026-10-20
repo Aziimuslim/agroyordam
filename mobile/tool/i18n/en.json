@@ -1387,5 +1387,10 @@
  "Shu va keyingi bajarilmagan takrorlar yangi qoida bo'yicha qayta yaratiladi.": "This and later unfinished repeats will be recreated with the new rule.",
  "Ilova menyulari shu tilda bo'ladi. O'simliklar, kasalliklar va dorilar katalogi hamda AI javoblari hozircha faqat o'zbek (lotin) tilida.": "The app menus will be in this language. The plant, disease and product catalog and AI answers are currently only in Uzbek (Latin).",
  "Bu manzil allaqachon profilingizda": "This address is already in your profile",
- "Telefon va email'ni o'zgartirish kod bilan tasdiqlanadi": "Changing phone and email requires a code"
+ "Telefon va email'ni o'zgartirish kod bilan tasdiqlanadi": "Changing phone and email requires a code",
+ "Galereyaga ruxsat berilmadi. Telefon sozlamalarida ruxsat bering": "No gallery access. Allow it in phone settings",
+ "Telefonda kamera ilovasi topilmadi. Galereyadan tanlang": "No camera app found. Choose from the gallery",
+ "Rasm tanlash oynasi hali yopilmagan. Biroz kutib qayta urinib ko'ring": "The photo picker is still open. Wait a moment and try again",
+ "Rasm tanlab bo'lmadi ({0})": "Couldn't pick a photo ({0})",
+ "Chiqish uchun yana bir marta bosing": "Press again to exit"
 }

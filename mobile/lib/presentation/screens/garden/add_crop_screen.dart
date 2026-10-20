@@ -11,6 +11,7 @@ import '../../../core/i18n/i18n.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/widgets/photos.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 import 'crop_photo.dart';
@@ -87,7 +88,7 @@ class _AddCropState extends ConsumerState<AddCropScreen> {
 
   Future<void> _pickPhoto(ImageSource source) async {
     try {
-      final f = await ImagePicker().pickImage(source: source, maxWidth: 1600, imageQuality: 85);
+      final f = await pickOnePhoto(context, source);
       if (f == null) return;
       final bytes = await f.readAsBytes();
       if (bytes.length > 10 * 1024 * 1024) {
@@ -100,9 +101,8 @@ class _AddCropState extends ConsumerState<AddCropScreen> {
         _removePhoto = false;
         _dirty = true;
       });
-    } catch (_) {
-      // Kamera ruxsati rad etilsa — tizim xatosi emas, galereya muqobil (TZ 4)
-      if (mounted) showToast(context, tr("Kameraga ruxsat berilmadi. Galereyadan tanlashingiz mumkin"));
+    } catch (e) {
+      if (mounted) showToast(context, pickErrorText(e));
     }
   }
 

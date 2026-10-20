@@ -13,6 +13,7 @@ import '../../../core/i18n/i18n.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/widgets/photos.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 
@@ -68,14 +69,8 @@ class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
   }
 
   Future<void> _pick(ImageSource source) async {
-    XFile? file;
-    try {
-      file = await ImagePicker().pickImage(source: source, maxWidth: 1600, imageQuality: 88);
-    } catch (_) {
-      // Kamera ruxsati rad etilsa — bu tizim xatosi emas; galereya ishlayveradi (TZ 4, S03)
-      if (mounted) showToast(context, tr("Kameraga ruxsat berilmadi. Galereyadan tanlashingiz mumkin"));
-      return;
-    }
+    // Kamera rad etilsa ham galereya ishlayveradi (TZ 4, S03); xatoning haqiqiy sababi aytiladi
+    final file = await pickOnePhoto(context, source, quality: 88);
     if (file == null || !mounted) return;
     final bytes = await file.readAsBytes();
     if (bytes.length > 10 * 1024 * 1024) {
@@ -89,7 +84,7 @@ class _DiagnoseState extends ConsumerState<DiagnoseScreen> {
     }
     setState(() {
       _image = bytes;
-      _name = file!.name.contains('.') ? file.name : '${file.name}.jpg';
+      _name = file.name.contains('.') ? file.name : '${file.name}.jpg';
       _step = _Step.preview;
       _error = null;
       _key = null; // yangi rasm — yangi tahlil

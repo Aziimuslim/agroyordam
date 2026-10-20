@@ -11,6 +11,7 @@ import '../../../core/i18n/i18n.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/widgets/photos.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 import '../catalog/catalog_common.dart';
@@ -138,7 +139,15 @@ class _LogEditorState extends ConsumerState<LogEditorScreen> {
   Future<void> _pick() async {
     final left = _maxImages - _images.length;
     if (left <= 0) return;
-    final files = await ImagePicker().pickMultiImage(maxWidth: 1600, imageQuality: 85, limit: left);
+    final List<XFile> files;
+    try {
+      files = left == 1
+          ? [if (await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85) case final f?) f]
+          : await ImagePicker().pickMultiImage(maxWidth: 1600, imageQuality: 85, limit: left); // limit ≥ 2 bo'lishi shart
+    } catch (e) {
+      if (mounted) showToast(context, pickErrorText(e));
+      return;
+    }
     if (files.isEmpty) return;
     var total = _total;
     final added = <_Pick>[];

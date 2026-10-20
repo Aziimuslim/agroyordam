@@ -27,14 +27,42 @@ class PickedPhoto {
   bool get ready => url != null;
 }
 
+/// Rasm tanlash xatosining foydalanuvchiga tushunarli sababi (haqiqiy kod bilan — telefonda sinovda aniqlash uchun).
+String pickErrorText(Object e) {
+  final code = e is PlatformException ? e.code : e.runtimeType.toString();
+  return switch (code) {
+    'camera_access_denied' => tr("Kameraga ruxsat berilmadi. Galereyadan tanlashingiz mumkin"),
+    'photo_access_denied' => tr("Galereyaga ruxsat berilmadi. Telefon sozlamalarida ruxsat bering"),
+    'no_available_camera' => tr('Telefonda kamera ilovasi topilmadi. Galereyadan tanlang'),
+    'already_active' => tr('Rasm tanlash oynasi hali yopilmagan. Biroz kutib qayta urinib ko\'ring'),
+    _ => trf("Rasm tanlab bo'lmadi ({0})", [code]),
+  };
+}
+
+/// Bitta rasm (kamera yoki galereya): xato yashirilmaydi — sababi toast bilan aytiladi, null qaytadi.
+Future<XFile?> pickOnePhoto(BuildContext context, ImageSource source, {double maxWidth = 1600, int quality = 85}) async {
+  try {
+    return await ImagePicker().pickImage(source: source, maxWidth: maxWidth, imageQuality: quality);
+  } catch (e) {
+    if (context.mounted) showToast(context, pickErrorText(e));
+    return null;
+  }
+}
+
 /// Galereyadan bir nechta rasm tanlash; chegaralar buzilsa sabab toast bilan aytiladi.
 Future<List<PickedPhoto>> pickPhotos(BuildContext context, {required List<PickedPhoto> current}) async {
   final remaining = kMaxPhotos - current.length;
   if (remaining <= 0) return [];
   final picker = ImagePicker();
-  final files = remaining == 1
-      ? [if (await picker.pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85) case final f?) f]
-      : await picker.pickMultiImage(maxWidth: 1600, imageQuality: 85, limit: remaining);
+  final List<XFile> files;
+  try {
+    files = remaining == 1
+        ? [if (await picker.pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85) case final f?) f]
+        : await picker.pickMultiImage(maxWidth: 1600, imageQuality: 85, limit: remaining);
+  } catch (e) {
+    if (context.mounted) showToast(context, pickErrorText(e));
+    return [];
+  }
   final out = <PickedPhoto>[];
   var total = current.fold<int>(0, (s, p) => s + p.size);
   String? problem;

@@ -12,6 +12,7 @@ import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../../core/widgets/photos.dart';
 import 'contact_sheet.dart';
 
 /// "Ma'lumotlarim": umumiy qism + dehqon uchun xo'jalik, agronom uchun mutaxassis ma'lumotlari.
@@ -131,8 +132,8 @@ class _EditProfileState extends ConsumerState<EditProfileScreen> {
         ]),
       );
     }
-    if (source == null) return;
-    final f = await ImagePicker().pickImage(source: source, maxWidth: 800, imageQuality: 85);
+    if (source == null || !mounted) return;
+    final f = await pickOnePhoto(context, source, maxWidth: 800);
     if (f == null) return;
     setState(() => _uploading = true);
     try {

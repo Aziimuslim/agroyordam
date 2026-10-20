@@ -1,6 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- CAMERA ruxsati e'lon qilinmaydi: image_picker kamerani tizim ilovasi orqali ochadi. E'lon qilinsa, Android
+         ruxsat berilmaguncha kamerani bloklaydi (image_picker esa uni so'ramaydi) — kamera umuman ochilmay qolardi. -->
     <application
         android:label="AgroYordam"
         android:usesCleartextTraffic="true"
@@ -43,6 +44,14 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Android 11+: kamera va galereya ilovalarini topish uchun (image_picker) -->
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.GET_CONTENT"/>
+            <data android:mimeType="image/*"/>
         </intent>
     </queries>
 </manifest>

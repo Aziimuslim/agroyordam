@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/widgets/tab_back.dart';
+
 import '../application/app_mode.dart';
 import '../application/providers.dart';
 import '../core/widgets/brand.dart';
@@ -72,7 +74,9 @@ String? safeReturnTo(String? loc) {
 }
 
 /// Tab ekranlari o'rtasida animatsiyasiz o'tish (pastki navigatsiya).
-Page<void> _tab(Widget child, GoRouterState s) => NoTransitionPage(key: s.pageKey, child: child);
+/// Pastki menyu bo'limlari. TZ 1/3: telefon "Orqaga" tugmasi bo'lim ildizida ilovani darhol yopmaydi —
+/// avval bosh bo'limga qaytaradi, bosh bo'limda esa ikkinchi bosishda chiqadi.
+Page<void> _tab(Widget child, GoRouterState s) => NoTransitionPage(key: s.pageKey, child: TabBackGuard(location: s.matchedLocation, child: child));
 
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ValueNotifier<AuthStatus>(ref.read(authProvider).status);

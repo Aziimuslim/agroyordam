@@ -1387,5 +1387,10 @@
  "Shu va keyingi bajarilmagan takrorlar yangi qoida bo'yicha qayta yaratiladi.": "Эта и следующие невыполненные задачи будут пересозданы по новому правилу.",
  "Ilova menyulari shu tilda bo'ladi. O'simliklar, kasalliklar va dorilar katalogi hamda AI javoblari hozircha faqat o'zbek (lotin) tilida.": "Меню приложения будет на этом языке. Каталог растений, болезней и препаратов, а также ответы ИИ пока только на узбекском (латиница).",
  "Bu manzil allaqachon profilingizda": "Этот адрес уже указан в профиле",
- "Telefon va email'ni o'zgartirish kod bilan tasdiqlanadi": "Изменение телефона и email подтверждается кодом"
+ "Telefon va email'ni o'zgartirish kod bilan tasdiqlanadi": "Изменение телефона и email подтверждается кодом",
+ "Galereyaga ruxsat berilmadi. Telefon sozlamalarida ruxsat bering": "Нет доступа к галерее. Разрешите его в настройках телефона",
+ "Telefonda kamera ilovasi topilmadi. Galereyadan tanlang": "Приложение камеры не найдено. Выберите из галереи",
+ "Rasm tanlash oynasi hali yopilmagan. Biroz kutib qayta urinib ko'ring": "Окно выбора фото ещё открыто. Подождите и попробуйте снова",
+ "Rasm tanlab bo'lmadi ({0})": "Не удалось выбрать фото ({0})",
+ "Chiqish uchun yana bir marta bosing": "Нажмите ещё раз, чтобы выйти"
 }
