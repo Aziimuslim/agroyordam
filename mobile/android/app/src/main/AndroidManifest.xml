@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
-    <!-- CAMERA ruxsati e'lon qilinmaydi: image_picker kamerani tizim ilovasi orqali ochadi. E'lon qilinsa, Android
-         ruxsat berilmaguncha kamerani bloklaydi (image_picker esa uni so'ramaydi) — kamera umuman ochilmay qolardi. -->
+    <!-- Kamera: ruxsat ilova ichida ochiq so'raladi (permission_handler) — so'ng image_picker tizim kamerasini ochadi -->
+    <uses-permission android:name="android.permission.CAMERA"/>
     <application
         android:label="AgroYordam"
         android:usesCleartextTraffic="true"

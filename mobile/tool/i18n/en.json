@@ -1392,5 +1392,8 @@
  "Telefonda kamera ilovasi topilmadi. Galereyadan tanlang": "No camera app found. Choose from the gallery",
  "Rasm tanlash oynasi hali yopilmagan. Biroz kutib qayta urinib ko'ring": "The photo picker is still open. Wait a moment and try again",
  "Rasm tanlab bo'lmadi ({0})": "Couldn't pick a photo ({0})",
- "Chiqish uchun yana bir marta bosing": "Press again to exit"
+ "Chiqish uchun yana bir marta bosing": "Press again to exit",
+ "Kameraga ruxsat o'chirilgan": "Camera access is turned off",
+ "Rasmga olish uchun telefon sozlamalarida AgroYordam → Ruxsatlar → Kamera'ni yoqing. Galereyadan tanlash ruxsatsiz ishlaydi.": "To take photos, enable AgroYordam → Permissions → Camera in phone settings. Choosing from the gallery works without it.",
+ "Sozlamalarni ochish": "Open settings"
 }

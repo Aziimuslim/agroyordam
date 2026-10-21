@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../config.dart';
 import '../i18n/i18n.dart';
@@ -39,8 +41,30 @@ String pickErrorText(Object e) {
   };
 }
 
+/// Android: kamera ruxsati ochiq so'raladi (tizim oynasi). Rad etilsa — sababi; butunlay o'chirilgan bo'lsa —
+/// telefon sozlamalarini ochish taklifi. true — kamerani ochish mumkin.
+Future<bool> ensureCameraPermission(BuildContext context) async {
+  if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return true;
+  var st = await Permission.camera.status;
+  if (st.isGranted) return true;
+  if (!st.isPermanentlyDenied) st = await Permission.camera.request();
+  if (st.isGranted) return true;
+  if (!context.mounted) return false;
+  if (st.isPermanentlyDenied || st.isRestricted) {
+    final open = await confirm(context, tr("Kameraga ruxsat o'chirilgan"),
+        tr("Rasmga olish uchun telefon sozlamalarida AgroYordam → Ruxsatlar → Kamera'ni yoqing. Galereyadan tanlash ruxsatsiz ishlaydi."),
+        ok: tr('Sozlamalarni ochish'));
+    if (open) await openAppSettings();
+    return false;
+  }
+  showToast(context, tr("Kameraga ruxsat berilmadi. Galereyadan tanlashingiz mumkin"));
+  return false;
+}
+
 /// Bitta rasm (kamera yoki galereya): xato yashirilmaydi — sababi toast bilan aytiladi, null qaytadi.
 Future<XFile?> pickOnePhoto(BuildContext context, ImageSource source, {double maxWidth = 1600, int quality = 85}) async {
+  if (source == ImageSource.camera && !await ensureCameraPermission(context)) return null;
+  if (!context.mounted) return null;
   try {
     return await ImagePicker().pickImage(source: source, maxWidth: maxWidth, imageQuality: quality);
   } catch (e) {
