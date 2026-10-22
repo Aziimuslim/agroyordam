@@ -13,4 +13,4 @@
 | 9 | 4.6 | Past ishonchli natijada sahifa pasti (fikr bloki) telefon navigatsiya paneli ostida qoladi | ✅ 0.8.17 |
 | 10 | 4.8 | "Jamoatda ulashish" topilmadi — faqat rasm ustidagi yozuvsiz belgi edi | ✅ 0.8.17: sahifada yozuvli tugma ham qo'shildi |
 | 11 | 4.7 | Past ishonchda (22%) reja chiqmaydi | ℹ️ TZ S08 bo'yicha ataylab: past ishonchda asosiy amal — qayta suratga olish. Aniqroq rasm bilan qayta sinash |
-| 12 | 4.6 | "Ishladi lekin juda sekin" | ⏳ aniqlashtirish: qaysi qadam sekin |
+| 12 | 4.6 | "Yo'q"dan keyin sabab qismi sekin chiqadi | ✅ 0.8.18: sabab qismi server javobini kutmasdan darhol chiqadi (3 s kechikishda ham 0,3 s da — tekshirildi) |

@@ -5,6 +5,9 @@ Web ilova: https://agroyordam.duckdns.org
 O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
 Ilova https://agroyordam.duckdns.org serveriga o'zi ulanadi. Eski versiya o'rnatilgan bo'lsa, ustidan yangilanadi.
 
+## 0.8.18
+- "AI to'g'ri topdimi?" → "Yo'q" bosilgach sabab tanlash darhol chiqadi (avval server javobini kutardi).
+
 ## 0.8.17 — tashxis natijasi
 - Ishonch past bo'lganda sahifa pasti telefon navigatsiya paneli ostida qolardi — tuzatildi.
 - "Jamoatda ulashish" sahifada yozuvli tugma sifatida ham bor (tepadagi belgi skrollda ko'rinmasdi).

@@ -33,7 +33,8 @@ class _DiagnosisFeedbackState extends ConsumerState<DiagnosisFeedback> {
   late bool? _value = widget.d.userFeedback;
 
   /// "Yo'q"dan keyin ixtiyoriy sabab (TZ S08): bir marta yuboriladi yoki o'tkazib yuboriladi.
-  late bool _reasonDone = widget.d.userFeedback != false || (widget.d.feedbackReason ?? '').isNotEmpty;
+  // Avval javob berilgan bo'lsa qayta so'ralmaydi; shu safar "Yo'q" bosilsa — darhol (server javobini kutmasdan) chiqadi
+  late bool _reasonDone = widget.d.userFeedback != null;
   final _reason = TextEditingController();
   String? _chip;
   bool _sending = false;
@@ -47,7 +48,10 @@ class _DiagnosisFeedbackState extends ConsumerState<DiagnosisFeedback> {
   }
 
   Future<void> _send(bool correct) async {
-    setState(() => _value = correct);
+    setState(() {
+      _value = correct;
+      _reasonDone = correct;
+    });
     try {
       await ref.read(gardenRepoProvider).feedback(widget.d.id, correct);
     } catch (e) {
