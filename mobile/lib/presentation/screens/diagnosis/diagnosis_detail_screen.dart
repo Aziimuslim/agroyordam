@@ -107,8 +107,10 @@ class _BodyState extends ConsumerState<_Body> {
           ),
         );
 
+    // Pastki panel yashirilgan holatda (past ishonch) ham kontent telefon navigatsiya paneli ostida qolmasin
+    final hasActionBar = !(unsure || (!d.isHealthy && d.diseaseName == null));
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: EdgeInsets.only(bottom: 24 + (hasActionBar ? 0 : MediaQuery.viewPaddingOf(context).bottom)),
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -223,6 +225,17 @@ class _BodyState extends ConsumerState<_Body> {
                 if (d.diseaseId != null) ...[const SizedBox(height: 8), _CatalogLink(d: d)],
                 const SizedBox(height: 12),
                 DiagnosisFeedback(d: d),
+                const SizedBox(height: 8),
+                // Tepadagi belgi skrollda ko'rinmaydi — ulashish sahifada yozuv bilan ham bor (TZ S08)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    style: TextButton.styleFrom(minimumSize: const Size(44, 48), foregroundColor: c.primaryDark),
+                    onPressed: _share,
+                    icon: const Icon(AppIcons.share, size: 20),
+                    label: Text(tr('Jamoatda ulashish'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  ),
+                ),
               ]),
             ),
           ]),

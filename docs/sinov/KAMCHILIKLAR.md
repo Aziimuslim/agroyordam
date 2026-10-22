@@ -10,3 +10,7 @@
 | 6 | 2.4 | Internetsiz yangilashda aylanib turadi | ⏳ aniqlashtirish: 15 soniyadan keyin xato bloki chiqdimi yoki cheksiz aylandimi |
 | 7 | 0.2 | "Ilova haqida" topilmadi | ℹ️ Profil → Sozlamalar guruhining oxirida (versiya yonida). Topilmasa — skrinshot |
 | 8 | — | Telefondagi web yorliqda (brauzer) rasm tanlash ishlamaydi; Pixel 7 emulyatsiyasida ishlaydi | ⏳ brauzer nomi va aniq holat kutilmoqda |
+| 9 | 4.6 | Past ishonchli natijada sahifa pasti (fikr bloki) telefon navigatsiya paneli ostida qoladi | ✅ 0.8.17 |
+| 10 | 4.8 | "Jamoatda ulashish" topilmadi — faqat rasm ustidagi yozuvsiz belgi edi | ✅ 0.8.17: sahifada yozuvli tugma ham qo'shildi |
+| 11 | 4.7 | Past ishonchda (22%) reja chiqmaydi | ℹ️ TZ S08 bo'yicha ataylab: past ishonchda asosiy amal — qayta suratga olish. Aniqroq rasm bilan qayta sinash |
+| 12 | 4.6 | "Ishladi lekin juda sekin" | ⏳ aniqlashtirish: qaysi qadam sekin |

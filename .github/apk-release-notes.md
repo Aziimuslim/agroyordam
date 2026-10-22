@@ -5,6 +5,10 @@ Web ilova: https://agroyordam.duckdns.org
 O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
 Ilova https://agroyordam.duckdns.org serveriga o'zi ulanadi. Eski versiya o'rnatilgan bo'lsa, ustidan yangilanadi.
 
+## 0.8.17 — tashxis natijasi
+- Ishonch past bo'lganda sahifa pasti telefon navigatsiya paneli ostida qolardi — tuzatildi.
+- "Jamoatda ulashish" sahifada yozuvli tugma sifatida ham bor (tepadagi belgi skrollda ko'rinmasdi).
+
 ## 0.8.16 — kamera ruxsati
 - "Kamerani ochish" bosilganda ilova kamera ruxsatini ochiq so'raydi (Android oynasi). Ruxsat butunlay o'chirilgan
   bo'lsa — telefon sozlamalarini ochish taklif qilinadi. Galereyadan tanlash ruxsatsiz ishlaydi.
