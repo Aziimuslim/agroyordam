@@ -119,18 +119,8 @@ class _Header extends ConsumerWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          LandscapeBackdrop(weather: weather.value),
-          // Matn ostida krem/qorong'i gradient: kontrast manzara va animatsiyaga bog'liq emas
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [c.cream, c.cream, c.cream.withValues(alpha: 0.85), c.cream.withValues(alpha: 0)],
-                stops: [0, (topPad + 150) / (topPad + 196 + landscapeH), (topPad + 190) / (topPad + 196 + landscapeH), (topPad + 250) / (topPad + 196 + landscapeH)],
-              ),
-            ),
-          ),
+          // Manzara matn ostidan boshlanadi; undan yuqorisi fon rangida — kontrast animatsiyaga bog'liq emas
+          LandscapeBackdrop(weather: weather.value, skyTop: topPad + 150, topColor: c.cream),
           // Pastki egilgan qirra — kontent "varag'i" manzara ustiga chiqadi
           Positioned(
             left: 0,
