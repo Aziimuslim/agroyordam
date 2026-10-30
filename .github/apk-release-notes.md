@@ -5,6 +5,11 @@ Web ilova: https://agroyordam.duckdns.org
 O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
 Ilova https://agroyordam.duckdns.org serveriga o'zi ulanadi. Eski versiya o'rnatilgan bo'lsa, ustidan yangilanadi.
 
+## 0.8.21 — manzara kun vaqtiga mos
+- Bosh sahifa manzarasi haqiqiy kun vaqtiga qarab o'zgaradi: tong, kun, oltin soat, quyosh botishi,
+  shafaq (pushti-binafsha), "ko'k soat" va tun (oy, yulduzlar). Hammasi silliq o'tadi.
+- Telefonda tungi rang qo'llanmay qolardi (surat kunduzgidek ko'rinardi) — tuzatildi.
+
 ## 0.8.20 — ilova ichidan yangilanish
 - Yangi versiya chiqsa, ilova o'zi taklif qiladi: hajmi ko'rsatiladi, "Yangilash" bosilgach APK progress bilan
   (MB va foiz) yuklanadi va o'rnatish oynasi ochiladi. "Keyinroq" — 24 soatdan keyin yana eslatadi.

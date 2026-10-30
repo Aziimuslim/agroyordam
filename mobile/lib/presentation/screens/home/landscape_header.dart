@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -45,6 +46,10 @@ class _LandscapeBackdropState extends State<LandscapeBackdrop> with SingleTicker
   late final AppLifecycleListener _life;
   final _trees = _TreeCache();
   bool _foreground = true;
+  // Quyosh balandligi vaqt o'tishi bilan o'zgaradi — manzara yorug'ligi har 2 daqiqada yangilanadi
+  late final Timer _clock = Timer.periodic(const Duration(minutes: 2), (_) {
+    if (mounted) setState(() {});
+  });
   ui.Image? _photo;
   ImageStream? _stream;
   late final ImageStreamListener _listener = ImageStreamListener((info, _) {
@@ -94,6 +99,7 @@ class _LandscapeBackdropState extends State<LandscapeBackdrop> with SingleTicker
   @override
   void dispose() {
     _stream?.removeListener(_listener);
+    _clock.cancel();
     _life.dispose();
     _ctl.dispose();
     _trees.dispose();
@@ -103,13 +109,16 @@ class _LandscapeBackdropState extends State<LandscapeBackdrop> with SingleTicker
   @override
   Widget build(BuildContext context) {
     final w = widget.weather;
-    final hour = DateTime.now().hour;
-    final night = w != null ? !w.isDay : (hour < 6 || hour >= 19);
+    _clock; // taymerni ishga tushiradi
+    final now = landscapeClock();
+    final sun = sunElevation(now);
+    // Ob-havo "kun/tun" bilan bir xil; ma'lumot bo'lmasa — quyosh balandligi bo'yicha
+    final night = w != null ? !w.isDay : sun < -4;
     final scene = w == null ? SkyScene.clear : sceneFor(w.code);
     final warm = w == null || w.temperature >= 14;
     // Statik kadr: bulut, qush va tomchilar kadr ichida ko'rinadigan lahza
     final anim = _reduce ? const AlwaysStoppedAnimation<double>(0.27) : _ctl;
-    final cfg = _Cfg(scene: scene, night: night, warm: warm, skyTop: widget.skyTop, topColor: widget.topColor);
+    final cfg = _Cfg(scene: scene, night: night, warm: warm, skyTop: widget.skyTop, topColor: widget.topColor, sun: (sun * 2).roundToDouble() / 2);
     final photo = _photo;
     return ExcludeSemantics(
       child: RepaintBoundary(
@@ -127,17 +136,39 @@ class _LandscapeBackdropState extends State<LandscapeBackdrop> with SingleTicker
 }
 
 class _Cfg {
-  const _Cfg({required this.scene, required this.night, required this.warm, required this.skyTop, this.topColor});
+  const _Cfg({required this.scene, required this.night, required this.warm, required this.skyTop, this.topColor, this.sun = 45});
   final SkyScene scene;
   final bool night, warm;
   final double skyTop;
   final Color? topColor;
 
+  /// Quyoshning ufqdan balandligi (gradus): manfiy — ufq ostida (shafaq, tun).
+  final double sun;
+
   @override
   bool operator ==(Object o) =>
-      o is _Cfg && o.scene == scene && o.night == night && o.warm == warm && o.skyTop == skyTop && o.topColor == topColor;
+      o is _Cfg && o.scene == scene && o.night == night && o.warm == warm && o.skyTop == skyTop && o.topColor == topColor && o.sun == sun;
   @override
-  int get hashCode => Object.hash(scene, night, warm, skyTop, topColor);
+  int get hashCode => Object.hash(scene, night, warm, skyTop, topColor, sun);
+}
+
+/// Vaqt manbai (sinovda almashtiriladi).
+DateTime Function() landscapeClock = DateTime.now;
+
+/// Quyosh balandligi (gradus), NOAA soddalashtirilgan formulasi. Standart joy — O'zbekiston markazi.
+double sunElevation(DateTime t, {double lat = 41.3, double lon = 69.3}) {
+  final u = t.toUtc();
+  final n = u.difference(DateTime.utc(u.year)).inDays + 1;
+  final hour = u.hour + u.minute / 60 + u.second / 3600;
+  final g = 2 * math.pi / 365 * (n - 1 + (hour - 12) / 24);
+  final eq = 229.18 * (0.000075 + 0.001868 * math.cos(g) - 0.032077 * math.sin(g) - 0.014615 * math.cos(2 * g) - 0.040849 * math.sin(2 * g));
+  final decl = 0.006918 - 0.399912 * math.cos(g) + 0.070257 * math.sin(g) - 0.006758 * math.cos(2 * g) + 0.000907 * math.sin(2 * g) -
+      0.002697 * math.cos(3 * g) + 0.00148 * math.sin(3 * g);
+  final tst = hour * 60 + eq + 4 * lon;
+  final ha = (tst / 4 - 180) * math.pi / 180;
+  final la = lat * math.pi / 180;
+  final cz = (math.sin(la) * math.sin(decl) + math.cos(la) * math.cos(decl) * math.cos(ha)).clamp(-1.0, 1.0);
+  return 90 - math.acos(cz) * 180 / math.pi;
 }
 
 /// Daraxt qatorlari tayyor rasm (Picture) sifatida saqlanadi — har kadrda faqat egiladi.
@@ -578,35 +609,67 @@ class _ScenePainter extends CustomPainter {
 const orchardAsset = 'assets/images/orchard.jpg';
 const _sunAt = Offset(0.145, 0.24);
 
-/// Ob-havo va tun uchun rang: (ko'paytma rgb, to'yinganlik, qo'shimcha rgb, tuman rgba).
-({List<double> mul, double sat, List<double> add, List<double> haze}) _grade(_Cfg cfg) {
-  var mul = [1.02, 1.0, 0.97], add = [0.0, 0.0, 0.0], haze = [0.0, 0.0, 0.0, 0.0];
-  var sat = 1.05;
+/// Suratning rangi: kun vaqti (quyosh balandligi) va ob-havo. Barcha platformada bir xil ishlashi uchun
+/// rang matritsasi emas, oddiy aralashtirish qatlamlari: to'yinganlik, ko'paytma (tus), "screen" (nur), tuman.
+typedef _Grade = ({List<double> mul, double sat, List<double> glow, List<double> haze});
+
+// (quyosh balandligi, ko'paytma rgb, to'yinganlik, nur rgba)
+const _dayKeys = <(double, List<double>, double, List<double>)>[
+  (-18, [0.26, 0.31, 0.50], 0.50, [0.05, 0.07, 0.17, 0.55]), // tun
+  (-9, [0.38, 0.41, 0.62], 0.58, [0.10, 0.10, 0.28, 0.50]), // "ko'k soat"
+  (-3, [0.74, 0.58, 0.66], 0.80, [0.38, 0.16, 0.30, 0.28]), // shafaq (pushti-binafsha)
+  (2, [1.00, 0.78, 0.60], 1.00, [0.60, 0.26, 0.06, 0.24]), // quyosh botishi/chiqishi
+  (9, [1.00, 0.92, 0.80], 1.00, [0.40, 0.22, 0.06, 0.13]), // oltin soat
+  (20, [1.00, 1.00, 0.98], 1.00, [0.00, 0.00, 0.00, 0.00]), // kun
+];
+
+_Grade _grade(_Cfg cfg) {
+  final e = cfg.sun;
+  var lo = _dayKeys.first, hi = _dayKeys.last;
+  if (e <= lo.$1) {
+    hi = lo;
+  } else if (e >= hi.$1) {
+    lo = hi;
+  } else {
+    for (var i = 0; i < _dayKeys.length - 1; i++) {
+      if (e >= _dayKeys[i].$1 && e <= _dayKeys[i + 1].$1) {
+        lo = _dayKeys[i];
+        hi = _dayKeys[i + 1];
+        break;
+      }
+    }
+  }
+  final f = hi.$1 == lo.$1 ? 0.0 : (e - lo.$1) / (hi.$1 - lo.$1);
+  double l(double a, double b) => a + (b - a) * f;
+  var mul = [for (var i = 0; i < 3; i++) l(lo.$2[i], hi.$2[i])];
+  var sat = l(lo.$3, hi.$3);
+  var glow = [for (var i = 0; i < 4; i++) l(lo.$4[i], hi.$4[i])];
+  var haze = [0.0, 0.0, 0.0, 0.0];
+  final night = e < -6;
   switch (cfg.scene) {
     case SkyScene.clear:
       break;
     case SkyScene.clouds:
-      mul = [0.95, 0.97, 1.0];
-      sat = 0.78;
-      add = [0.02, 0.02, 0.03];
+      mul = [mul[0] * 0.95, mul[1] * 0.97, mul[2]];
+      sat *= 0.8;
+      glow = [glow[0], glow[1], glow[2], glow[3] * 0.6];
     case SkyScene.rain:
-      mul = [0.78, 0.84, 0.92];
-      sat = 0.58;
+      mul = [mul[0] * 0.78, mul[1] * 0.84, mul[2] * 0.92];
+      sat *= 0.6;
+      glow = [glow[0], glow[1], glow[2], glow[3] * 0.3];
     case SkyScene.snow:
-      mul = [1.0, 1.02, 1.06];
-      sat = 0.35;
-      add = [0.08, 0.08, 0.10];
+      sat *= 0.4;
+      glow = night ? glow : [0.85, 0.88, 0.95, 0.22];
     case SkyScene.fog:
-      sat = 0.65;
-      haze = [0.93, 0.92, 0.89, 0.45];
+      sat *= 0.65;
+      haze = night ? [0.32, 0.35, 0.42, 0.35] : [0.93, 0.92, 0.89, 0.45];
   }
-  if (cfg.night) {
-    mul = [mul[0] * 0.34, mul[1] * 0.40, mul[2] * 0.60];
-    sat *= 0.7;
-    add = [add[0] * 0.3, add[1] * 0.3 + 0.01, add[2] * 0.3 + 0.04];
-    haze = [haze[0] * 0.35, haze[1] * 0.38, haze[2] * 0.5, haze[3] * 0.6];
-  }
-  return (mul: mul, sat: sat, add: add, haze: haze);
+  return (mul: mul, sat: sat, glow: glow, haze: haze);
+}
+
+double _smoothstep(double a, double b, double x) {
+  final t = ((x - a) / (b - a)).clamp(0.0, 1.0);
+  return t * t * (3 - 2 * t);
 }
 
 class _PhotoPainter extends _ScenePainter {
@@ -643,21 +706,27 @@ class _PhotoPainter extends _ScenePainter {
     final src = Rect.fromLTWH(sx, sy, sw, sh);
     _photo(canvas, band, src, v);
 
-    // Kunduzi ochiq osmon: suratdagi quyosh ustida jilva va aylanuvchi nurlar
+    // Kun vaqti: quyosh balandligiga qarab jilva, oy, yulduzlar silliq paydo bo'ladi/so'nadi
+    final e = cfg.sun;
     final sun = Offset(band.left + (iw * _sunAt.dx - src.left) / src.width * band.width, band.top + (ih * _sunAt.dy - src.top) / src.height * band.height);
     final r = math.max(8.0, band.height * 0.07);
-    if (!cfg.night && cfg.scene == SkyScene.clear) {
-      _sunGlare(canvas, sun, r, v);
-    } else if (cfg.night) {
-      if (cfg.scene == SkyScene.clear) _starsIn(canvas, Rect.fromLTRB(band.left, band.top + band.height * _fade * 0.5, band.right, band.top + band.height * 0.36), v);
-      if (cfg.scene != SkyScene.rain && cfg.scene != SkyScene.snow) _moon(canvas, sun, r * 0.85, v);
+    final open = cfg.scene == SkyScene.clear || cfg.scene == SkyScene.clouds;
+    final sunA = _smoothstep(-3, 3, e) * (cfg.scene == SkyScene.clear ? 1.0 : 0.0);
+    if (sunA > 0) _sunGlare(canvas, sun, r, v, sunA, _smoothstep(2, 18, e));
+    final starA = _smoothstep(-5, -12, e) * (cfg.scene == SkyScene.clear ? 1.0 : 0.0);
+    if (starA > 0) _starsIn(canvas, Rect.fromLTRB(band.left, band.top + band.height * _fade * 0.5, band.right, band.top + band.height * 0.36), v, starA);
+    final moonA = _smoothstep(-2, -8, e) * (open || cfg.scene == SkyScene.fog ? 1.0 : 0.0);
+    if (moonA > 0) {
+      canvas.saveLayer(Rect.fromCircle(center: sun, radius: r * 4), Paint()..color = Color.fromRGBO(0, 0, 0, moonA));
+      _moon(canvas, sun, r * 0.85, v);
+      canvas.restore();
     }
     _softClouds(canvas, band, v);
-    if (!cfg.night && (cfg.scene == SkyScene.clear || cfg.scene == SkyScene.clouds)) {
+    if (e > 1 && open) {
       _birds(canvas, Rect.fromLTRB(band.left, band.top + band.height * 0.05, band.right, band.bottom), v);
       _leaves(canvas, band, v);
     }
-    if (cfg.night && cfg.scene == SkyScene.clear && cfg.warm) _fireflies(canvas, band, v);
+    if (e < -8 && cfg.scene == SkyScene.clear && cfg.warm) _fireflies(canvas, band, v);
     switch (cfg.scene) {
       case SkyScene.rain:
         _rain(canvas, band, v);
@@ -687,8 +756,8 @@ class _PhotoPainter extends _ScenePainter {
         final fx = i / cols;
         pos[k] = band.left + fx * band.width;
         pos[k + 1] = band.top + fy * band.height;
-        final edge = 0.55 + 0.45 * _smooth(0.45, 1.0, (fx - 0.5).abs() * 2);
-        final m = _smooth(0.28, 0.9, fy) * edge * wind;
+        final edge = 0.55 + 0.45 * _smoothstep(0.45, 1.0, (fx - 0.5).abs() * 2);
+        final m = _smoothstep(0.28, 0.9, fy) * edge * wind;
         final dx = 0.6 * math.sin(t * 19 + fy * 14 + fx * 4) + 0.4 * math.sin(t * 33 + fx * 23 + fy * 5);
         final dy = 0.35 * math.sin(t * 24 + fx * 17);
         tex[k] = src.left + fx * src.width + dx * m * 2.4 * px;
@@ -710,10 +779,30 @@ class _PhotoPainter extends _ScenePainter {
     canvas.drawVertices(
         verts,
         BlendMode.srcOver,
-        Paint()
-          ..shader = ImageShader(image, TileMode.mirror, TileMode.clamp, Matrix4.identity().storage, filterQuality: FilterQuality.medium)
-          ..colorFilter = ColorFilter.matrix(_matrix(g)));
+        Paint()..shader = ImageShader(image, TileMode.mirror, TileMode.clamp, Matrix4.identity().storage, filterQuality: FilterQuality.medium));
     verts.dispose();
+    // Rang: to'yinganlik → tus (ko'paytma) → nur (screen). Oddiy aralashtirish — Android/web'da bir xil
+    if (g.sat < 0.99) {
+      canvas.drawRect(band, Paint()
+        ..blendMode = BlendMode.saturation
+        ..color = Color.fromRGBO(128, 128, 128, (1 - g.sat).clamp(0.0, 1.0)));
+    }
+    if (g.mul.any((m) => m < 0.995)) {
+      canvas.drawRect(band, Paint()
+        ..blendMode = BlendMode.multiply
+        ..color = Color.from(alpha: 1, red: g.mul[0].clamp(0.0, 1.0), green: g.mul[1].clamp(0.0, 1.0), blue: g.mul[2].clamp(0.0, 1.0)));
+    }
+    if (g.glow[3] > 0.005) {
+      // Nur tepadan (osmondan) kuchliroq
+      canvas.drawRect(
+          band,
+          Paint()
+            ..blendMode = BlendMode.screen
+            ..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [
+              Color.from(alpha: g.glow[3], red: g.glow[0], green: g.glow[1], blue: g.glow[2]),
+              Color.from(alpha: g.glow[3] * 0.55, red: g.glow[0], green: g.glow[1], blue: g.glow[2]),
+            ]).createShader(band));
+    }
     if (g.haze[3] > 0) {
       canvas.drawRect(
           band,
@@ -733,26 +822,14 @@ class _PhotoPainter extends _ScenePainter {
     canvas.restore();
   }
 
-  static double _smooth(double a, double b, double x) {
-    final t = ((x - a) / (b - a)).clamp(0.0, 1.0);
-    return t * t * (3 - 2 * t);
+  /// [a] — ko'rinish (ufqda so'nadi), [high] — 0 past quyosh (to'q sariq), 1 baland (och sariq).
+  void _sunGlare(Canvas canvas, Offset c, double r, double v, double a, double high) {
+    canvas.saveLayer(Rect.fromCircle(center: c, radius: r * 12), Paint()..color = Color.fromRGBO(0, 0, 0, a));
+    _sunGlareInner(canvas, c, r * (1.25 - 0.25 * high), v, Color.lerp(const Color(0xFFFFB25C), const Color(0xFFFFF1C4), high)!);
+    canvas.restore();
   }
 
-  List<double> _matrix(({List<double> mul, double sat, List<double> add, List<double> haze}) g) {
-    const lr = 0.299, lg = 0.587, lb = 0.114;
-    final s = g.sat;
-    final m = <double>[];
-    for (var row = 0; row < 3; row++) {
-      final k = g.mul[row];
-      final base = [lr * (1 - s), lg * (1 - s), lb * (1 - s)];
-      base[row] += s;
-      m.addAll([base[0] * k, base[1] * k, base[2] * k, 0, g.add[row] * 255]);
-    }
-    m.addAll([0, 0, 0, 1, 0]);
-    return m;
-  }
-
-  void _sunGlare(Canvas canvas, Offset c, double r, double v) {
+  void _sunGlareInner(Canvas canvas, Offset c, double r, double v, Color tint) {
     final pulse = 0.5 + 0.5 * math.sin(v * _ScenePainter._tau * 6);
     final glowR = r * (3.6 + 0.4 * pulse);
     canvas.drawCircle(
@@ -760,7 +837,7 @@ class _PhotoPainter extends _ScenePainter {
         glowR,
         Paint()
           ..blendMode = BlendMode.screen
-          ..shader = RadialGradient(colors: [const Color(0xFFFFF1C4).withValues(alpha: 0.75 + 0.2 * pulse), const Color(0x00FFE6A8)]).createShader(Rect.fromCircle(center: c, radius: glowR)));
+          ..shader = RadialGradient(colors: [tint.withValues(alpha: 0.75 + 0.2 * pulse), tint.withValues(alpha: 0)]).createShader(Rect.fromCircle(center: c, radius: glowR)));
     final ray = Paint()
       ..blendMode = BlendMode.screen
       ..strokeCap = StrokeCap.round;
@@ -771,7 +848,7 @@ class _PhotoPainter extends _ScenePainter {
       final dir = Offset(math.cos(a), math.sin(a));
       ray
         ..strokeWidth = math.max(1.2, r * (i.isEven ? 0.16 : 0.1))
-        ..shader = LinearGradient(colors: [const Color(0xAAFFF3CF), const Color(0x00FFF3CF)]).createShader(Rect.fromPoints(c + dir * r * 0.9, c + dir * (r * 0.9 + len)));
+        ..shader = LinearGradient(colors: [tint.withValues(alpha: 0.67), tint.withValues(alpha: 0)]).createShader(Rect.fromPoints(c + dir * r * 0.9, c + dir * (r * 0.9 + len)));
       canvas.drawLine(c + dir * r * 0.9, c + dir * (r * 0.9 + len), ray);
     }
     // Linza yolqini — quyoshdan pastga-o'ngga, nafas oladi
@@ -783,16 +860,16 @@ class _PhotoPainter extends _ScenePainter {
     }
   }
 
-  void _starsIn(Canvas canvas, Rect area, double v) {
+  void _starsIn(Canvas canvas, Rect area, double v, double alpha) {
     final rnd = math.Random(11);
     final n = (area.width / 26).clamp(10, 60).toInt();
     for (var i = 0; i < n; i++) {
       final p = Offset(area.left + rnd.nextDouble() * area.width, area.top + rnd.nextDouble() * area.height);
       final speed = 3 + rnd.nextInt(6);
       final tw = 0.2 + 0.8 * (0.5 + 0.5 * math.sin((v * speed + rnd.nextDouble()) * _ScenePainter._tau));
-      canvas.drawCircle(p, rnd.nextDouble() < 0.2 ? 1.6 : 1.0, Paint()..color = Color.fromRGBO(243, 238, 221, tw));
+      canvas.drawCircle(p, rnd.nextDouble() < 0.2 ? 1.6 : 1.0, Paint()..color = Color.fromRGBO(243, 238, 221, tw * alpha));
     }
-    _shootingStar(canvas, area, v);
+    if (alpha > 0.8) _shootingStar(canvas, area, v);
   }
 
   // Yumshoq (xira) bulutlar suratning osmon qismida suzadi
@@ -804,9 +881,14 @@ class _PhotoPainter extends _ScenePainter {
       SkyScene.fog => const [],
     };
     if (list.isEmpty) return;
-    final base = cfg.night
-        ? const Color(0xFF4E566C)
-        : switch (cfg.scene) { SkyScene.rain => const Color(0xFF7A8388), SkyScene.snow => const Color(0xFFE9ECEF), _ => const Color(0xFFFFFFFF) };
+    final dayC = switch (cfg.scene) { SkyScene.rain => const Color(0xFF7A8388), SkyScene.snow => const Color(0xFFE9ECEF), _ => const Color(0xFFFFFFFF) };
+    // Kunduzi oq, quyosh botganda pushti-to'q sariq, tunda to'q kulrang
+    final e = cfg.sun;
+    final base = e >= 8
+        ? dayC
+        : e >= 0
+            ? Color.lerp(const Color(0xFFF6C9A8), dayC, e / 8)!
+            : Color.lerp(const Color(0xFF4E566C), const Color(0xFFD9A0A8), _smoothstep(-9, 0, e))!;
     for (final (x0, fy, k, sp, a) in list) {
       final r = math.max(8.0, b.height * 0.09 * k);
       final span = b.width + r * 8;
