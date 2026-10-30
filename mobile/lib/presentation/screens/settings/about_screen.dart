@@ -7,6 +7,7 @@ import '../../../core/config.dart';
 import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/update/app_update.dart';
 import '../../../core/widgets/widgets.dart';
 import '../auth/server_settings.dart';
 import 'settings_widgets.dart';
@@ -76,6 +77,12 @@ class AboutScreen extends ConsumerWidget {
               ],
             ),
           ),
+          if (appUpdateSupported)
+            ListRow(
+              icon: Icons.system_update_rounded,
+              label: tr('Yangilanishni tekshirish'),
+              onTap: () => checkForUpdateManually(context, ref.read(apiClientProvider).dio),
+            ),
           SettingsSection(tr('Yordam')),
           if (ref.watch(currentUserProvider) != null)
           ListRow(icon: Icons.support_agent_rounded, label: tr('Agronomga savol berish'), onTap: () => context.push('/help/ask')),

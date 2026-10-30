@@ -30,15 +30,33 @@ android {
         versionName = flutter.versionName
     }
 
+    // Release imzo: CI kalitni serverdan oladi (APK_KEYSTORE, APK_KEYSTORE_PASSWORD). Hamma APK bir kalit bilan
+    // imzolanadi — ilova ustidan yangilanadi. Kalit berilmasa (lokal yig'ish) — debug kalit.
+    val releaseKeystore = System.getenv("APK_KEYSTORE").orEmpty()
+    signingConfigs {
+        create("release") {
+            if (releaseKeystore.isNotEmpty()) {
+                storeFile = file(releaseKeystore)
+                storeType = "pkcs12"
+                storePassword = System.getenv("APK_KEYSTORE_PASSWORD")
+                keyAlias = "agroyordam"
+                keyPassword = System.getenv("APK_KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (releaseKeystore.isNotEmpty()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
         }
     }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // FileProvider (ilova yangilanishi) — plaginlar orqali ilovada allaqachon bor, bu yerda kompilyatsiya uchun
+    implementation("androidx.core:core:1.13.1")
 }

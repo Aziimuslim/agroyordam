@@ -20,11 +20,51 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {flutter-version: "3.35.4", channel: stable, cache: true}
       - run: flutter pub get
+      - name: Imzo kaliti (serverdan)
+        # Hamma APK bitta kalit bilan imzolanadi — ilova o'zini ustidan yangilay oladi (deploy/deploy.sh apk-signing-key)
+        env:
+          HAS_SERVER: ${{ secrets.SERVER_HOST != '' && secrets.SERVER_SSH_KEY != '' }}
+          KEY: ${{ secrets.SERVER_SSH_KEY }}
+          HOST: ${{ secrets.SERVER_HOST }}
+          USER_NAME: ${{ secrets.SERVER_USER }}
+        run: |
+          set -euo pipefail
+          if [ "$HAS_SERVER" != "true" ]; then
+            echo "::warning::Server secret'lari yo'q — APK debug kalit bilan, release chiqarilmaydi"; exit 0
+          fi
+          KEY_FILE="$RUNNER_TEMP/deploy_key"
+          umask 077
+          if printf '%s' "$KEY" | grep -q -- '-----BEGIN'; then
+            printf '%s\n' "$KEY" | tr -d '\r' | sed 's/[[:space:]]*$//' > "$KEY_FILE"
+          else
+            printf '%s' "$KEY" | tr -d ' \r\n\t' | base64 -d > "$KEY_FILE" 2>/dev/null || true
+          fi
+          HOST="$(printf '%s' "$HOST" | tr -d '[:space:]')"; USER_NAME="$(printf '%s' "$USER_NAME" | tr -d '[:space:]')"
+          out=""
+          # Yangi deploy.sh serverga parallel deploy bilan yetib boradi — biroz kutamiz
+          for i in $(seq 1 60); do
+            out="$(ssh -i "$KEY_FILE" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
+              -o ConnectTimeout=20 "${USER_NAME:-ubuntu}@$HOST" apk-signing-key 2>/dev/null || true)"
+            case "$out" in PASSWORD=*) break ;; esac
+            out=""; echo "Server hali kalit bermadi ($i/60) — 30 s kutamiz"; sleep 30
+          done
+          rm -f "$KEY_FILE"
+          [ -n "$out" ] || { echo "::error::Imzo kalitini serverdan olib bo'lmadi"; exit 1; }
+          PASS="$(printf '%s\n' "$out" | sed -n '1s/^PASSWORD=//p')"
+          echo "::add-mask::$PASS"
+          printf '%s\n' "$out" | sed -n '2p' | base64 -d > "$RUNNER_TEMP/release.p12"
+          { echo "APK_KEYSTORE=$RUNNER_TEMP/release.p12"; echo "APK_KEYSTORE_PASSWORD=$PASS"; echo "APK_SIGNED=1"; } >> "$GITHUB_ENV"
       - name: APK yig'ish (release)
         # Standart: jonli server. Boshqa server uchun Repo Settings → Variables → API_URL
         env:
           API_URL: ${{ vars.API_URL || 'https://agroyordam.duckdns.org' }}
         run: flutter build apk --release ${API_URL:+--dart-define=API_URL=$API_URL}
+      - name: Imzoni tekshirish
+        if: env.APK_SIGNED == '1'
+        run: |
+          SIGNER="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -n1)apksigner"
+          "$SIGNER" verify --print-certs build/app/outputs/flutter-apk/app-release.apk | grep -E 'Signer #1 certificate (DN|SHA-256)'
+          rm -f "$RUNNER_TEMP/release.p12"
       - name: Nomlash
         id: ver
         run: |
@@ -37,6 +77,7 @@ jobs:
           name: AgroYordam-${{ steps.ver.outputs.ver }}-apk
           path: mobile/build/AgroYordam-${{ steps.ver.outputs.ver }}.apk
       - name: GitHub Release'ga yuklash (v${{ steps.ver.outputs.ver }})
+        if: env.APK_SIGNED == '1'
         working-directory: .
         env:
           GH_TOKEN: ${{ github.token }}

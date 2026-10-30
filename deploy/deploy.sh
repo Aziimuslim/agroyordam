@@ -7,7 +7,7 @@
 # Qadamlar: kod yangilanadi → image'lar yig'iladi → /health tekshiriladi →
 # o'tmasa, oldingi versiyaga avtomatik qaytariladi (rollback).
 #
-# Qo'lda: sudo /opt/agroyordam/deploy/deploy.sh [branch | backup-status | backup-now | backup-list]
+# Qo'lda: sudo /opt/agroyordam/deploy/deploy.sh [branch | backup-status | backup-now | backup-list | apk-signing-key]
 set -euo pipefail
 
 # Skript o'zi `git reset` bilan yangilanadi — ishlayotgan faylni o'zgartirmaslik uchun nusxadan ishlaymiz
@@ -35,6 +35,31 @@ ssh_command() {
   done
 }
 
+# APK imzo kaliti: bir marta yaratiladi va serverda saqlanadi (repo ochiq — kalit unga yozilmaydi).
+# "Android APK" workflow uni shu deploy kaliti orqali oladi: hamma APK bitta kalit bilan imzolanadi,
+# shuning uchun ilova o'zini ustidan yangilay oladi. Kalit yo'qolsa, foydalanuvchilar ilovani
+# bir marta o'chirib qayta o'rnatishi kerak bo'ladi — /etc/agroyordam/apk-signing nusxasini saqlang.
+SIGN_DIR="${AGRO_SIGN_DIR:-/etc/agroyordam/apk-signing}"
+apk_signing_key() {
+  umask 077
+  mkdir -p "$SIGN_DIR"
+  exec 8>"$SIGN_DIR/.lock"
+  flock 8
+  if [ ! -s "$SIGN_DIR/release.p12" ] || [ ! -s "$SIGN_DIR/password" ]; then
+    local tmp
+    tmp="$(mktemp -d)"
+    openssl rand -hex 24 > "$SIGN_DIR/password"
+    openssl req -x509 -newkey rsa:4096 -sha256 -days 10950 -nodes -subj "/CN=AgroYordam/O=AgroYordam/C=UZ" \
+      -keyout "$tmp/key.pem" -out "$tmp/cert.pem" 2>/dev/null
+    openssl pkcs12 -export -name agroyordam -inkey "$tmp/key.pem" -in "$tmp/cert.pem" \
+      -out "$SIGN_DIR/release.p12" -passout "file:$SIGN_DIR/password"
+    rm -rf "$tmp"
+  fi
+  printf 'PASSWORD=%s\n' "$(cat "$SIGN_DIR/password")"
+  base64 -w0 "$SIGN_DIR/release.p12"
+  echo
+}
+
 # Branch: argument yoki SSH buyrug'idan ("deploy <branch>"), aks holda hozirgi branch
 REQ="${1:-$(ssh_command)}"
 cd "$DIR"
@@ -43,6 +68,7 @@ case "$REQ" in
   backup-status) "${COMPOSE[@]}" exec -T backup backup.sh check; exit ;;
   backup-now)    "${COMPOSE[@]}" exec -T backup backup.sh now; exit ;;
   backup-list)   "${COMPOSE[@]}" exec -T backup backup.sh list; exit ;;
+  apk-signing-key) apk_signing_key; exit ;;
 esac
 REQ="${REQ#deploy}"; REQ="${REQ# }"
 BRANCH="${REQ:-$(git rev-parse --abbrev-ref HEAD)}"

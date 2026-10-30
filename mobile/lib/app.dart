@@ -9,6 +9,8 @@ import 'application/theme_mode.dart';
 import 'core/config.dart';
 import 'core/i18n/i18n.dart';
 import 'core/theme/app_theme.dart';
+import 'core/update/app_update.dart';
+import 'application/providers.dart';
 import 'presentation/router.dart';
 
 class AgroYordamApp extends ConsumerStatefulWidget {
@@ -29,6 +31,18 @@ class _AgroYordamAppState extends ConsumerState<AgroYordamApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _expert != expert) setState(() => _expert = expert);
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Android APK: yangi versiya bo'lsa taklif qilinadi (ekran ochilib ulgursin)
+    if (appUpdateSupported) {
+      Future.delayed(const Duration(seconds: 4), () {
+        if (!mounted) return;
+        checkForUpdateOnStart(ref.read(apiClientProvider).dio, () => _router?.routerDelegate.navigatorKey.currentContext);
+      });
+    }
   }
 
   @override

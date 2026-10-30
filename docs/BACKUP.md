@@ -104,3 +104,11 @@ Yangi serverda `SECRET_KEY` boshqacha bo'ladi. Shuning uchun foydalanuvchilar il
 Parollari va ma'lumotlari saqlanib qoladi.
 
 > Maslahat: `.env` faylining nusxasini (to'lov kalitlari bilan birga) parol menejerida saqlang. U zaxiraga kirmaydi.
+
+## APK imzo kaliti
+
+Android APK serverda saqlanadigan doimiy kalit bilan imzolanadi: `/etc/agroyordam/apk-signing/` (`release.p12`, `password`).
+Kalitni birinchi so'rovda `deploy/deploy.sh apk-signing-key` yaratadi, "Android APK" workflow uni deploy kaliti orqali oladi.
+Shu papkaning nusxasini xavfsiz joyda saqlang: kalit yo'qolsa, ilova ichidan yangilanish ishlamaydi va
+foydalanuvchilar ilovani bir marta o'chirib qayta o'rnatishi kerak bo'ladi.
+

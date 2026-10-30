@@ -5,6 +5,13 @@ Web ilova: https://agroyordam.duckdns.org
 O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
 Ilova https://agroyordam.duckdns.org serveriga o'zi ulanadi. Eski versiya o'rnatilgan bo'lsa, ustidan yangilanadi.
 
+## 0.8.20 — ilova ichidan yangilanish
+- Yangi versiya chiqsa, ilova o'zi taklif qiladi: hajmi ko'rsatiladi, "Yangilash" bosilgach APK progress bilan
+  (MB va foiz) yuklanadi va o'rnatish oynasi ochiladi. "Keyinroq" — 24 soatdan keyin yana eslatadi.
+- Profil → Ilova haqida → "Yangilanishni tekshirish".
+- Muhim: bu versiyadan boshlab APK doimiy kalit bilan imzolanadi. Eski versiya o'rnatilgan bo'lsa, 0.8.20 ni
+  bir marta o'chirib qayta o'rnating (ma'lumotlar serverda, yo'qolmaydi). Keyingi yangilanishlar ilova ichidan.
+
 ## 0.8.19 — jonli bosh sahifa manzarasi
 - Bosh sahifa sarlavhasida Tabiiy Agro maketidagi bog' surati: daraxtlar shamolda tebranadi, quyosh nurlari jilvalanadi,
   bulutlar suzadi, qushlar uchadi, barglar shamolda uchadi.
