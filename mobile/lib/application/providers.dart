@@ -176,6 +176,32 @@ final myApplicationProvider = FutureProvider.autoDispose<ExpertApplication?>((re
 final expertStatsProvider = FutureProvider.autoDispose<ExpertStats>((ref) => ref.watch(expertRepoProvider).stats());
 final reviewQueueProvider = FutureProvider.autoDispose.family<List<QueueItem>, String>((ref, f) => ref.watch(expertRepoProvider).queue(f));
 final queueItemProvider = FutureProvider.autoDispose.family<QueueItem, String>((ref, id) => ref.watch(expertRepoProvider).queueItem(id));
+final queueCountsProvider = FutureProvider.autoDispose<QueueCounts>((ref) => ref.watch(expertRepoProvider).queueCounts());
+
+/// Agronom TZ Y02→Y03: tekshiruv qoralamasi (tanlov, sabab, izoh, manba). Y03 dan Y02 ga qaytganda saqlanadi.
+class ReviewDraft {
+  const ReviewDraft({this.label, this.name, this.retakeReason, this.comment = '', this.source = ''});
+  final String? label, name, retakeReason; // label null + retakeReason ≠ null → "rasm yetarli emas"
+  final String comment, source;
+  bool get isRetake => retakeReason != null;
+  ReviewDraft copyWith({String? label, String? name, String? retakeReason, bool clearRetake = false, bool clearLabel = false, String? comment, String? source}) => ReviewDraft(
+        label: clearLabel ? null : (label ?? this.label),
+        name: clearLabel ? null : (name ?? this.name),
+        retakeReason: clearRetake ? null : (retakeReason ?? this.retakeReason),
+        comment: comment ?? this.comment,
+        source: source ?? this.source,
+      );
+}
+
+class ReviewDrafts extends Notifier<Map<String, ReviewDraft>> {
+  @override
+  Map<String, ReviewDraft> build() => {};
+  ReviewDraft of(String id) => state[id] ?? const ReviewDraft();
+  void set(String id, ReviewDraft d) => state = {...state, id: d};
+  void clear(String id) => state = {...state}..remove(id);
+}
+
+final reviewDraftsProvider = NotifierProvider<ReviewDrafts, Map<String, ReviewDraft>>(ReviewDrafts.new);
 final inboxProvider = FutureProvider.autoDispose.family<List<Question>, String>((ref, s) => ref.watch(expertRepoProvider).inbox(s));
 final catalogChangesProvider = FutureProvider.autoDispose<List<CatalogChange>>((ref) => ref.watch(expertRepoProvider).changes());
 final datasetImagesProvider =

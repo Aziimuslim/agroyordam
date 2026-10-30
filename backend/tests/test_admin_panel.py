@@ -33,7 +33,7 @@ async def test_experts_ai_and_revert(client, user_headers, admin_headers, fake_a
     expert = await make_expert(client, admin_headers)
     fake_ai.next = Prediction("Pomidor", "Tomato_Late_blight", 55.0, True)
     d = (await client.post(f"{API}/diagnoses", files={"image": ("l.png", image_bytes(), "image/png")}, headers=user_headers)).json()
-    await client.post(f"{API}/experts/queue/{d['id']}", json={"status": "corrected", "label": "Tomato_Early_blight"}, headers=expert)
+    await client.post(f"{API}/experts/queue/{d['id']}", json={"comment": "Agronom xulosasi", "status": "corrected", "label": "Tomato_Early_blight"}, headers=expert)
 
     ex = (await client.get(f"{API}/admin/experts", headers=admin_headers)).json()
     assert ex[0]["reviewed"] == 1 and ex[0]["ai_agreement"] == 0

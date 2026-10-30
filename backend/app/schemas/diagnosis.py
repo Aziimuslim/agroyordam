@@ -33,6 +33,8 @@ class DiagnosisOut(ORMModel):
     review_status: str = "pending"
     review_requested: bool = False
     expert_comment: str | None = None
+    expert_source: str | None = None
+    retake_reason: str | None = None
     diagnosed_at: datetime | None = None
 
 

@@ -1,10 +1,10 @@
 """Agronom roli: arizalar, agronomlar ro'yxati, tashxislarni tekshirish navbati va agronom statistikasi."""
 import uuid
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import case, func, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -87,12 +87,28 @@ class QueueItem(BaseModel):
     farmer_name: str
     farmer_region: str | None = None
     diagnosed_at: datetime | None = None
+    symptoms: str | None = None  # bilimlar bazasidagi qisqa belgi (kartada)
+    claimed_by_me: bool = False
+    claimed_by_other: bool = False
+    review_status: str = "pending"
 
 
 class QueueReviewIn(BaseModel):
     status: str = Field(pattern=r"^(confirmed|corrected|rejected)$")
     label: str | None = Field(default=None, max_length=150)
-    comment: str | None = Field(default=None, max_length=1000)
+    # TZ Y03: izoh majburiy (bo'sh/probel emas), 2000 belgigacha; manba — faqat https URL
+    comment: str = Field(min_length=3, max_length=2000)
+    source: str | None = Field(default=None, max_length=500, pattern=r"^https://[^\s]+\.[^\s]+$")
+    retake_reason: str | None = Field(default=None, pattern=r"^(blurry|far|wrong_part|no_context|other)$")
+
+
+# Ishni olish muddati: shu vaqt ichida boshqa agronom xulosa bera olmaydi (keyin bo'shaydi)
+CLAIM_TTL = timedelta(minutes=30)
+
+
+def _claimed_by_other(d: Diagnosis, user: User) -> bool:
+    return bool(d.review_claimed_by and d.review_claimed_by != user.id and d.review_claimed_at
+                and d.review_claimed_at > utcnow() - CLAIM_TTL)
 
 
 # ---------- Arizalar ----------
@@ -154,8 +170,9 @@ async def queue(
     _: User = Depends(require_expert),
     db: AsyncSession = Depends(get_db),
 ):
-    """Tekshirilmagan tashxislar: avval dehqon so'raganlari, keyin ishonchi pastlari, keyin yangilari."""
-    stmt = select(Diagnosis).where(Diagnosis.review_status == "pending")
+    """Tekshirilmagan tashxislar: avval dehqon so'raganlari, keyin ishonchi pastlari, keyin yangilari.
+    Boshqa agronom hozir ko'rib chiqayotgan ish ro'yxatda ko'rinmaydi."""
+    stmt = select(Diagnosis).where(Diagnosis.review_status == "pending", Diagnosis.hidden_at.is_(None), _free_for(_))
     if filter_ == "requested":
         stmt = stmt.where(Diagnosis.review_requested.is_(True))
     elif filter_ == "low":
@@ -163,10 +180,27 @@ async def queue(
     stmt = stmt.order_by(case((Diagnosis.review_requested.is_(True), 0), else_=1), Diagnosis.confidence.asc(),
                          Diagnosis.diagnosed_at.desc())
     rows = (await db.scalars(stmt.limit(limit).offset(offset))).all()
-    return [await _queue_item(db, d) for d in rows]
+    return [await _queue_item(db, d, _) for d in rows]
 
 
-async def _queue_item(db: AsyncSession, d: Diagnosis) -> QueueItem:
+def _free_for(user: User):
+    """Bo'sh yoki shu agronomga biriktirilgan (yoki claim muddati o'tgan) ishlar."""
+    return or_(Diagnosis.review_claimed_by.is_(None), Diagnosis.review_claimed_by == user.id,
+               Diagnosis.review_claimed_at < utcnow() - CLAIM_TTL)
+
+
+@router.get("/queue-counts")
+async def queue_counts(user: User = Depends(require_expert), db: AsyncSession = Depends(get_db)):
+    """Filtr sonlari ro'yxat bilan bir xil ma'noda: "Hammasi" — barcha ochiq ishlar, qolganlari uning qismi."""
+    base = select(func.count()).select_from(Diagnosis).where(Diagnosis.review_status == "pending", Diagnosis.hidden_at.is_(None), _free_for(user))
+    return {
+        "all": await db.scalar(base) or 0,
+        "requested": await db.scalar(base.where(Diagnosis.review_requested.is_(True))) or 0,
+        "low": await db.scalar(base.where(Diagnosis.confidence < settings.AI_MIN_CONFIDENCE)) or 0,
+    }
+
+
+async def _queue_item(db: AsyncSession, d: Diagnosis, viewer: User | None = None) -> QueueItem:
     farmer = await db.get(User, d.user_id)
     disease = await db.get(Disease, d.disease_id) if d.disease_id else None
     plant = await db.get(Plant, d.plant_id) if d.plant_id else None
@@ -183,16 +217,48 @@ async def _queue_item(db: AsyncSession, d: Diagnosis) -> QueueItem:
         plant_id=d.plant_id, plant_name=plant.name if plant else None, confidence=conf, alternatives=alts,
         review_requested=d.review_requested, review_note=d.review_note,
         farmer_name=farmer.full_name.split(" ")[0] if farmer else "Dehqon", farmer_region=", ".join(x for x in (farmer.region, farmer.district) if x) or None if farmer else None,
-        diagnosed_at=d.diagnosed_at,
+        diagnosed_at=d.diagnosed_at, symptoms=(disease.symptoms.split(".")[0][:120] if disease and disease.symptoms else None),
+        claimed_by_me=bool(viewer and d.review_claimed_by == viewer.id and not _claimed_by_other(d, viewer)),
+        claimed_by_other=bool(viewer and _claimed_by_other(d, viewer)), review_status=d.review_status,
     )
 
 
 @router.get("/queue/{diag_id}", response_model=QueueItem)
-async def queue_item(diag_id: uuid.UUID, _: User = Depends(require_expert), db: AsyncSession = Depends(get_db)):
+async def queue_item(diag_id: uuid.UUID, user: User = Depends(require_expert), db: AsyncSession = Depends(get_db)):
     d = await db.get(Diagnosis, diag_id)
     if d is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tashxis topilmadi")
-    return await _queue_item(db, d)
+    return await _queue_item(db, d, user)
+
+
+@router.post("/queue/{diag_id}/claim", response_model=QueueItem)
+async def claim(diag_id: uuid.UUID, user: User = Depends(require_expert), db: AsyncSession = Depends(get_db)):
+    """Ishni olish: atomik — ikki agronom bir vaqtda olsa, faqat bittasi yutadi (ikkinchisiga 409)."""
+    from sqlalchemy import update
+
+    now = utcnow()
+    res = await db.execute(
+        update(Diagnosis).where(Diagnosis.id == diag_id, Diagnosis.review_status == "pending", _free_for(user))
+        .values(review_claimed_by=user.id, review_claimed_at=now).execution_options(synchronize_session=False))
+    await db.commit()
+    d = await db.get(Diagnosis, diag_id)
+    if d is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Tashxis topilmadi")
+    await db.refresh(d)
+    if res.rowcount == 0:
+        if d.review_status != "pending":
+            raise HTTPException(status.HTTP_409_CONFLICT, "Bu tashxis allaqachon tekshirilgan")
+        raise HTTPException(status.HTTP_409_CONFLICT, "Bu ish boshqa ekspertga biriktirilgan")
+    return await _queue_item(db, d, user)
+
+
+@router.post("/queue/{diag_id}/release", status_code=204)
+async def release(diag_id: uuid.UUID, user: User = Depends(require_expert), db: AsyncSession = Depends(get_db)):
+    """Ishdan voz kechish: navbatga qaytadi (faqat o'zi olgan bo'lsa)."""
+    d = await db.get(Diagnosis, diag_id)
+    if d and d.review_claimed_by == user.id and d.review_status == "pending":
+        d.review_claimed_by = d.review_claimed_at = None
+        await db.commit()
 
 
 @router.post("/queue/{diag_id}", response_model=QueueItem | None)
@@ -204,7 +270,14 @@ async def review(diag_id: uuid.UUID, body: QueueReviewIn, reviewer: User = Depen
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tashxis topilmadi")
     if d.review_status != "pending":
         raise HTTPException(status.HTTP_409_CONFLICT, "Bu tashxis allaqachon tekshirilgan")
-    await apply_review(db, d, body.status, body.label, reviewer, comment=body.comment, notify_owner=True)
+    if _claimed_by_other(d, reviewer):
+        raise HTTPException(status.HTTP_409_CONFLICT, "Bu ish boshqa ekspertga biriktirilgan")
+    if not body.comment.strip() or len(body.comment.strip()) < 3:
+        raise HTTPException(422, "Dehqonga izoh yozing")
+    if body.status == "rejected" and not body.retake_reason:
+        raise HTTPException(422, "Rasm nima uchun yetarli emasligini tanlang")
+    await apply_review(db, d, body.status, body.label, reviewer, comment=body.comment, notify_owner=True,
+                       source=body.source, retake_reason=body.retake_reason)
     await db.commit()
     nxt = await queue(filter_="all", limit=1, offset=0, _=reviewer, db=db)
     return nxt[0] if nxt else None
@@ -236,6 +309,10 @@ async def my_stats(user: User = Depends(require_expert), db: AsyncSession = Depe
         "ratings_count": await db.scalar(select(func.count()).select_from(Question).where(
             Question.expert_id == user.id, Question.rating.is_not(None))) or 0,
         "avg_answer_minutes": round(sum(waits) / len(waits)) if waits else None,
+        # Y01 ko'rsatkichlari: bugun kelgan ochiq ishlar va so'nggi 7 kunda shu agronom bergan xulosalar
+        "today_new": await db.scalar(select(func.count()).select_from(Diagnosis).where(
+            Diagnosis.review_status == "pending", Diagnosis.diagnosed_at >= today)) or 0,
+        "reviewed_7d": await db.scalar(reviewed.where(Diagnosis.reviewed_at >= utcnow() - timedelta(days=7))) or 0,
     }
 
 

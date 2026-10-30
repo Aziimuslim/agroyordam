@@ -5,11 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../application/providers.dart';
 import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/widgets.dart';
 
-/// Agronom rejimi menyusi: Savollar · Jamoat · [Navbat] · Bilimlar · Profil. Faol rang — tuproq (expert).
+/// Agronom rejimi menyusi (Agronom TZ 4): Navbat · Savollar · Jamoat · Bilimlar · Profil. Faol rang — brand (to'q yashil).
 class ExpertBottomNav extends ConsumerWidget {
   const ExpertBottomNav({super.key, required this.current});
   final String current;
@@ -19,41 +18,32 @@ class ExpertBottomNav extends ConsumerWidget {
     final c = context.c;
     final stats = ref.watch(expertStatsProvider).value;
     Widget badge(int n, Widget child) =>
-        n <= 0 ? child : Badge(label: Text(n > 99 ? '99+' : '$n'), backgroundColor: c.danger, textColor: c.card, child: child);
+        n <= 0 ? child : Badge(label: Text(n > 99 ? '99+' : '$n'), backgroundColor: c.primary, textColor: c.onPrimary, child: child);
 
-    Widget item(String route, String label, IconData icon, [int count = 0]) {
+    Widget item(String route, String label, IconData icon, IconData activeIcon, [int count = 0]) {
       final active = current == route;
-      final color = active ? c.expert : c.muted;
+      final color = active ? c.olive : c.muted;
       return Expanded(
         child: Semantics(
           button: true,
           selected: active,
           label: count > 0 ? trf('{0}, {1} ta yangi', [label, count]) : label,
           excludeSemantics: true,
-          onTap: () => context.go(route),
           child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () => context.go(route),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
+            borderRadius: BorderRadius.circular(12),
+            onTap: active ? null : () => context.go(route),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 56),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                    decoration: BoxDecoration(color: active ? c.expertBg : Colors.transparent, borderRadius: BorderRadius.circular(999)),
-                    child: badge(count, Icon(icon, size: 22, color: color)),
-                  ),
+                  badge(count, Icon(active ? activeIcon : icon, size: 24, color: color)),
                   const SizedBox(height: 4),
                   FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      softWrap: false,
-                      style: TextStyle(fontSize: 11, fontWeight: active ? FontWeight.w800 : FontWeight.w600, color: color),
-                    ),
+                    child: Text(label,
+                        maxLines: 1, softWrap: false, style: TextStyle(fontSize: 12, fontWeight: active ? FontWeight.w800 : FontWeight.w600, color: color)),
                   ),
                 ],
               ),
@@ -63,80 +53,23 @@ class ExpertBottomNav extends ConsumerWidget {
       );
     }
 
-    final queueActive = current == '/expert';
     return Container(
-      decoration: BoxDecoration(
-        color: c.card,
-        border: Border(top: BorderSide(color: c.border)),
-      ),
+      decoration: BoxDecoration(color: c.card, border: Border(top: BorderSide(color: c.border))),
       child: SafeArea(
         top: false,
         child: Align(
           heightFactor: 1,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
+            constraints: const BoxConstraints(maxWidth: 560),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  item('/expert/questions', tr('Savollar'), Icons.inbox_outlined, stats?.questionsNew ?? 0),
-                  item('/expert/community', tr('Jamoat'), AppIcons.users),
-                  SizedBox(
-                    width: 76,
-                    height: 54,
-                    child: OverflowBox(
-                      maxHeight: 90,
-                      alignment: Alignment.center,
-                      child: Semantics(
-                        button: true,
-                        selected: queueActive,
-                        label: (stats?.queuePending ?? 0) > 0 ? trf('Navbat, {0} ta kutmoqda', [stats!.queuePending]) : tr('Navbat'),
-                        excludeSemantics: true,
-                        onTap: () => context.go('/expert'),
-                        child: Transform.translate(
-                          offset: const Offset(0, -14),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: c.card, width: 4),
-                                  boxShadow: [BoxShadow(color: c.expert.withValues(alpha: 0.35), blurRadius: 18, offset: const Offset(0, 8))],
-                                ),
-                                child: badge(
-                                  stats?.queuePending ?? 0,
-                                  Material(
-                                    color: c.expert,
-                                    shape: const CircleBorder(),
-                                    child: InkWell(
-                                      customBorder: const CircleBorder(),
-                                      onTap: () => context.go('/expert'),
-                                      child: SizedBox(width: 56, height: 56, child: Icon(Icons.verified_user_outlined, color: c.onExpert, size: 26)),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                tr('Navbat'),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: queueActive ? FontWeight.w800 : FontWeight.w600,
-                                  color: queueActive ? c.expert : c.muted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  item('/expert/kb', tr('Bilimlar'), AppIcons.book),
-                  item('/expert/profile', tr('Profil'), AppIcons.user),
-                ],
-              ),
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+              child: Row(children: [
+                item('/expert', tr('Navbat'), Icons.assignment_outlined, Icons.assignment_rounded, stats?.queuePending ?? 0),
+                item('/expert/questions', tr('Savollar'), Icons.chat_bubble_outline_rounded, Icons.chat_bubble_rounded, stats?.questionsNew ?? 0),
+                item('/expert/community', tr('Jamoat'), Icons.groups_outlined, Icons.groups_rounded),
+                item('/expert/kb', tr('Bilimlar'), Icons.menu_book_outlined, Icons.menu_book_rounded),
+                item('/expert/profile', tr('Profil'), Icons.person_outline_rounded, Icons.person_rounded),
+              ]),
             ),
           ),
         ),
@@ -164,11 +97,11 @@ class ExpertHeader extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.verified_user_outlined, size: 14, color: c.expert),
+                    Icon(Icons.verified_user_outlined, size: 14, color: c.olive),
                     const SizedBox(width: 4),
                     Text(
                       tr('AGRONOM REJIMI'),
-                      style: TextStyle(fontSize: 11.5, letterSpacing: 0.8, fontWeight: FontWeight.w800, color: c.expert),
+                      style: TextStyle(fontSize: 11.5, letterSpacing: 0.8, fontWeight: FontWeight.w800, color: c.olive),
                     ),
                   ],
                 ),
@@ -287,8 +220,8 @@ class ExpertPage extends StatelessWidget {
   final Future<void> Function()? onRefresh;
   @override
   Widget build(BuildContext context) {
-    Widget body = ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.fromLTRB(20, 16, 20, 100), children: children);
-    if (onRefresh != null) body = RefreshIndicator(color: context.c.expert, onRefresh: onRefresh!, child: body);
+    Widget body = ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.fromLTRB(16, 12, 16, 32), children: children);
+    if (onRefresh != null) body = RefreshIndicator(color: context.c.primary, onRefresh: onRefresh!, child: body);
     return Scaffold(
       backgroundColor: context.c.cream,
       bottomNavigationBar: ExpertBottomNav(current: current),
@@ -296,8 +229,48 @@ class ExpertPage extends StatelessWidget {
         bottom: false,
         child: Align(
           alignment: Alignment.topCenter,
-          child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 480), child: body),
+          child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 680), child: body),
         ),
+      ),
+    );
+  }
+}
+
+/// Filtr chiplari (agronom ekranlari): tanlangani to'q yashil.
+class ExpertChips extends StatelessWidget {
+  const ExpertChips({super.key, required this.tabs, required this.selected, required this.onSelect});
+  final List<(String, String)> tabs;
+  final String selected;
+  final ValueChanged<String> onSelect;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(children: [
+          for (final (id, label) in tabs)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Semantics(
+                selected: selected == id,
+                button: true,
+                child: Material(
+                  color: selected == id ? c.olive : c.card,
+                  shape: StadiumBorder(side: BorderSide(color: selected == id ? c.olive : c.border)),
+                  child: InkWell(
+                    customBorder: const StadiumBorder(),
+                    onTap: () => onSelect(id),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                      child: Text(label, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: selected == id ? c.onOlive : c.text)),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ]),
       ),
     );
   }

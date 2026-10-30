@@ -202,6 +202,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // ---------- Agronom rejimi ----------
       GoRoute(path: '/expert', pageBuilder: (_, s) => _tab(const ExpertQueueScreen(), s)),
       GoRoute(path: '/expert/review/:id', builder: (_, s) => ReviewScreen(key: ValueKey(s.matchedLocation), id: s.pathParameters['id']!)),
+      GoRoute(path: '/expert/review/:id/conclusion', builder: (_, s) => ConclusionScreen(id: s.pathParameters['id']!)),
       GoRoute(path: '/expert/questions', pageBuilder: (_, s) => _tab(const ExpertQuestionsScreen(), s)),
       GoRoute(path: '/expert/community', pageBuilder: (_, s) => _tab(const ExpertCommunityScreen(), s)),
       GoRoute(path: '/expert/kb', pageBuilder: (_, s) => _tab(const KnowledgeScreen(), s), routes: [

@@ -43,6 +43,11 @@ class Diagnosis(Base):
     review_requested: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", index=True)
     review_note: Mapped[str | None] = mapped_column(Text)  # dehqon izohi
     expert_comment: Mapped[str | None] = mapped_column(Text)  # agronomning dehqonga izohi
+    expert_source: Mapped[str | None] = mapped_column(String(500))  # agronom ko'rsatgan manba (https URL), ixtiyoriy
+    retake_reason: Mapped[str | None] = mapped_column(String(40))  # "rasm yetarli emas" sababi (blurry|far|wrong_part|no_context|other)
+    # Agronom ishni olgan (claim): boshqa ekspert shu vaqtda xulosa bera olmaydi (TZ Y01/T04)
+    review_claimed_by: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("users.id", ondelete="SET NULL"))
+    review_claimed_at: Mapped[datetime | None] = mapped_column(DateTime)
     # Dehqon tarixdan yashirgan vaqt (TZ S07: yashirish va qaytarish). Yozuv o'chmaydi —
     # agronom tekshiruvi va AI dataseti saqlanadi.
     hidden_at: Mapped[datetime | None] = mapped_column(DateTime)

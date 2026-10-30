@@ -36,6 +36,9 @@ EXTRA = ['Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba', 'Y
          "Bu foydalanuvchi bilan yozishib bo'lmaydi", "Bu foydalanuvchiga obuna bo'lib bo'lmaydi", "O'zingizni bloklab bo'lmaydi",
          "Yozuv topilmadi", "Yozuv boshqa joyda o'zgartirilgan. Sahifani yangilab, qayta tahrirlang.",
          "Matn yoki kamida bitta rasm kerak", "Kuzatuv sanasi kelajakda bo'lmasin", "Rasm ilovaga yuklangan bo'lishi kerak",
+         # 0.8.23 agronom navbati (experts.py, expert.dart retakeReasons)
+         "Bu ish boshqa ekspertga biriktirilgan", "Dehqonga izoh yozing", "Rasm xira chiqqan", "Juda uzoqdan olingan",
+         "Noto'g'ri organ yoki ekin", "Kontekst yetarli emas", "Boshqa sabab",
          "AI tashxis — cheksiz", "\"Mening bog'im\" — cheksiz ekin", "AI Yordamchi — cheksiz va ustuvor javob", "Batafsil sog'liq tarixi"]
 
 

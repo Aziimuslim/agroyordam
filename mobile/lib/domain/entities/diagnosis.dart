@@ -29,6 +29,8 @@ class Diagnosis {
     this.reviewStatus = 'pending',
     this.reviewRequested = false,
     this.expertComment,
+    this.expertSource,
+    this.retakeReason,
   });
   final String id, imageUrl;
   final String? cropId, plantId, plantName, diseaseId, diseaseName, riskLevel, symptoms, causes, treatment, prevention, recommendations;
@@ -41,6 +43,9 @@ class Diagnosis {
 
   /// AI sinfi (ma'lumotnoma rasmi uchun) va agronom tekshiruvi: pending | confirmed | corrected | rejected.
   final String? aiLabel, expertComment;
+
+  /// Agronom ko'rsatgan manba (https) va qayta surat sababi kaliti (blurry | far | wrong_part | no_context | other).
+  final String? expertSource, retakeReason;
 
   /// Bilimlar bazasidagi kasallik sinfi — agronom tuzatgan bo'lsa ham to'g'ri ma'lumotnoma rasmi uchun.
   final String? diseaseLabel;
@@ -78,6 +83,8 @@ class Diagnosis {
         reviewStatus: j['review_status'] ?? 'pending',
         reviewRequested: j['review_requested'] ?? false,
         expertComment: j['expert_comment'],
+        expertSource: j['expert_source'],
+        retakeReason: j['retake_reason'],
       );
 }
 

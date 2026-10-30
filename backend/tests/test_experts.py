@@ -80,7 +80,7 @@ async def test_review_queue_correct_and_notify(client, user_headers, admin_heade
         "status": "corrected", "label": "Tomato_Early_blight", "comment": "Bu alternarioz. Mankoseb bilan ishlov bering."},
         headers=expert)
     assert r.status_code == 200 and r.json()["id"] == sure["id"]  # javobda — navbatdagi keyingisi
-    assert (await client.post(f"{API}/experts/queue/{unsure['id']}", json={"status": "confirmed"}, headers=expert)).status_code == 409
+    assert (await client.post(f"{API}/experts/queue/{unsure['id']}", json={"comment": "Agronom xulosasi", "status": "confirmed"}, headers=expert)).status_code == 409
 
     d = (await client.get(f"{API}/diagnoses/{unsure['id']}", headers=user_headers)).json()
     assert d["review_status"] == "corrected" and d["disease_name"].startswith("Alternarioz")
@@ -93,7 +93,7 @@ async def test_review_queue_correct_and_notify(client, user_headers, admin_heade
     stats = (await client.get(f"{API}/admin/dataset/stats", headers=admin_headers)).json()
     assert stats["corrected"] == 1 and stats["usable"] == 1
 
-    await client.post(f"{API}/experts/queue/{sure['id']}", json={"status": "confirmed"}, headers=expert)
+    await client.post(f"{API}/experts/queue/{sure['id']}", json={"comment": "Agronom xulosasi", "status": "confirmed"}, headers=expert)
     s = (await client.get(f"{API}/experts/stats/me", headers=expert)).json()
     assert s["reviewed_today"] == 2 and s["ai_agreement"] == 50 and s["queue_pending"] == 0
     assert (await client.post(f"{API}/diagnoses/{sure['id']}/request-review", headers=user_headers)).status_code == 409
@@ -219,7 +219,7 @@ async def test_expert_mode_tools(client, user_headers, admin_headers, fake_ai):
     assert [a["label"] for a in (await client.get(f"{API}/experts/queue/{old['id']}", headers=expert)).json()["alternatives"]] == ["Tomato_Leaf_Mold"]
 
     # Tuzatish → rasm datasetga tushadi → rasmi yo'q kasallik uchun tanlash mumkin
-    await client.post(f"{API}/experts/queue/{d['id']}", json={"status": "corrected", "label": "Tomato_Early_blight"}, headers=expert)
+    await client.post(f"{API}/experts/queue/{d['id']}", json={"comment": "Agronom xulosasi", "status": "corrected", "label": "Tomato_Early_blight"}, headers=expert)
     imgs = (await client.get(f"{API}/experts/dataset-images?label=Tomato_Early_blight", headers=expert)).json()
     assert [i["id"] for i in imgs] == [d["id"]]
     assert (await client.get(f"{API}/experts/dataset-images?label=Tomato_Early_blight", headers=user_headers)).status_code == 403
@@ -243,3 +243,50 @@ async def test_expert_mode_tools(client, user_headers, admin_headers, fake_ai):
     assert (await client.get(f"{API}/questions?status=mine", headers=expert)).json() == []
     stats = (await client.get(f"{API}/experts/stats/me", headers=expert)).json()
     assert stats["avg_answer_minutes"] == 0 and stats["reviewed_total"] == 1 and stats["ratings_count"] == 0
+
+
+async def test_claim_conflict_retake_and_conclusion_rules(client, user_headers, admin_headers, fake_ai):
+    """Agronom TZ T04 (ikki agronom bitta ish), T09 (qayta surat sababi), T11 (bo'sh xulosa), manba formati."""
+    from app.services.ai_client import Prediction
+    a = await make_expert(client, admin_headers)
+    b = await make_expert(client, admin_headers, username="agronom2")
+    fake_ai.next = Prediction("Pomidor", "Tomato_Late_blight", 45.0, True)
+    d = (await client.post(f"{API}/diagnoses", files={"image": ("l.png", image_bytes(), "image/png")}, headers=user_headers)).json()
+    counts = (await client.get(f"{API}/experts/queue-counts", headers=a)).json()
+    assert counts == {"all": 1, "requested": 0, "low": 1}
+
+    r = await client.post(f"{API}/experts/queue/{d['id']}/claim", headers=a)
+    assert r.status_code == 200 and r.json()["claimed_by_me"] is True
+    assert (await client.post(f"{API}/experts/queue/{d['id']}/claim", headers=a)).status_code == 200  # qayta ochish mumkin
+    r = await client.post(f"{API}/experts/queue/{d['id']}/claim", headers=b)
+    assert r.status_code == 409 and "boshqa ekspert" in r.json()["detail"]
+    assert (await client.get(f"{API}/experts/queue", headers=b)).json() == []  # B navbatida ko'rinmaydi
+    assert (await client.get(f"{API}/experts/queue-counts", headers=b)).json()["all"] == 0
+    r = await client.post(f"{API}/experts/queue/{d['id']}", json={"status": "confirmed", "comment": "To'g'ri"}, headers=b)
+    assert r.status_code == 409
+
+    # Bo'sh izoh, https bo'lmagan manba, sababsiz "rasm yetarli emas" — rad etiladi
+    assert (await client.post(f"{API}/experts/queue/{d['id']}", json={"status": "confirmed", "comment": "   "}, headers=a)).status_code == 422
+    assert (await client.post(f"{API}/experts/queue/{d['id']}", json={"status": "confirmed", "comment": "Tasdiq", "source": "http://x.uz"}, headers=a)).status_code == 422
+    assert (await client.post(f"{API}/experts/queue/{d['id']}", json={"status": "rejected", "comment": "Qayta oling"}, headers=a)).status_code == 422
+
+    r = await client.post(f"{API}/experts/queue/{d['id']}", json={"status": "rejected", "retake_reason": "blurry",
+                                                                    "comment": "Bargni kunduzi, 20 sm masofadan oling."}, headers=a)
+    assert r.status_code == 200
+    dd = (await client.get(f"{API}/diagnoses/{d['id']}", headers=user_headers)).json()
+    assert dd["review_status"] == "rejected" and dd["retake_reason"] == "blurry" and dd["expert_source"] is None
+    notes = (await client.get(f"{API}/notifications", headers=user_headers)).json()
+    assert any(n["title"] == "Agronom: rasmni qayta oling" and n["body"].startswith("Rasm xira chiqqan") for n in notes)
+    s = (await client.get(f"{API}/experts/stats/me", headers=a)).json()
+    assert s["reviewed_7d"] == 1 and s["today_new"] == 0
+
+    # Release: o'zi olgan ishni qaytaradi; boshqa ekspert ola boshlaydi
+    fake_ai.next = Prediction("Pomidor", "Tomato_Late_blight", 80.0, True)
+    d2 = (await client.post(f"{API}/diagnoses", files={"image": ("l.png", image_bytes(), "image/png")}, headers=user_headers)).json()
+    await client.post(f"{API}/experts/queue/{d2['id']}/claim", headers=a)
+    assert (await client.post(f"{API}/experts/queue/{d2['id']}/release", headers=a)).status_code == 204
+    assert (await client.post(f"{API}/experts/queue/{d2['id']}/claim", headers=b)).status_code == 200
+    r = await client.post(f"{API}/experts/queue/{d2['id']}", json={"status": "confirmed", "comment": "To'g'ri topilgan",
+                                                                     "source": "https://www.fao.org/plant-health"}, headers=b)
+    assert r.status_code == 200
+    assert (await client.get(f"{API}/diagnoses/{d2['id']}", headers=user_headers)).json()["expert_source"] == "https://www.fao.org/plant-health"

@@ -20,8 +20,7 @@ class AgroYordamApp extends ConsumerStatefulWidget {
 }
 
 class _AgroYordamAppState extends ConsumerState<AgroYordamApp> {
-  // Agronom rejimi (/expert...) bu bosqichda eski "Yashil dala" mavzusida qoladi (TZ: agronom paneli keyingi bosqich)
-  bool _expert = false;
+  bool _expert = false; // /expert yo'li (mavzu endi bir xil; kelajakdagi farqlar uchun kuzatiladi)
   GoRouter? _router;
 
   void _onRoute() {
@@ -67,8 +66,9 @@ class _AgroYordamAppState extends ConsumerState<AgroYordamApp> {
     return MaterialApp.router(
       title: AppConfig.appName,
       debugShowCheckedModeBanner: false,
-      theme: expert ? AppTheme.legacyLight : AppTheme.light,
-      darkTheme: expert ? AppTheme.legacyDark : AppTheme.dark,
+      // Agronom TZ 3: agronom rejimi ham Tabiiy Agro dizayn tizimida
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
       themeMode: ref.watch(themeModeProvider),
       // TZ 13.3: mavzu almashishi 150–200 ms rang o'tishi
       themeAnimationDuration: Duration(milliseconds: prefs.reduceMotion ? 0 : 180),

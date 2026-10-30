@@ -10,7 +10,6 @@ import '../../../core/widgets/widgets.dart';
 import '../../../domain/entities/entities.dart';
 import '../community/post_card.dart';
 import 'expert_shell.dart';
-import 'queue_screen.dart';
 
 /// Agronom: dehqon savollari — Yangi (hech kim olmagan) · Jarayonda (men olganlar) · Yopilgan.
 class ExpertQuestionsScreen extends ConsumerStatefulWidget {

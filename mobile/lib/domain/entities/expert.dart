@@ -169,9 +169,13 @@ class QueueItem {
     this.reviewNote,
     this.farmerRegion,
     this.diagnosedAt,
+    this.symptoms,
+    this.claimedByMe = false,
+    this.claimedByOther = false,
   });
   final String id, imageUrl, farmerName;
-  final String? aiLabel, diseaseName, plantId, plantName, reviewNote, farmerRegion;
+  final String? aiLabel, diseaseName, plantId, plantName, reviewNote, farmerRegion, symptoms;
+  final bool claimedByMe, claimedByOther;
   final double? confidence;
   final List<Alternative> alternatives;
   final bool reviewRequested;
@@ -194,14 +198,17 @@ class QueueItem {
         reviewNote: j['review_note'],
         farmerRegion: j['farmer_region'],
         diagnosedAt: parseDate(j['diagnosed_at']),
+        symptoms: j['symptoms'],
+        claimedByMe: j['claimed_by_me'] ?? false,
+        claimedByOther: j['claimed_by_other'] ?? false,
       );
 }
 
 /// Agronomning o'z ko'rsatkichlari (navbat sarlavhasi va profil).
 class ExpertStats {
   ExpertStats({this.reviewedToday = 0, this.reviewedTotal = 0, this.aiAgreement, this.queuePending = 0, this.questionsNew = 0,
-      this.answers = 0, this.rating, this.ratingsCount = 0, this.avgAnswerMinutes});
-  final int reviewedToday, reviewedTotal, queuePending, questionsNew, answers, ratingsCount;
+      this.answers = 0, this.rating, this.ratingsCount = 0, this.avgAnswerMinutes, this.todayNew = 0, this.reviewed7d = 0});
+  final int reviewedToday, reviewedTotal, queuePending, questionsNew, answers, ratingsCount, todayNew, reviewed7d;
   final int? aiAgreement, avgAnswerMinutes;
   final double? rating;
 
@@ -215,8 +222,26 @@ class ExpertStats {
         rating: (j['rating'] as num?)?.toDouble(),
         ratingsCount: j['ratings_count'] ?? 0,
         avgAnswerMinutes: j['avg_answer_minutes'],
+        todayNew: j['today_new'] ?? 0,
+        reviewed7d: j['reviewed_7d'] ?? 0,
       );
 }
+
+/// Navbat filtrlari sonlari (TZ Y01): "Hammasi" — barcha ochiq ishlar, qolganlari uning qismi.
+class QueueCounts {
+  const QueueCounts({this.all = 0, this.requested = 0, this.low = 0});
+  final int all, requested, low;
+  factory QueueCounts.fromJson(Map<String, dynamic> j) => QueueCounts(all: j['all'] ?? 0, requested: j['requested'] ?? 0, low: j['low'] ?? 0);
+}
+
+/// "Rasm yetarli emas" sabablari (backend RETAKE_REASONS bilan bir xil kalitlar).
+const retakeReasons = <(String, String)>[
+  ('blurry', 'Rasm xira chiqqan'),
+  ('far', 'Juda uzoqdan olingan'),
+  ('wrong_part', "Noto'g'ri organ yoki ekin"),
+  ('no_context', 'Kontekst yetarli emas'),
+  ('other', 'Boshqa sabab'),
+];
 
 /// Bilimlar bazasidagi o'zgarish (tarix).
 class CatalogChange {

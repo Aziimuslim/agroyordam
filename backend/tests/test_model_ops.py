@@ -20,7 +20,7 @@ async def test_coverage_counts_and_unknown_classes(client, user_headers, admin_h
     expert = await make_expert(client, admin_headers)
     fake_ai.next = Prediction("Bodring", "Squash_Powdery_mildew", 40.0, True)
     d = (await client.post(f"{API}/diagnoses", files={"image": ("l.png", image_bytes(), "image/png")}, headers=user_headers)).json()
-    await client.post(f"{API}/experts/queue/{d['id']}", json={"status": "corrected", "label": "Cucumber_Powdery_mildew"}, headers=expert)
+    await client.post(f"{API}/experts/queue/{d['id']}", json={"comment": "Agronom xulosasi", "status": "corrected", "label": "Cucumber_Powdery_mildew"}, headers=expert)
     cov = (await client.get(f"{API}/admin/ai/coverage", headers=admin_headers)).json()
     first = cov["classes"][0]
     assert first["in_model"] is False  # model bilmaydigan sinflar birinchi
@@ -77,7 +77,7 @@ async def test_training_dispatch_and_one_time_ticket(client, admin_headers, user
     expert = await make_expert(client, admin_headers)
     fake_ai.next = Prediction("Pomidor", "Tomato_Late_blight", 90.0, True)
     d = (await client.post(f"{API}/diagnoses", files={"image": ("l.png", image_bytes(), "image/png")}, headers=user_headers)).json()
-    await client.post(f"{API}/experts/queue/{d['id']}", json={"status": "confirmed"}, headers=expert)
+    await client.post(f"{API}/experts/queue/{d['id']}", json={"comment": "Agronom xulosasi", "status": "confirmed"}, headers=expert)
 
     assert (await client.post(f"{API}/admin/ai/training", headers=expert)).status_code == 403
     r = await client.post(f"{API}/admin/ai/training", headers=admin_headers)

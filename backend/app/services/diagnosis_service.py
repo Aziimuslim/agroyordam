@@ -137,5 +137,7 @@ async def to_out(db: AsyncSession, diag: Diagnosis, ai_label: str | None = None)
         review_status=diag.review_status,
         review_requested=diag.review_requested,
         expert_comment=diag.expert_comment,
+        expert_source=diag.expert_source,
+        retake_reason=diag.retake_reason,
         diagnosed_at=diag.diagnosed_at,
     )

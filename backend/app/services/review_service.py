@@ -12,10 +12,19 @@ from app.services.notification_service import notify
 
 LABEL_RE = re.compile(r"^[A-Z][A-Za-z]*_[A-Za-z0-9_]+$")
 USABLE = ("confirmed", "corrected")
+# "Rasm yetarli emas" sabablari → dehqonga aniq qayta surat ko'rsatmasi (Agronom TZ Y02)
+RETAKE_REASONS = {
+    "blurry": "Rasm xira chiqqan",
+    "far": "Juda uzoqdan olingan",
+    "wrong_part": "Noto'g'ri organ yoki ekin suratga olingan",
+    "no_context": "Tashxis uchun kontekst yetarli emas",
+    "other": "Boshqa sabab",
+}
 
 
 async def apply_review(db: AsyncSession, d: Diagnosis, status_: str, label: str | None, reviewer: User,
-                       comment: str | None = None, notify_owner: bool = False) -> None:
+                       comment: str | None = None, notify_owner: bool = False, source: str | None = None,
+                       retake_reason: str | None = None) -> None:
     """status_: confirmed | corrected | rejected | pending. Tuzatilganda dehqonning tashxisi ham yangilanadi."""
     if status_ == "confirmed":
         label = d.ai_label or (await db.scalar(select(Disease.ai_label).where(Disease.id == d.disease_id)) if d.disease_id else None)
@@ -34,11 +43,17 @@ async def apply_review(db: AsyncSession, d: Diagnosis, status_: str, label: str 
     d.reviewed_at = utcnow() if status_ != "pending" else None
     if comment is not None:
         d.expert_comment = comment.strip() or None
+    d.expert_source = (source or "").strip() or None if status_ != "pending" else None
+    d.retake_reason = retake_reason if status_ == "rejected" else None
+    d.review_claimed_by = d.review_claimed_at = None
 
     if notify_owner and status_ != "pending" and d.user_id != reviewer.id:
         title = {"confirmed": "Agronom tashxisni tasdiqladi", "corrected": "Agronom tashxisni tuzatdi",
                  "rejected": "Agronom: rasmni qayta oling"}[status_]
-        await notify(db, d.user_id, "diagnosis_reviewed", title, d.expert_comment, d.id)
+        body = d.expert_comment
+        if status_ == "rejected" and d.retake_reason in RETAKE_REASONS:
+            body = f"{RETAKE_REASONS[d.retake_reason]}. {d.expert_comment or ''}".strip()
+        await notify(db, d.user_id, "diagnosis_reviewed", title, body, d.id)
 
 
 async def _relabel(db: AsyncSession, d: Diagnosis, label: str) -> None:

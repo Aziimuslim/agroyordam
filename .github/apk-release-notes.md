@@ -5,6 +5,14 @@ Web ilova: https://agroyordam.duckdns.org
 O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
 Ilova https://agroyordam.duckdns.org serveriga o'zi ulanadi. Eski versiya o'rnatilgan bo'lsa, ustidan yangilanadi.
 
+## 0.8.23 — agronom rejimi: navbat va tekshiruv (1-qism)
+- Agronom rejimi yangi dizaynda: pastki menyu (Navbat, Savollar, Jamoat, Bilimlar, Profil).
+- Navbat: hisoblagichlar, filtrlar soni bilan, ish holati (qabul qilaman / hozircha yo'q).
+- Tekshirish: ish agronomga biriktiriladi (ikki agronom bir ishni bir vaqtda tekshirmaydi), rasmni kattalashtirish,
+  AI taxmini, boshqa kasallik tanlash, "Rasm yetarli emas" sabab bilan.
+- Ekspert xulosasi: dehqonga izoh majburiy, ixtiyoriy manba havolasi, oldindan ko'rish; yuborilgach keyingi ish ochiladi.
+- Dehqon tashxis sahifasida agronom manbasi va qayta surat sababi ko'rinadi.
+
 ## 0.8.22 — yangi admin panel (web)
 - Admin panel (agroyordam.duckdns.org/admin) Tabiiy Agro dizayniga o'tkazildi: 8 ta bo'lim tablar bilan,
   foydalanuvchi profili drawer'da, moderatsiya tafsilotlari, to'lovlar (sinov/haqiqiy ajratilgan), tizim monitoringi.

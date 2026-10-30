@@ -48,12 +48,20 @@ class ExpertRepository extends BaseRepository {
       call(() async => list((await dio.get('/experts/queue', queryParameters: {'filter': filter})).data, QueueItem.fromJson));
   Future<QueueItem> queueItem(String id) => call(() async => QueueItem.fromJson((await dio.get('/experts/queue/$id')).data));
 
+  Future<QueueCounts> queueCounts() => call(() async => QueueCounts.fromJson((await dio.get('/experts/queue-counts')).data));
+
+  /// Ishni olish: boshqa agronom olgan bo'lsa server 409 qaytaradi.
+  Future<QueueItem> claim(String id) => call(() async => QueueItem.fromJson((await dio.post('/experts/queue/$id/claim')).data));
+  Future<void> release(String id) => call(() => dio.post('/experts/queue/$id/release'));
+
   /// status: confirmed | corrected | rejected. Javob — navbatdagi keyingi tashxis (bo'lmasa null).
-  Future<QueueItem?> review(String id, {required String status, String? label, String? comment}) => call(() async {
+  Future<QueueItem?> review(String id, {required String status, String? label, required String comment, String? source, String? retakeReason}) => call(() async {
         final d = (await dio.post('/experts/queue/$id', data: {
           'status': status,
           if (label != null) 'label': label,
-          if (comment != null && comment.trim().isNotEmpty) 'comment': comment.trim(),
+          'comment': comment.trim(),
+          if (source != null && source.trim().isNotEmpty) 'source': source.trim(),
+          if (retakeReason != null) 'retake_reason': retakeReason,
         }))
             .data;
         return d == null ? null : QueueItem.fromJson(Map<String, dynamic>.from(d));

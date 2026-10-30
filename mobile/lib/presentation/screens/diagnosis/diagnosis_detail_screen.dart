@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../application/providers.dart';
 import '../../../core/catalog_images.dart';
@@ -446,11 +447,23 @@ class _ExpertBlockState extends ConsumerState<_ExpertBlock> {
     final d = widget.d;
     Widget pad(Widget w) => Padding(padding: const EdgeInsets.only(bottom: 14), child: w);
     if (d.expertChecked) {
-      return pad(NoteBox(kind: NoteKind.expert, title: d.reviewStatus == 'corrected' ? tr('Agronom tashxisni tuzatdi') : tr('Agronom tashxisni tasdiqladi'),
-          text: d.expertComment));
+      final note = NoteBox(kind: NoteKind.expert, title: d.reviewStatus == 'corrected' ? tr('Agronom tashxisni tuzatdi') : tr('Agronom tashxisni tasdiqladi'),
+          text: d.expertComment);
+      final src = d.expertSource;
+      if (src == null || src.isEmpty) return pad(note);
+      return pad(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        note,
+        const SizedBox(height: 4),
+        TextButton.icon(
+          onPressed: () => launchUrl(Uri.parse(src), mode: LaunchMode.externalApplication),
+          icon: const Icon(Icons.link_rounded, size: 18),
+          label: Text(trf('Agronom manbasi: {0}', [Uri.tryParse(src)?.host ?? src]), maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
+      ]));
     }
     if (d.reviewStatus == 'rejected') {
-      return pad(NoteBox(kind: NoteKind.risk, title: tr('Agronom: rasmni qayta oling'),
+      final reason = retakeReasons.where((r) => r.$1 == d.retakeReason).map((r) => tr(r.$2)).firstOrNull;
+      return pad(NoteBox(kind: NoteKind.risk, title: reason == null ? tr('Agronom: rasmni qayta oling') : trf('Agronom: rasmni qayta oling ({0})', [reason]),
           text: d.expertComment ?? tr("Bargni yorug' joyda, yaqinroqdan, tiniq qilib suratga oling.")));
     }
     if (d.reviewRequested) {
