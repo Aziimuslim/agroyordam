@@ -62,9 +62,11 @@ jobs:
       - name: Imzoni tekshirish
         if: env.APK_SIGNED == '1'
         run: |
-          SIGNER="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -n1)apksigner"
-          "$SIGNER" verify --print-certs build/app/outputs/flutter-apk/app-release.apk | grep -E 'Signer #1 certificate (DN|SHA-256)'
           rm -f "$RUNNER_TEMP/release.p12"
+          SIGNER="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -name apksigner -type f | sort -V | tail -n1)"
+          echo "apksigner: $SIGNER"
+          "$SIGNER" verify --print-certs build/app/outputs/flutter-apk/app-release.apk > "$RUNNER_TEMP/certs.txt"
+          grep -iE 'certificate (DN|SHA-256)' "$RUNNER_TEMP/certs.txt" || cat "$RUNNER_TEMP/certs.txt"
       - name: Nomlash
         id: ver
         run: |
