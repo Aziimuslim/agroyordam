@@ -313,12 +313,12 @@ async def revert_change(change_id: uuid.UUID, admin: User = Depends(require_admi
 @router.get("/reports")
 async def reports(db: AsyncSession = Depends(get_db)):
     groups: dict[tuple, dict] = {}
-    for r in (await db.scalars(select(Report).where(Report.status == "pending").order_by(Report.created_at.desc()))).all():
+    for r in (await db.scalars(select(Report).where(Report.status.in_(("pending", "reviewing"))).order_by(Report.created_at.desc()))).all():
         key = ("comment", r.comment_id) if r.comment_id else ("message", r.message_id) if r.message_id else ("post", r.post_id)
         g = groups.get(key)
         if g is None:
             target = await db.get(_MODEL[key[0]], key[1])
-            if target is None:
+            if target is None or (key[0] == "comment" and target.deleted_at is not None):
                 continue
             owner = target.sender_id if key[0] == "message" else target.user_id
             author = await db.get(User, owner)
@@ -339,6 +339,7 @@ _WHAT = {"post": ("postingiz", "post"), "comment": ("izohingiz", "izoh"), "messa
 class ModerateIn(BaseModel):
     kind: str = Field(pattern=r"^(post|comment|message)$")
     target_id: uuid.UUID
+    note: str | None = Field(default=None, max_length=500)  # moderator qarori sababi (jurnalga yoziladi)
 
 
 @router.post("/reports/hide")
@@ -353,8 +354,11 @@ async def hide_reported(body: ModerateIn, admin: User = Depends(require_admin), 
         await remove_comment(db, target)  # javoblari bo'lsa "Izoh o'chirilgan" bo'lib qoladi
     else:
         await db.delete(target)
-    await notify(db, author_id, "moderation", f"Jamoatdagi {what} olib tashlandi" if body.kind != "message" else "Chatdagi xabaringiz olib tashlandi", "Jamoat qoidalariga mos kelmadi.")
-    await audit(db, admin, "report_hide", f"Shikoyat bo'yicha {noun} olib tashlandi", author_id)
+    snippet = ((getattr(target, "title", None) or target.content or "").strip()[:80]) or "—"
+    note = (body.note or "").strip()
+    await notify(db, author_id, "moderation", f"Jamoatdagi {what} olib tashlandi" if body.kind != "message" else "Chatdagi xabaringiz olib tashlandi",
+                 "Jamoat qoidalariga mos kelmadi." + (f" Sabab: {note}" if note else ""))
+    await audit(db, admin, "report_hide", f"Shikoyat bo'yicha {noun} olib tashlandi: «{snippet}»" + (f". Sabab: {note}" if note else ""), author_id)
     await db.commit()
     return {"ok": True}
 
@@ -363,10 +367,14 @@ async def hide_reported(body: ModerateIn, admin: User = Depends(require_admin), 
 async def dismiss_reports(body: ModerateIn, admin: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     col = _REPORT_COL[body.kind]
     n = 0
-    for r in (await db.scalars(select(Report).where(col == body.target_id, Report.status == "pending"))).all():
+    for r in (await db.scalars(select(Report).where(col == body.target_id, Report.status.in_(("pending", "reviewing"))))).all():
         r.status, r.reviewed_at = "dismissed", utcnow()
         n += 1
-    await audit(db, admin, "report_dismiss", f"{n} ta shikoyat rad etildi", body.target_id)
+    target = await db.get(_MODEL[body.kind], body.target_id)
+    snippet = ((getattr(target, "title", None) or getattr(target, "content", None) or "").strip()[:80]) if target else ""
+    note = (body.note or "").strip()
+    await audit(db, admin, "report_dismiss", f"{n} ta shikoyat rad etildi" + (f": «{snippet}»" if snippet else "") + (f". Sabab: {note}" if note else ""),
+                body.target_id)
     await db.commit()
     return {"ok": True, "dismissed": n}
 
