@@ -104,7 +104,8 @@ class ExpertProfileScreen extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        Row(
+        IntrinsicHeight(child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             StatTile('${s?.answers ?? '—'}', tr('javob')),
             const SizedBox(width: 8),
@@ -112,7 +113,7 @@ class ExpertProfileScreen extends ConsumerWidget {
             const SizedBox(width: 8),
             StatTile(formatWait(s?.avgAnswerMinutes), tr("o'rtacha\njavob")),
           ],
-        ),
+        )),
         const SizedBox(height: 16),
         AppCard(
           shadow: false,

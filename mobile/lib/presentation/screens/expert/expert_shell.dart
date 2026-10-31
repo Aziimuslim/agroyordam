@@ -6,7 +6,20 @@ import '../../../application/providers.dart';
 import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/bottom_nav.dart' show Breakpoints;
+import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../../domain/entities/entities.dart';
+
+typedef _ExpertNavItem = (String route, String label, IconData icon, IconData activeIcon, int count);
+
+List<_ExpertNavItem> _expertItems(ExpertStats? stats) => [
+      ('/expert', tr('Navbat'), Icons.assignment_outlined, Icons.assignment_rounded, stats?.queuePending ?? 0),
+      ('/expert/questions', tr('Savollar'), Icons.chat_bubble_outline_rounded, Icons.chat_bubble_rounded, stats?.questionsNew ?? 0),
+      ('/expert/community', tr('Jamoat'), Icons.groups_outlined, Icons.groups_rounded, 0),
+      ('/expert/kb', tr('Bilimlar'), Icons.menu_book_outlined, Icons.menu_book_rounded, 0),
+      ('/expert/profile', tr('Profil'), Icons.person_outline_rounded, Icons.person_rounded, 0),
+    ];
 
 /// Agronom rejimi menyusi (Agronom TZ 4): Navbat · Savollar · Jamoat · Bilimlar · Profil. Faol rang — brand (to'q yashil).
 class ExpertBottomNav extends ConsumerWidget {
@@ -63,15 +76,84 @@ class ExpertBottomNav extends ConsumerWidget {
             constraints: const BoxConstraints(maxWidth: 560),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-              child: Row(children: [
-                item('/expert', tr('Navbat'), Icons.assignment_outlined, Icons.assignment_rounded, stats?.queuePending ?? 0),
-                item('/expert/questions', tr('Savollar'), Icons.chat_bubble_outline_rounded, Icons.chat_bubble_rounded, stats?.questionsNew ?? 0),
-                item('/expert/community', tr('Jamoat'), Icons.groups_outlined, Icons.groups_rounded),
-                item('/expert/kb', tr('Bilimlar'), Icons.menu_book_outlined, Icons.menu_book_rounded),
-                item('/expert/profile', tr('Profil'), Icons.person_outline_rounded, Icons.person_rounded),
-              ]),
+              child: Row(children: [for (final it in _expertItems(stats)) item(it.$1, it.$2, it.$3, it.$4, it.$5)]),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Keng ekran (≥ 1024 px) uchun chap menyu (Agronom TZ 3.3): pastki menyu o'rnida.
+class ExpertSideNav extends ConsumerWidget {
+  const ExpertSideNav({super.key, required this.current});
+  final String current;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
+    final stats = ref.watch(expertStatsProvider).value;
+    return Container(
+      width: 248,
+      decoration: BoxDecoration(color: c.card, border: Border(right: BorderSide(color: c.border))),
+      child: SafeArea(
+        right: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Row(children: [
+              const BrandLogo(size: 36),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('AgroYordam', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: c.text)),
+                  Text(tr('Agronom'), style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: c.olive)),
+                ]),
+              ),
+            ]),
+            const SizedBox(height: 24),
+            for (final it in _expertItems(stats))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Semantics(
+                  button: true,
+                  selected: current == it.$1,
+                  label: it.$5 > 0 ? trf('{0}, {1} ta yangi', [it.$2, it.$5]) : it.$2,
+                  excludeSemantics: true,
+                  child: Material(
+                    color: current == it.$1 ? c.oliveSoft : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: current == it.$1 ? null : () => context.go(it.$1),
+                      child: SizedBox(
+                        height: 48,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Row(children: [
+                            Icon(current == it.$1 ? it.$4 : it.$3, size: 22, color: current == it.$1 ? c.olive : c.text),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(it.$2,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontSize: 15, fontWeight: current == it.$1 ? FontWeight.w800 : FontWeight.w600, color: current == it.$1 ? c.olive : c.text)),
+                            ),
+                            if (it.$5 > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(color: c.primary, borderRadius: BorderRadius.circular(99)),
+                                child: Text(it.$5 > 99 ? '99+' : '${it.$5}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: c.onPrimary)),
+                              ),
+                          ]),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ]),
         ),
       ),
     );
@@ -197,7 +279,12 @@ class StatTile extends StatelessWidget {
         children: [
           Text(value, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800, height: 1.15)),
           const SizedBox(height: 2),
-          Text(label, style: TextStyle(fontSize: 12, color: context.c.muted, height: 1.25), maxLines: 2),
+          // Uzun so'z tor kartada bo'linib ketmasin: sig'masa kichrayadi
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(label, style: TextStyle(fontSize: 12, color: context.c.muted, height: 1.25), maxLines: 2, softWrap: false),
+          ),
         ],
       ),
     ),
@@ -222,16 +309,20 @@ class ExpertPage extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget body = ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.fromLTRB(16, 12, 16, 32), children: children);
     if (onRefresh != null) body = RefreshIndicator(color: context.c.primary, onRefresh: onRefresh!, child: body);
+    final desktop = Breakpoints.isDesktop(context);
+    final content = SafeArea(
+      bottom: false,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 680), child: body),
+      ),
+    );
     return Scaffold(
       backgroundColor: context.c.cream,
-      bottomNavigationBar: ExpertBottomNav(current: current),
-      body: SafeArea(
-        bottom: false,
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 680), child: body),
-        ),
-      ),
+      bottomNavigationBar: desktop ? null : ExpertBottomNav(current: current),
+      body: desktop
+          ? Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [ExpertSideNav(current: current), Expanded(child: content)])
+          : content,
     );
   }
 }

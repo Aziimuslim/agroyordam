@@ -7,6 +7,7 @@ import '../../../core/config.dart';
 import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/widgets/bottom_nav.dart' show Breakpoints;
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/ds.dart';
 import '../../../core/widgets/widgets.dart';
@@ -43,14 +44,19 @@ class _QueueState extends ConsumerState<ExpertQueueScreen> {
       onRefresh: _refresh,
       children: [
         Row(children: [
-          const BrandLogo(size: 34),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('AgroYordam', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: c.text, height: 1.1)),
-              Text(tr('Agronom'), style: TextStyle(fontSize: 13, color: c.muted)),
-            ]),
-          ),
+          // Keng ekranda logo chap menyuda bor — bu yerda bo'lim nomi
+          if (Breakpoints.isDesktop(context))
+            Expanded(child: Text(tr('Navbat'), style: Theme.of(context).textTheme.headlineSmall))
+          else ...[
+            const BrandLogo(size: 34),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('AgroYordam', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: c.text, height: 1.1)),
+                Text(tr('Agronom'), style: TextStyle(fontSize: 13, color: c.muted)),
+              ]),
+            ),
+          ],
           IconButton(
             tooltip: unread > 0 ? trf('Bildirishnomalar: {0} ta yangi', [unread]) : tr('Bildirishnomalar'),
             onPressed: () => context.push('/notifications'),
@@ -273,39 +279,48 @@ class QueueCard extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         margin: const EdgeInsets.only(bottom: 12),
         onTap: open,
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          CatalogImage(url: AppConfig.mediaUrl(i.imageUrl), width: 104, height: 120, radius: 12),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Wrap(spacing: 8, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                Text(i.plantName ?? tr('Ekin ko\'rsatilmagan'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: c.text)),
-                if (i.claimedByMe) StatusTag(tr("Siz ko'rib chiqyapsiz"), kind: StatusKind.info, icon: Icons.edit_note_rounded)
-                else if (i.reviewRequested) StatusTag(tr("Dehqon so'ragan"), kind: StatusKind.info, icon: Icons.send_outlined)
-                else if (i.lowConfidence) StatusTag(tr('Ishonchi past'), kind: StatusKind.risk, icon: Icons.info_outline_rounded),
+        child: LayoutBuilder(builder: (context, box) {
+          // Tor ekranda (≈320 px) tugma rasm ostiga, butun kenglikka tushadi — matn kesilmaydi
+          final narrow = box.maxWidth < 300;
+          final button = SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+              onPressed: open,
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Flexible(child: Text(tr("Ko'rib chiqish"), overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15))),
+                const SizedBox(width: 6),
+                const Icon(Icons.arrow_forward_rounded, size: 18),
               ]),
-              const SizedBox(height: 4),
-              Text(symptom, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, color: c.text, height: 1.35)),
-              const SizedBox(height: 6),
-              _Meta(Icons.person_outline_rounded, [i.farmerName, if (i.farmerRegion != null) i.farmerRegion!].join(' · ')),
-              _Meta(Icons.schedule_rounded, timeAgo(i.diagnosedAt)),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                height: 44,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                  onPressed: open,
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Flexible(child: Text(tr("Ko'rib chiqish"), overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15))),
-                    const SizedBox(width: 6),
-                    const Icon(Icons.arrow_forward_rounded, size: 18),
-                  ]),
-                ),
-              ),
+            ),
+          );
+          final tag = i.claimedByMe
+              ? StatusTag(tr("Siz ko'rib chiqyapsiz"), kind: StatusKind.info, icon: Icons.edit_note_rounded)
+              : i.reviewRequested
+                  ? StatusTag(tr("Dehqon so'ragan"), kind: StatusKind.info, icon: Icons.send_outlined)
+                  : i.lowConfidence
+                      ? StatusTag(tr('Ishonchi past'), kind: StatusKind.risk, icon: Icons.info_outline_rounded)
+                      : null;
+          final info = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(i.plantName ?? tr('Ekin ko\'rsatilmagan'), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: c.text)),
+            if (tag != null) ...[const SizedBox(height: 4), tag],
+            const SizedBox(height: 4),
+            Text(symptom, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, color: c.text, height: 1.35)),
+            const SizedBox(height: 6),
+            _Meta(Icons.person_outline_rounded, [i.farmerName, if (i.farmerRegion != null) i.farmerRegion!].join(' · ')),
+            _Meta(Icons.schedule_rounded, timeAgo(i.diagnosedAt)),
+            if (!narrow) ...[const SizedBox(height: 8), button],
+          ]);
+          return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              CatalogImage(url: AppConfig.mediaUrl(i.imageUrl), width: narrow ? 80 : 104, height: narrow ? 96 : 120, radius: 12),
+              const SizedBox(width: 12),
+              Expanded(child: info),
             ]),
-          ),
-        ]),
+            if (narrow) ...[const SizedBox(height: 10), button],
+          ]);
+        }),
       ),
     );
   }
