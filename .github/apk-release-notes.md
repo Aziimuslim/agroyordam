@@ -5,6 +5,11 @@ Web ilova: https://agroyordam.duckdns.org
 O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
 Ilova https://agroyordam.duckdns.org serveriga o'zi ulanadi. Eski versiya o'rnatilgan bo'lsa, ustidan yangilanadi.
 
+## 0.8.25 — agronom rejimi: kompyuter ekrani
+- Keng ekranda kontent kengroq: navbat kartalari va bilimlar ro'yxati 2 ustunda.
+- Tashxisni tekshirish ikki panelda: chapda katta rasm va dehqon ma'lumoti, o'ngda AI taxmini va amallar.
+- Profil ikki ustunda: chapda ma'lumot va sozlamalar, o'ngda menyu.
+
 ## 0.8.24 — agronom rejimi: ekran o'lchamlariga moslash
 - Kompyuterda (1024 px dan keng) agronom menyusi chap tomonda, pastki menyu o'rnida.
 - Kichik telefonda (320 px) navbat kartasidagi tugma va belgi kesilmaydi; profil raqamlaridagi so'zlar bo'linmaydi.

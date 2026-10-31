@@ -66,152 +66,160 @@ class ExpertProfileScreen extends ConsumerWidget {
     final repo = ref.read(expertRepoProvider);
     return ExpertPage(
       current: '/expert/profile',
+      wide: true,
       onRefresh: () async {
         ref.invalidate(expertStatsProvider);
         await ref.read(authProvider.notifier).refreshUser();
       },
       children: [
         ExpertHeader(title: tr('Profil')),
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: c.expert, width: 2.5),
-              ),
-              child: Avatar(name: user.fullName, url: user.avatarUrl, size: 68, color: c.expertBg, textColor: c.expert),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(user.fullName, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
-                  Text([tr('Agronom'), user.specialization].whereType<String>().join(' · '), style: TextStyle(color: c.muted, fontSize: 13.5)),
-                  const SizedBox(height: 4),
-                  Row(
+        ExpertColumns(
+          left: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: c.expert, width: 2.5),
+                  ),
+                  child: Avatar(name: user.fullName, url: user.avatarUrl, size: 68, color: c.expertBg, textColor: c.expert),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.star_rounded, size: 18, color: c.gold),
-                      const SizedBox(width: 3),
-                      Text(s?.rating?.toStringAsFixed(1) ?? '—', style: const TextStyle(fontWeight: FontWeight.w800)),
-                      Text(trf(' · {0} baho', [s?.ratingsCount ?? 0]), style: TextStyle(color: c.muted, fontSize: 13)),
+                      Text(user.fullName, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+                      Text([tr('Agronom'), user.specialization].whereType<String>().join(' · '), style: TextStyle(color: c.muted, fontSize: 13.5)),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.star_rounded, size: 18, color: c.gold),
+                          const SizedBox(width: 3),
+                          Text(s?.rating?.toStringAsFixed(1) ?? '—', style: const TextStyle(fontWeight: FontWeight.w800)),
+                          Text(trf(' · {0} baho', [s?.ratingsCount ?? 0]), style: TextStyle(color: c.muted, fontSize: 13)),
+                        ],
+                      ),
                     ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  StatTile('${s?.answers ?? '—'}', tr('javob')),
+                  const SizedBox(width: 8),
+                  StatTile('${s?.reviewedTotal ?? '—'}', tr('tekshirilgan\ntashxis')),
+                  const SizedBox(width: 8),
+                  StatTile(formatWait(s?.avgAnswerMinutes), tr("o'rtacha\njavob")),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            AppCard(
+              shadow: false,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+              child: Column(
+                children: [
+                  _Row(
+                    icon: AppIcons.clock,
+                    label: tr('Ish vaqti'),
+                    value: user.workHours ?? tr("Ko'rsatilmagan"),
+                    onTap: () => _editText(
+                      context,
+                      ref,
+                      title: tr('Ish vaqti'),
+                      initial: user.workHours ?? '',
+                      hint: tr('Du–Ju, 9:00–18:00'),
+                      save: (v) => repo.updateMe(workHours: v),
+                    ),
+                  ),
+                  Divider(height: 1, color: c.border),
+                  _Row(
+                    icon: AppIcons.leaf,
+                    label: tr('Mutaxassislik'),
+                    value: user.specialization ?? tr("Ko'rsatilmagan"),
+                    onTap: () => _editText(
+                      context,
+                      ref,
+                      title: tr('Mutaxassislik'),
+                      initial: user.specialization ?? '',
+                      hint: tr('Mevali daraxtlar, sabzavotlar'),
+                      save: (v) => repo.updateMe(specialization: v),
+                    ),
+                  ),
+                  Divider(height: 1, color: c.border),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        SizedBox(width: 34, child: Icon(Icons.inbox_outlined, color: c.expert)),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(tr('Yangi savollar qabul qilish'), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+                              Text(tr("O'chirsangiz, dehqonlar sizni «Oflayn» ko'radi"), style: TextStyle(fontSize: 12.5)),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: user.acceptingQuestions,
+                          activeTrackColor: c.expert,
+                          onChanged: (v) async {
+                            try {
+                              await repo.updateMe(acceptingQuestions: v);
+                              await ref.read(authProvider.notifier).refreshUser();
+                            } catch (e) {
+                              if (context.mounted) showError(context, e);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
+            Text(tr('MAVZU'), style: Theme.of(context).textTheme.labelSmall),
+            const SizedBox(height: 8),
+            const ThemePicker(expert: true),
           ],
-        ),
-        const SizedBox(height: 16),
-        IntrinsicHeight(child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            StatTile('${s?.answers ?? '—'}', tr('javob')),
-            const SizedBox(width: 8),
-            StatTile('${s?.reviewedTotal ?? '—'}', tr('tekshirilgan\ntashxis')),
-            const SizedBox(width: 8),
-            StatTile(formatWait(s?.avgAnswerMinutes), tr("o'rtacha\njavob")),
+          right: [
+            ListRow(icon: AppIcons.globe, label: tr('Ilova tili'), value: ref.watch(langProvider).label, onTap: () => showLanguageSheet(context, ref)),
+            ListRow(
+              icon: AppIcons.home,
+              label: tr("Dehqon rejimiga o'tish"),
+              value: tr("Bog'im, tashxis"),
+              onTap: () async {
+                await ref.read(expertModePrefProvider.notifier).set(false);
+                if (context.mounted) context.go('/home');
+              },
+            ),
+            ListRow(icon: AppIcons.edit, label: tr("Ma'lumotlarim"), value: tr("Tajriba, ta'lim, yo'nalish"), onTap: () => context.push('/profile/edit')),
+            ListRow(icon: Icons.lock_outline_rounded, label: tr("Parolni o'zgartirish"), onTap: () => context.push('/profile/password')),
+            ListRow(icon: Icons.visibility_outlined, label: tr("Dehqonlar ko'radigan profil"), onTap: () => context.push('/help/agronom/${user.id}')),
+            ListRow(icon: Icons.notifications_none_rounded, label: tr('Bildirishnomalar'), onTap: () => context.push('/notifications')),
+            ListRow(icon: AppIcons.chat, label: tr('Xabarlar'), onTap: () => context.push('/messages')),
+            ListRow(
+              icon: AppIcons.logout,
+              label: tr('Chiqish'),
+              danger: true,
+              onTap: () async {
+                if (await confirm(context, tr('Chiqish'), tr('Hisobdan chiqmoqchimisiz?'), ok: tr('Chiqish'), danger: true)) {
+                  await ref.read(authProvider.notifier).logout();
+                }
+              },
+            ),
+            const SizedBox(height: 10),
+            Center(
+              child: Text(trf('Versiya {0}', [AppConfig.version]), style: TextStyle(color: c.muted, fontSize: 11)),
+            ),
           ],
-        )),
-        const SizedBox(height: 16),
-        AppCard(
-          shadow: false,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-          child: Column(
-            children: [
-              _Row(
-                icon: AppIcons.clock,
-                label: tr('Ish vaqti'),
-                value: user.workHours ?? tr("Ko'rsatilmagan"),
-                onTap: () => _editText(
-                  context,
-                  ref,
-                  title: tr('Ish vaqti'),
-                  initial: user.workHours ?? '',
-                  hint: tr('Du–Ju, 9:00–18:00'),
-                  save: (v) => repo.updateMe(workHours: v),
-                ),
-              ),
-              Divider(height: 1, color: c.border),
-              _Row(
-                icon: AppIcons.leaf,
-                label: tr('Mutaxassislik'),
-                value: user.specialization ?? tr("Ko'rsatilmagan"),
-                onTap: () => _editText(
-                  context,
-                  ref,
-                  title: tr('Mutaxassislik'),
-                  initial: user.specialization ?? '',
-                  hint: tr('Mevali daraxtlar, sabzavotlar'),
-                  save: (v) => repo.updateMe(specialization: v),
-                ),
-              ),
-              Divider(height: 1, color: c.border),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
-                  children: [
-                    SizedBox(width: 34, child: Icon(Icons.inbox_outlined, color: c.expert)),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(tr('Yangi savollar qabul qilish'), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
-                          Text(tr("O'chirsangiz, dehqonlar sizni «Oflayn» ko'radi"), style: TextStyle(fontSize: 12.5)),
-                        ],
-                      ),
-                    ),
-                    Switch(
-                      value: user.acceptingQuestions,
-                      activeTrackColor: c.expert,
-                      onChanged: (v) async {
-                        try {
-                          await repo.updateMe(acceptingQuestions: v);
-                          await ref.read(authProvider.notifier).refreshUser();
-                        } catch (e) {
-                          if (context.mounted) showError(context, e);
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        Text(tr('MAVZU'), style: Theme.of(context).textTheme.labelSmall),
-        const SizedBox(height: 8),
-        const ThemePicker(expert: true),
-        const SizedBox(height: 16),
-        ListRow(icon: AppIcons.globe, label: tr('Ilova tili'), value: ref.watch(langProvider).label, onTap: () => showLanguageSheet(context, ref)),
-        ListRow(
-          icon: AppIcons.home,
-          label: tr("Dehqon rejimiga o'tish"),
-          value: tr("Bog'im, tashxis"),
-          onTap: () async {
-            await ref.read(expertModePrefProvider.notifier).set(false);
-            if (context.mounted) context.go('/home');
-          },
-        ),
-        ListRow(icon: AppIcons.edit, label: tr("Ma'lumotlarim"), value: tr("Tajriba, ta'lim, yo'nalish"), onTap: () => context.push('/profile/edit')),
-        ListRow(icon: Icons.lock_outline_rounded, label: tr("Parolni o'zgartirish"), onTap: () => context.push('/profile/password')),
-        ListRow(icon: Icons.visibility_outlined, label: tr("Dehqonlar ko'radigan profil"), onTap: () => context.push('/help/agronom/${user.id}')),
-        ListRow(icon: Icons.notifications_none_rounded, label: tr('Bildirishnomalar'), onTap: () => context.push('/notifications')),
-        ListRow(icon: AppIcons.chat, label: tr('Xabarlar'), onTap: () => context.push('/messages')),
-        ListRow(
-          icon: AppIcons.logout,
-          label: tr('Chiqish'),
-          danger: true,
-          onTap: () async {
-            if (await confirm(context, tr('Chiqish'), tr('Hisobdan chiqmoqchimisiz?'), ok: tr('Chiqish'), danger: true)) {
-              await ref.read(authProvider.notifier).logout();
-            }
-          },
-        ),
-        const SizedBox(height: 10),
-        Center(
-          child: Text(trf('Versiya {0}', [AppConfig.version]), style: TextStyle(color: c.muted, fontSize: 11)),
         ),
       ],
     );

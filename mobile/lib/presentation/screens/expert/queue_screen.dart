@@ -41,6 +41,7 @@ class _QueueState extends ConsumerState<ExpertQueueScreen> {
     final unread = ref.watch(notificationsProvider).value?.where((n) => !n.isRead).length ?? 0;
     return ExpertPage(
       current: '/expert',
+      wide: true,
       onRefresh: _refresh,
       children: [
         Row(children: [
@@ -89,7 +90,7 @@ class _QueueState extends ConsumerState<ExpertQueueScreen> {
           onRetry: () => ref.invalidate(reviewQueueProvider(_filter)),
           data: (items) => items.isEmpty
               ? _EmptyQueue(filter: _filter, onRefresh: _refresh)
-              : Column(children: [for (final i in items) QueueCard(i)]),
+              : ExpertGrid(children: [for (final i in items) QueueCard(i)]),
         ),
       ],
     );

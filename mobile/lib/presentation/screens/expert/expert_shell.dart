@@ -301,12 +301,16 @@ String formatWait(int? minutes) {
 
 /// Agronom rejimidagi tab ekrani qobig'i.
 class ExpertPage extends StatelessWidget {
-  const ExpertPage({super.key, required this.current, required this.children, this.onRefresh});
+  const ExpertPage({super.key, required this.current, required this.children, this.onRefresh, this.wide = false});
   final String current;
   final List<Widget> children;
   final Future<void> Function()? onRefresh;
+
+  /// Keng ekranda kontent 1120 px gacha (kartalar 2 ustunda); aks holda 680 px (TZ 3.3).
+  final bool wide;
   @override
   Widget build(BuildContext context) {
+    final maxW = wide && Breakpoints.isDesktop(context) ? expertWideMax : 680.0;
     Widget body = ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.fromLTRB(16, 12, 16, 32), children: children);
     if (onRefresh != null) body = RefreshIndicator(color: context.c.primary, onRefresh: onRefresh!, child: body);
     final desktop = Breakpoints.isDesktop(context);
@@ -314,7 +318,7 @@ class ExpertPage extends StatelessWidget {
       bottom: false,
       child: Align(
         alignment: Alignment.topCenter,
-        child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 680), child: body),
+        child: ConstrainedBox(constraints: BoxConstraints(maxWidth: maxW), child: body),
       ),
     );
     return Scaffold(
@@ -325,6 +329,48 @@ class ExpertPage extends StatelessWidget {
           : content,
     );
   }
+}
+
+/// Keng ekrandagi ish maydoni (TZ 3.3: max 1280, yon menyu bilan).
+const expertWideMax = 1120.0;
+
+/// Kartalar ro'yxati: keng joyda (≥ 820 px) 2 ustun; torda — bitta ustun.
+class ExpertGrid extends StatelessWidget {
+  const ExpertGrid({super.key, required this.children, this.gap = 12});
+  final List<Widget> children;
+  final double gap;
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
+        if (box.maxWidth < 820) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children);
+        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          // IntrinsicHeight ishlatilmaydi: kartalar ichida LayoutBuilder bor
+          for (var k = 0; k < children.length; k += 2)
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(child: children[k]),
+              SizedBox(width: gap),
+              Expanded(child: k + 1 < children.length ? children[k + 1] : const SizedBox()),
+            ]),
+        ]);
+      });
+}
+
+/// Ikki panel: keng joyda (≥ 880 px) chap va o'ng ustun yonma-yon; torda — ketma-ket.
+class ExpertColumns extends StatelessWidget {
+  const ExpertColumns({super.key, required this.left, required this.right, this.leftFlex = 1, this.rightFlex = 1, this.narrowGap = 16});
+  final List<Widget> left, right;
+  final int leftFlex, rightFlex;
+
+  /// Torda ikki qism orasidagi bo'shliq.
+  final double narrowGap;
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
+        if (box.maxWidth < 880) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [...left, SizedBox(height: narrowGap), ...right]);
+        return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(flex: leftFlex, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: left)),
+          const SizedBox(width: 24),
+          Expanded(flex: rightFlex, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: right)),
+        ]);
+      });
 }
 
 /// Filtr chiplari (agronom ekranlari): tanlangani to'q yashil.

@@ -48,6 +48,7 @@ class _KnowledgeState extends ConsumerState<KnowledgeScreen> {
     final c = context.c;
     return ExpertPage(
       current: '/expert/kb',
+      wide: true,
       onRefresh: () async {
         ref.invalidate(diseasesProvider);
         ref.invalidate(medicinesProvider);
@@ -70,12 +71,12 @@ class _KnowledgeState extends ConsumerState<KnowledgeScreen> {
           'medicines' => AsyncView(
             value: ref.watch(medicinesProvider),
             onRetry: () => ref.invalidate(medicinesProvider),
-            data: (list) => Column(children: [for (final m in list) MedicineRow(m, onTap: () => context.push('/expert/kb/medicine/${m.id}'))]),
+            data: (list) => ExpertGrid(gap: 10, children: [for (final m in list) MedicineRow(m, onTap: () => context.push('/expert/kb/medicine/${m.id}'))]),
           ),
           'plants' => AsyncView(
             value: ref.watch(plantsProvider),
             onRetry: () => ref.invalidate(plantsProvider),
-            data: (list) => Column(children: [for (final p in list) PlantRow(p, onTap: () => context.push('/expert/kb/plant/${p.id}'))]),
+            data: (list) => ExpertGrid(gap: 10, children: [for (final p in list) PlantRow(p, onTap: () => context.push('/expert/kb/plant/${p.id}'))]),
           ),
           'history' => AsyncView(
             value: ref.watch(catalogChangesProvider),
@@ -110,7 +111,7 @@ class _KnowledgeState extends ConsumerState<KnowledgeScreen> {
                     ),
                     const SizedBox(height: 12),
                   ],
-                  for (final d in sorted) DiseaseRow(d, onTap: () => context.push('/expert/kb/disease/${d.id}')),
+                  ExpertGrid(gap: 10, children: [for (final d in sorted) DiseaseRow(d, onTap: () => context.push('/expert/kb/disease/${d.id}'))]),
                 ],
               );
             },
