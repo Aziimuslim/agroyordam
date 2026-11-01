@@ -33,3 +33,4 @@ __all__ = [
     "Diagnosis", "Disease", "DiseaseMedicine", "Follower", "Like", "Medicine", "Message",
     "Notification", "PaymentTransaction", "Plant", "Post", "RefreshToken", "Reminder", "Report", "Subscription", "User",
 ]
+from app.models import _alphabet_events  # noqa: E402,F401  (post/izoh/ism yangi lotin harflarida)

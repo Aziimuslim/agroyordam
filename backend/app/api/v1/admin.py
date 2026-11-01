@@ -7,11 +7,25 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.experts import ApplicationOut
+from app.core.alphabet import search_variants
 from app.core.database import get_db
 from app.core.deps import require_admin, require_superadmin
 from app.core.security import hash_password, utcnow
-from app.models import CatalogChange, RefreshToken, Comment, Crop, Diagnosis, Disease, ExpertApplication, Post, Question, Report, Subscription, User
-from app.api.v1.experts import ApplicationOut
+from app.models import (
+    CatalogChange,
+    Comment,
+    Crop,
+    Diagnosis,
+    Disease,
+    ExpertApplication,
+    Post,
+    Question,
+    RefreshToken,
+    Report,
+    Subscription,
+    User,
+)
 from app.schemas.user import UserMe
 from app.services.app_settings import audit
 from app.services.notification_service import notify
@@ -91,7 +105,7 @@ async def list_users(q: str | None = None, role: str | None = Query(default=None
     if blocked:
         stmt = stmt.where(User.is_active.is_(False))
     if q:
-        stmt = stmt.where(or_(User.full_name.ilike(f"%{q}%"), User.username.ilike(f"%{q}%"), User.region.ilike(f"%{q}%"),
+        stmt = stmt.where(or_(*[User.full_name.ilike(f"%{v}%") for v in search_variants(q)], User.username.ilike(f"%{q}%"), User.region.ilike(f"%{q}%"),
                               User.email.ilike(f"%{q}%"), User.phone.ilike(f"%{q}%")))
     return [await _user_out(db, u) for u in (await db.scalars(stmt)).all()]
 

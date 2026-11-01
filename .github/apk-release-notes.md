@@ -5,11 +5,17 @@ Web ilova: https://agroyordam.duckdns.org
 O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
 Ilova https://agroyordam.duckdns.org serveriga o'zi ulanadi. Eski versiya o'rnatilgan bo'lsa, ustidan yangilanadi.
 
+## 0.8.27 — postlar va ismlar ham yangi harflarda
+- Jamoatdagi postlar, izohlar va foydalanuvchi ismlari yangi lotin harflarida (ó, ǵ, ş, ç).
+- Yangi yozilgan post, izoh va ism saqlanayotganda avtomatik o'tkaziladi.
+- Odam qidirishda eski yozuvda yozsangiz ham topiladi ("Shohruh" → "Şohruh").
+- Login (foydalanuvchi nomi, email, telefon) va shaxsiy xabarlar o'zgarmaydi.
+
 ## 0.8.26 — yangi o'zbek lotin harflari
 - O'zbekcha matnlar yangi harflar bilan: oʻ → ó, gʻ → ǵ, sh → ş, ch → ç (Ózbekça, şaftoli, uçun).
 - Ilova menyulari, katalog (ekin, kasallik, dori), parvarish rejasi, bildirishnomalar, AI Yordamchi javoblari va admin panel.
 - Qidiruv eski yozuvda ham ishlaydi: "shira" yozsangiz "şira" topiladi.
-- Foydalanuvchilar o'zi yozgan postlar, xabarlar va ismlar o'zgarmaydi. Kirill va boshqa tillar o'z holicha.
+- Kirill va boshqa tillar o'z holicha.
 
 ## 0.8.25 — agronom rejimi: kompyuter ekrani
 - Keng ekranda kontent kengroq: navbat kartalari va bilimlar ro'yxati 2 ustunda.

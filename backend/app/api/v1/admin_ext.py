@@ -15,13 +15,30 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.alphabet import search_variants
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import require_admin
 from app.core.security import utcnow
 from app.models import (
-    AnalysisJob, AuditLog, CatalogChange, Comment, Crop, Diagnosis, Disease, DiseaseMedicine, ExpertApplication, Medicine, Message, Plant,
-    Post, Question, RefreshToken, Report, Subscription, User,
+    AnalysisJob,
+    AuditLog,
+    CatalogChange,
+    Comment,
+    Crop,
+    Diagnosis,
+    Disease,
+    DiseaseMedicine,
+    ExpertApplication,
+    Medicine,
+    Message,
+    Plant,
+    Post,
+    Question,
+    RefreshToken,
+    Report,
+    Subscription,
+    User,
 )
 from app.services.app_settings import audit
 
@@ -96,7 +113,7 @@ async def users_page(q: str | None = Query(default=None, max_length=100),
         stmt = stmt.where(User.is_premium.is_(plan == "premium"))
     if q:
         like = f"%{q.strip()}%"
-        stmt = stmt.where(or_(User.full_name.ilike(like), User.username.ilike(like), User.region.ilike(like),
+        stmt = stmt.where(or_(*[User.full_name.ilike(f"%{v}%") for v in search_variants(q.strip())], User.username.ilike(like), User.region.ilike(like),
                               User.email.ilike(like), User.phone.ilike(like)))
     total = await db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     order = {"new": User.created_at.desc(), "old": User.created_at.asc(), "name": User.full_name.asc(),

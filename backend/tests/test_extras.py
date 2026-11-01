@@ -18,7 +18,7 @@ async def test_bookmarks(client, user_headers):
     post = (await client.post(f"{API}/posts", json={"title": "Saqlash", "content": "Saqlanadigan post matni", "category": "advice"}, headers=user_headers)).json()
     for _ in range(2):  # ikki marta bosish — bitta yozuv
         r = await client.post(f"{API}/bookmarks", json={"kind": "post", "target_id": post["id"]}, headers=user_headers)
-        assert r.status_code == 201 and r.json()["exists"] and r.json()["title"] == "Saqlash"
+        assert r.status_code == 201 and r.json()["exists"] and r.json()["title"] == "Saqlaş"  # post sarlavhasi yangi harflarda saqlanadi
     await client.post(f"{API}/bookmarks", json={"kind": "plant", "target_id": str(plant.id)}, headers=user_headers)
     assert len((await client.get(f"{API}/bookmarks", headers=user_headers)).json()) == 2
     assert [b["kind"] for b in (await client.get(f"{API}/bookmarks?kind=plant", headers=user_headers)).json()] == ["plant"]
@@ -144,3 +144,15 @@ async def test_message_pagination(client, user_headers):
     assert [m["content"] for m in last] == ["m4", "m5", "m6"]
     older = (await client.get(f"{API}/conversations/{conv['id']}/messages?limit=3&before={last[0]['id']}", headers=user_headers)).json()
     assert [m["content"] for m in older] == ["m1", "m2", "m3"]
+
+
+async def test_posts_comments_names_new_alphabet(client, user_headers):
+    """Post, izoh va ism yangi lotin harflarida saqlanadi; login o'zgarmaydi."""
+    p = (await client.post(f"{API}/posts", json={"title": "Shaftoli bog'ida shira", "content": "Ko'chatlar uchun nima qilish kerak? https://t.me/shop",
+                                                "category": "question"}, headers=user_headers)).json()
+    assert p["title"] == "Şaftoli boǵida şira"
+    assert p["content"] == "Kóçatlar uçun nima qiliş kerak? https://t.me/shop"
+    c = (await client.post(f"{API}/posts/{p['id']}/comments", json={"content": "Choy qoldig'i bilan sug'oring"}, headers=user_headers)).json()
+    assert c["content"] == "Çoy qoldiǵi bilan suǵoring"
+    me = (await client.put(f"{API}/users/me", json={"full_name": "Shohruh Cho'liyev"}, headers=user_headers)).json()
+    assert me["full_name"] == "Şohruh Çóliyev"

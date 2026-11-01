@@ -6,6 +6,7 @@ from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.alphabet import search_variants
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.rate_limit import enforce
@@ -119,7 +120,7 @@ async def search_users(q: str = "", me_: User = Depends(get_current_user), db: A
     like = f"%{term.replace('%', '').replace('_', '')}%"
     hidden = await block_service.hidden_ids(db, me_.id)
     stmt = (select(User).where(User.is_active.is_(True), User.id != me_.id,
-                               or_(User.full_name.ilike(like), User.username.ilike(like)))
+                               or_(User.username.ilike(like), *[User.full_name.ilike(f"%{v}%") for v in search_variants(like.strip('%'))]))
             .order_by(User.full_name).limit(20))
     if hidden:
         stmt = stmt.where(User.id.not_in(hidden))
