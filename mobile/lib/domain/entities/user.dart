@@ -10,6 +10,7 @@ class AppUser {
     this.avatarUrl,
     this.region,
     this.language = 'uz',
+    this.languageUpdatedAt,
     this.role = 'user',
     this.isPremium = false,
     this.premiumUntil,
@@ -33,6 +34,9 @@ class AppUser {
   final String id, fullName, username;
   final String? email, phone, avatarUrl, region;
   final String language, role;
+
+  /// Til oxirgi marta qachon tanlangan (server vaqti) — qurilmalar orasida sinxronlash uchun.
+  final DateTime? languageUpdatedAt;
   final bool isPremium, isActive;
   final DateTime? premiumUntil, createdAt;
 
@@ -70,6 +74,7 @@ class AppUser {
         avatarUrl: j['avatar_url'],
         region: j['region'],
         language: j['language'] ?? 'uz',
+        languageUpdatedAt: parseDate(j['language_updated_at']),
         role: j['role'] ?? 'user',
         isPremium: j['is_premium'] ?? false,
         premiumUntil: parseDate(j['premium_until']),

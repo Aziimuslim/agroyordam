@@ -23,6 +23,7 @@ class UserMe(UserPublic):
     email: str | None = None
     phone: str | None = None
     language: str = "uz"
+    language_updated_at: datetime | None = None
     specialization: str | None = None
     accepting_questions: bool = True
     work_hours: str | None = None

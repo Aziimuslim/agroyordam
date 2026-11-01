@@ -29,6 +29,8 @@ class User(Base):
     main_crops: Mapped[list | None] = mapped_column(JSON)
     irrigation: Mapped[str | None] = mapped_column(String(20))  # ariq|tomchi|yomgir|nasos|lalmi
     language: Mapped[str] = mapped_column(String(10), default="uz", server_default="uz")
+    # Til oxirgi marta qachon tanlangan — qurilmalar orasida sinxronlash (oxirgi tanlov ustun)
+    language_updated_at: Mapped[datetime | None] = mapped_column(DateTime)
     role: Mapped[str] = mapped_column(String(20), default="user", server_default="user")
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     premium_until: Mapped[datetime | None] = mapped_column(DateTime)

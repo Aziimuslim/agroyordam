@@ -5,6 +5,11 @@ Web ilova: https://agroyordam.duckdns.org
 O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
 Ilova https://agroyordam.duckdns.org serveriga o'zi ulanadi. Eski versiya o'rnatilgan bo'lsa, ustidan yangilanadi.
 
+## 0.8.31 — til barcha qurilmalarda bir xil
+- Bir akkauntda til (masalan, "Lotin (yangi)") bir qurilmada tanlansa, telefon va kompyuterda ham shu til qo'llanadi —
+  oxirgi tanlov ustun. Ilova qayta ochilganda yoki fondan qaytganda tekshiriladi.
+- Bosh sahifada qushlar endi "Salom" matni ustidan uchmaydi.
+
 ## 0.8.30 — jonli 3D bog' manzarasi
 - Bosh sahifa manzarasi chuqurlikka ega: uzoqdagi tog', o'rtadagi daraxtlar va yaqin olmali shoxlar har xil tezlikda suriladi.
 - Shamol daraxtlar bo'ylab to'lqin bo'lib o'tadi, yaqin barglar kuchliroq tebranadi.

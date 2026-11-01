@@ -772,13 +772,13 @@ class _PhotoPainter extends _ScenePainter {
     canvas.drawVertices(mesh, BlendMode.srcOver, paintImg);
     // Bulutlar tog' ustida, oldingi shoxlar ortida
     _softClouds(canvas, Rect.fromLTRB(band.left, band.top - band.height * 0.05, band.right, band.bottom), v);
-    if (day) _birds3d(canvas, band, src, v, front: false);
+    if (day) _birds3d(canvas, photoRect, src, v, front: false);
     final n = near;
     if (n != null && n.width == image.width) {
       canvas.drawVertices(
           mesh, BlendMode.srcOver, Paint()..shader = ImageShader(n, TileMode.clamp, TileMode.clamp, Matrix4.identity().storage, filterQuality: FilterQuality.medium));
     }
-    if (day) _birds3d(canvas, band, src, v, front: true);
+    if (day) _birds3d(canvas, photoRect, src, v, front: true);
     if (photoRect.top > band.top + 0.5) {
       // Surat tepasi osmonga silliq qo'shiladi, osmon esa suratning o'z rangida (orqaga — dstOver)
       final fade = Rect.fromLTRB(band.left, photoRect.top, band.right, photoRect.top + photoRect.height * 0.22);

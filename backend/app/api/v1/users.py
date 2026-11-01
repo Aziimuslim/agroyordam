@@ -10,7 +10,7 @@ from app.core.alphabet import search_variants
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.rate_limit import enforce
-from app.core.security import hash_password, hash_refresh_token, verify_password
+from app.core.security import hash_password, hash_refresh_token, utcnow, verify_password
 from app.models import Follower, Post, RefreshToken, User, UserBlock
 from app.schemas.user import EXPERT_FIELDS, UserMe, UserProfile, UserPublic, UserUpdate
 from app.services import block_service, otp_service
@@ -37,6 +37,8 @@ async def update_me(body: UserUpdate, user: User = Depends(get_current_user), db
         new = data.get(field)
         if new and new != getattr(user, field) and channel in otp_service.available_channels():
             raise HTTPException(status.HTTP_409_CONFLICT, "Telefon va email'ni o'zgartirish kod bilan tasdiqlanadi")
+    if data.get("language"):
+        user.language_updated_at = utcnow()  # boshqa qurilmalar shu tanlovni oladi
     if user.role != "agronomist":
         for k in EXPERT_FIELDS:
             data.pop(k, None)

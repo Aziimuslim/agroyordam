@@ -156,3 +156,11 @@ async def test_posts_comments_names_new_alphabet(client, user_headers):
     assert c["content"] == "Çoy qoldiği bilan suğoring"
     me = (await client.put(f"{API}/users/me", json={"full_name": "Shohruh Cho'liyev"}, headers=user_headers)).json()
     assert me["full_name"] == "Şohruh Çöliyev"
+
+
+async def test_language_sync_timestamp(client, user_headers):
+    """Til tanlansa vaqti saqlanadi — boshqa qurilma shu tanlovni oladi."""
+    me = (await client.get(f"{API}/users/me", headers=user_headers)).json()
+    assert me["language_updated_at"] is None
+    r = (await client.put(f"{API}/users/me", json={"language": "uz-old"}, headers=user_headers)).json()
+    assert r["language"] == "uz-old" and r["language_updated_at"]
