@@ -5,6 +5,11 @@ Web ilova: https://agroyordam.duckdns.org
 O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
 Ilova https://agroyordam.duckdns.org serveriga o'zi ulanadi. Eski versiya o'rnatilgan bo'lsa, ustidan yangilanadi.
 
+## 0.8.29 — "Lotin (yangi)" va "Lotin (amaldagi)" tanlovi
+- Profil → Ilova tili: "Özbekça (Lotin, yangi)" yoki "O'zbekcha (Lotin, amaldagi)".
+- Amaldagi tanlansa, menyular ham, katalog, postlar, ismlar va AI javoblari ham eski yozuvda (o', g', sh, ch) ko'rinadi.
+- Til tanlamaganlarga 2027-yil 22-aprelgacha amaldagi yozuv, shu kundan yangi alifbo avtomatik yoqiladi.
+
 ## 0.8.28 — rasmiy yangi alifbo harflari
 - Harflar 2026-yil 21-oktyabrdagi qonunga moslandi: Ö, Ğ, Ş, Ç (avval xato ravishda ó, ǵ ishlatilgan edi).
 - Bazadagi barcha matnlar (katalog, postlar, izohlar, ismlar, bildirishnomalar) avtomatik tuzatildi.

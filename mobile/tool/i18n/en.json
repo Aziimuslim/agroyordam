@@ -1496,5 +1496,7 @@
  "Noto'g'ri organ yoki ekin": "Wrong plant part or crop",
  "Kontekst yetarli emas": "Not enough context",
  "Agronom manbasi: {0}": "Agronomist's source: {0}",
- "Agronom: rasmni qayta oling ({0})": "Agronomist: retake the photo ({0})"
+ "Agronom: rasmni qayta oling ({0})": "Agronomist: retake the photo ({0})",
+ "Yangi alifbo": "New alphabet",
+ "Yangi lotin alifbosi (Ö, Ğ, Ş, Ç) 2027-yil 22-apreldan rasmiy kuchga kiradi. Unga qadar o'zingizga qulay yozuvni tanlang; tanlamaganlarga shu kundan yangi alifbo yoqiladi.": "The new Uzbek Latin alphabet (Ö, Ğ, Ş, Ç) takes effect on 22 April 2027. Until then, pick the script you prefer; from that date the new alphabet is used for anyone who hasn't chosen."
 }

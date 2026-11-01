@@ -103,7 +103,7 @@ class _FlagPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size s) {
     switch (lang) {
-      case AppLang.uz || AppLang.uzCyrl:
+      case AppLang.uz || AppLang.uzOld || AppLang.uzCyrl:
         const blue = Color(0xFF0099B5);
         _bands(canvas, s, [(blue, 0.32), (const Color(0xFFCE1126), 0.03), (Colors.white, 0.30), (const Color(0xFFCE1126), 0.03), (const Color(0xFF1EB53A), 0.32)]);
         _crescent(canvas, s, blue);

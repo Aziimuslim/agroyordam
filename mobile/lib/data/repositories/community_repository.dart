@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 import '../../core/i18n/i18n.dart';
+import '../../core/network/api_client.dart' show oldLatinJson;
 import '../../core/network/api_exception.dart';
 import '../../domain/entities/entities.dart';
 import 'base.dart';
@@ -111,7 +112,11 @@ class CommunityRepository extends BaseRepository {
     final data = StringBuffer();
     await for (final line in lines) {
       if (line.isEmpty) {
-        if (event != null && data.isNotEmpty) yield AIStreamEvent(event, Map<String, dynamic>.from(jsonDecode(data.toString())));
+        if (event != null && data.isNotEmpty) {
+          final m = Map<String, dynamic>.from(jsonDecode(data.toString()));
+          // "Lotin (amaldagi)" tanlangan bo'lsa AI javobi ham amaldagi yozuvda
+          yield AIStreamEvent(event, I18n.lang == AppLang.uzOld ? oldLatinJson(m) as Map<String, dynamic> : m);
+        }
         event = null;
         data.clear();
       } else if (line.startsWith('event: ')) {

@@ -276,7 +276,7 @@ void main() {
     I18n.lang = AppLang.kaa;
     expect(tr('Saqlash'), 'Saqlaw');
     expect(AppLang.fromCode('uz-Cyrl'), AppLang.uzCyrl);
-    expect(AppLang.fromCode('xx'), AppLang.uz);
+    expect(AppLang.fromCode('xx'), AppLang.defaultLang); // 2027-04-22 gacha amaldagi lotin
   });
 
   test("To'lov holati va tilni oldindan ko'rish", () {

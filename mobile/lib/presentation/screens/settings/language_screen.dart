@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../application/lang.dart';
 import '../../../core/i18n/i18n.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/ds.dart';
 import '../../../core/widgets/lang_sheet.dart';
 import '../../../core/widgets/widgets.dart';
 import 'settings_widgets.dart';
@@ -80,7 +81,7 @@ class _LanguageState extends ConsumerState<LanguageScreen> {
             ),
             const SizedBox(height: 8),
             // TZ S32: katalog va AI matnlari serverda faqat o'zbek (lotin) tilida — tanlangan tilda ochiq aytiladi
-            if (_lang != AppLang.uz)
+            if (!_lang.isUzLatin)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Semantics(
@@ -99,6 +100,15 @@ class _LanguageState extends ConsumerState<LanguageScreen> {
                       ),
                     ]),
                   ),
+                ),
+              ),
+            if (_lang.isUzLatin)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: NoteBox(
+                  icon: Icons.abc_rounded,
+                  title: trIn(_lang, 'Yangi alifbo'),
+                  text: trIn(_lang, "Yangi lotin alifbosi (Ö, Ğ, Ş, Ç) 2027-yil 22-apreldan rasmiy kuchga kiradi. Unga qadar o'zingizga qulay yozuvni tanlang; tanlamaganlarga shu kundan yangi alifbo yoqiladi."),
                 ),
               ),
             Text(tr("Siz va boshqalar yozgan postlar, ismlar tarjima qilinmaydi."), style: TextStyle(fontSize: 13.5, color: c.muted)),

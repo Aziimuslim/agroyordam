@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 
 import '../config.dart';
 import '../storage/token_storage.dart';
+import '../i18n/i18n.dart';
+import '../i18n/translit.dart';
 
 /// JWT'ni avtomatik qo'shadi va 401 bo'lsa refresh token bilan bir marta yangilaydi.
 class ApiClient {
@@ -21,6 +23,13 @@ class ApiClient {
               options.headers['Authorization'] = 'Bearer $token';
             }
             handler.next(options);
+          },
+          onResponse: (res, handler) {
+            // "Lotin (amaldagi)": server matni yangi harflarda (ö, ğ, ş, ç) — ekranga amaldagi yozuvda
+            if (I18n.lang == AppLang.uzOld && res.requestOptions.responseType == ResponseType.json && res.data != null) {
+              res.data = oldLatinJson(res.data);
+            }
+            handler.next(res);
           },
           onError: (err, handler) async {
             final req = err.requestOptions;
@@ -68,3 +77,12 @@ class ApiClient {
     return c.future;
   }
 }
+
+/// JSON ichidagi barcha matnlarni amaldagi lotinga o'tkazadi (faqat ö, ğ, ş, ç harflari o'zgaradi — id, havola, email tegilmaydi).
+Object? oldLatinJson(Object? v) => switch (v) {
+      String s => toOldLatin(s),
+      List l => <dynamic>[for (final x in l) oldLatinJson(x)],
+      Map m => <String, dynamic>{for (final e in m.entries) '${e.key}': oldLatinJson(e.value)},
+      _ => v,
+    };
+

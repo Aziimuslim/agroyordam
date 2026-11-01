@@ -168,5 +168,37 @@ String toNewLatin(String s) {
   return out.toString();
 }
 
+/// Yangi harflardan amaldagi lotinga: ö → oʻ (o'), ğ → g', ş → sh, ç → ch. "Lotin (amaldagi)" tanlanganda server matni uchun.
+String toOldLatin(String s) {
+  if (s.isEmpty || !RegExp('[ÖöĞğŞşÇçÓóǴǵ]').hasMatch(s)) return s;
+  final b = StringBuffer();
+  for (var i = 0; i < s.length; i++) {
+    final c = s[i];
+    final nx = i + 1 < s.length ? s[i + 1] : '';
+    final nextUp = nx.isNotEmpty && nx.toUpperCase() == nx && nx.toLowerCase() != nx;
+    switch (c) {
+      case 'ö' || 'ó':
+        b.write("o'");
+      case 'Ö' || 'Ó':
+        b.write("O'");
+      case 'ğ' || 'ǵ':
+        b.write("g'");
+      case 'Ğ' || 'Ǵ':
+        b.write("G'");
+      case 'ş':
+        b.write('sh');
+      case 'Ş':
+        b.write(nextUp ? 'SH' : 'Sh');
+      case 'ç':
+        b.write('ch');
+      case 'Ç':
+        b.write(nextUp ? 'CH' : 'Ch');
+      default:
+        b.write(c);
+    }
+  }
+  return b.toString();
+}
+
 /// Qidiruv kaliti: kichik harf + yangi yozuv — "shira", "şira", "ШИРА"siz ham bir xil topiladi.
 String searchKey(String s) => toNewLatin(s.toLowerCase());

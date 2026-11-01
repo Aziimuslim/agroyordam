@@ -5,7 +5,8 @@ import 'translit.dart';
 
 /// Ilova tillari. Manba matnlar o'zbek lotinida yoziladi va kalit sifatida ishlatiladi.
 enum AppLang {
-  uz('uz', 'Özbekça (Lotin)', 'UZ'),
+  uz('uz', 'Özbekça (Lotin, yangi)', 'UZ'),
+  uzOld('uz-old', "O'zbekcha (Lotin, amaldagi)", 'UZ'),
   uzCyrl('uz-Cyrl', 'Ўзбекча (Кирилл)', 'ЎЗ'),
   ru('ru', 'Русский', 'RU'),
   en('en', 'English', 'EN'),
@@ -14,7 +15,16 @@ enum AppLang {
   const AppLang(this.code, this.label, this.short);
   final String code, label, short;
 
-  static AppLang fromCode(String? code) => values.firstWhere((l) => l.code == code, orElse: () => AppLang.uz);
+  /// Yangi alifbo qonuni (OʻRQ–1184) kuchga kiradigan kun: shu kungacha til tanlamaganlarga amaldagi lotin.
+  static final newAlphabetDate = DateTime(2027, 4, 22);
+
+  /// Tanlanmagan bo'lsa: 2027-yil 22-aprelgacha amaldagi lotin, keyin yangi lotin.
+  static AppLang get defaultLang => DateTime.now().isBefore(newAlphabetDate) ? AppLang.uzOld : AppLang.uz;
+
+  static AppLang fromCode(String? code) => code == null ? defaultLang : values.firstWhere((l) => l.code == code, orElse: () => defaultLang);
+
+  /// O'zbek lotin (yangi yoki amaldagi).
+  bool get isUzLatin => this == AppLang.uz || this == AppLang.uzOld;
 }
 
 class I18n {
@@ -37,6 +47,8 @@ String tr(String s) {
     case AppLang.uz:
       // Manba matnlar eski yozuvda (kalit sifatida); ekranga yangi harflar bilan chiqadi: ö, ğ, ş, ç
       return I18n._newCache.putIfAbsent(s, () => toNewLatin(s));
+    case AppLang.uzOld:
+      return s; // manba matnlar amaldagi yozuvda
     case AppLang.uzCyrl:
       return I18n._cyrCache.putIfAbsent(s, () => toCyrillic(s));
     default:
@@ -47,6 +59,7 @@ String tr(String s) {
 /// Matnni berilgan tilda qaytaradi (global tilni o'zgartirmasdan) — til tanlashda oldindan ko'rish uchun (TZ S32).
 String trIn(AppLang l, String s) => switch (l) {
       AppLang.uz => toNewLatin(s),
+      AppLang.uzOld => s,
       AppLang.uzCyrl => toCyrillic(s),
       AppLang.ru => stringsRu[s] ?? s,
       AppLang.en => stringsEn[s] ?? s,
@@ -68,6 +81,7 @@ String trData(String? s) {
   return switch (I18n.lang) {
     AppLang.uzCyrl => I18n._cyrCache.putIfAbsent(s, () => toCyrillic(s)),
     AppLang.uz => I18n._newCache.putIfAbsent(s, () => toNewLatin(s)),
+    AppLang.uzOld => toOldLatin(s),
     _ => s,
   };
 }
