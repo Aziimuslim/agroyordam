@@ -111,7 +111,7 @@ class _Header extends ConsumerWidget {
     final firstName = (user?.fullName ?? '').trim().split(RegExp(r'\s+')).first;
     final topPad = MediaQuery.paddingOf(context).top;
     final desktop = Breakpoints.isDesktop(context);
-    final landscapeH = desktop ? 190.0 : 150.0;
+    final landscapeH = desktop ? 250.0 : 190.0;
 
     return SizedBox(
       // matn qismi + ko'rinadigan manzara
@@ -119,21 +119,8 @@ class _Header extends ConsumerWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Manzara matn ostidan boshlanadi; undan yuqorisi fon rangida — kontrast animatsiyaga bog'liq emas
+          // Manzara butun header bo'ylab: matn ostida yengil tuman, pastda sahifa rangiga silliq o'tadi
           LandscapeBackdrop(weather: weather.value, skyTop: topPad + 150, topColor: c.cream),
-          // Pastki egilgan qirra — kontent "varag'i" manzara ustiga chiqadi
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: -1,
-            height: 25,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: c.cream,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-            ),
-          ),
           Padding(
             padding: EdgeInsets.only(top: topPad),
             child: constrained(
@@ -210,14 +197,16 @@ class _Header extends ConsumerWidget {
                         );
                         final chip = _WeatherChip(value: weather, onRetry: () => ref.invalidate(weatherProvider));
                         final stacked = MediaQuery.textScalerOf(context).scale(10) > 11.5 && MediaQuery.sizeOf(context).width < 600;
+                        // Salomlashuv manzara ustida yumshoq paydo bo'ladi (pastdan yuqoriga, ~0,8 s)
+                        final shown = _Entrance(child: greet);
                         return stacked
-                            ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [greet, const SizedBox(height: 10), chip])
+                            ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [shown, const SizedBox(height: 10), _Entrance(delay: 0.25, child: chip)])
                             : Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Expanded(child: greet),
+                                  Expanded(child: shown),
                                   const SizedBox(width: 12),
-                                  chip,
+                                  _Entrance(delay: 0.25, child: chip),
                                 ],
                               );
                       },
@@ -229,6 +218,24 @@ class _Header extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Bir marta paydo bo'lish: shaffoflik + pastdan siljish. "Harakatni kamaytirish" yoqilsa — darhol.
+class _Entrance extends StatelessWidget {
+  const _Entrance({required this.child, this.delay = 0});
+  final Widget child;
+  final double delay;
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) return child;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 800 + (delay * 1000).round()),
+      curve: Interval(delay / (0.8 + delay), 1, curve: Curves.easeOutCubic),
+      child: child,
+      builder: (context, k, child) => Opacity(opacity: k, child: Transform.translate(offset: Offset(0, 14 * (1 - k)), child: child)),
     );
   }
 }

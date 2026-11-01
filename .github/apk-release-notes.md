@@ -5,6 +5,14 @@ Web ilova: https://agroyordam.duckdns.org
 O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
 Ilova https://agroyordam.duckdns.org serveriga o'zi ulanadi. Eski versiya o'rnatilgan bo'lsa, ustidan yangilanadi.
 
+## 0.8.30 — jonli 3D bog' manzarasi
+- Bosh sahifa manzarasi chuqurlikka ega: uzoqdagi tog', o'rtadagi daraxtlar va yaqin olmali shoxlar har xil tezlikda suriladi.
+- Shamol daraxtlar bo'ylab to'lqin bo'lib o'tadi, yaqin barglar kuchliroq tebranadi.
+- Qushlar daraxtlar orasidan — oldingi shoxlar ortidan uchadi, ba'zan bittasi yaqindan o'tadi.
+- Surat sifati 2 baravar oshirildi; kompyuterda chetlari ko'zgudek takrorlanmaydi.
+- Pastdagi oq chiziq olib tashlandi — manzara sahifaga silliq o'tadi.
+- "Salom" matni manzara ustida yumshoq paydo bo'ladi.
+
 ## 0.8.29 — "Lotin (yangi)" va "Lotin (amaldagi)" tanlovi
 - Profil → Ilova tili: "Özbekça (Lotin, yangi)" yoki "O'zbekcha (Lotin, amaldagi)".
 - Amaldagi tanlansa, menyular ham, katalog, postlar, ismlar va AI javoblari ham eski yozuvda (o', g', sh, ch) ko'rinadi.
