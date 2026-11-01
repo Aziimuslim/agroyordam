@@ -313,7 +313,7 @@ button.thumb{padding:0;cursor:zoom-in}
 /* ---------- Kirish sahifasi ---------- */
 .login{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(420px,1fr)}
 .login-hero{position:relative;overflow:hidden;background:var(--sidebar);color:#fff;padding:48px 56px;display:flex;flex-direction:column}
-.login-hero::before{content:"";position:absolute;inset:0;background:url(/assets/assets/images/orchard.jpg) center 70%/cover no-repeat;opacity:.9}
+.login-hero::before{content:"";position:absolute;inset:0;background:url(/assets/assets/images/orchard_hd.jpg) center 70%/cover no-repeat;opacity:.9}
 .login-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(9,40,26,.96) 0%,rgba(13,52,34,.86) 45%,rgba(13,52,34,.35) 100%),linear-gradient(0deg,rgba(9,40,26,.6),transparent 40%)}
 .login-hero>*{position:relative;z-index:1}
 .login-hero .brand{padding:0}
