@@ -5,14 +5,18 @@ Web ilova: https://agroyordam.duckdns.org
 O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
 Ilova https://agroyordam.duckdns.org serveriga o'zi ulanadi. Eski versiya o'rnatilgan bo'lsa, ustidan yangilanadi.
 
+## 0.8.28 — rasmiy yangi alifbo harflari
+- Harflar 2026-yil 21-oktyabrdagi qonunga moslandi: Ö, Ğ, Ş, Ç (avval xato ravishda ó, ǵ ishlatilgan edi).
+- Bazadagi barcha matnlar (katalog, postlar, izohlar, ismlar, bildirishnomalar) avtomatik tuzatildi.
+
 ## 0.8.27 — postlar va ismlar ham yangi harflarda
-- Jamoatdagi postlar, izohlar va foydalanuvchi ismlari yangi lotin harflarida (ó, ǵ, ş, ç).
+- Jamoatdagi postlar, izohlar va foydalanuvchi ismlari yangi lotin harflarida (ö, ğ, ş, ç).
 - Yangi yozilgan post, izoh va ism saqlanayotganda avtomatik o'tkaziladi.
 - Odam qidirishda eski yozuvda yozsangiz ham topiladi ("Shohruh" → "Şohruh").
 - Login (foydalanuvchi nomi, email, telefon) va shaxsiy xabarlar o'zgarmaydi.
 
 ## 0.8.26 — yangi o'zbek lotin harflari
-- O'zbekcha matnlar yangi harflar bilan: oʻ → ó, gʻ → ǵ, sh → ş, ch → ç (Ózbekça, şaftoli, uçun).
+- O'zbekcha matnlar yangi harflar bilan: oʻ → ö, gʻ → ğ, sh → ş, ch → ç (Özbekça, şaftoli, uçun).
 - Ilova menyulari, katalog (ekin, kasallik, dori), parvarish rejasi, bildirishnomalar, AI Yordamchi javoblari va admin panel.
 - Qidiruv eski yozuvda ham ishlaydi: "shira" yozsangiz "şira" topiladi.
 - Kirill va boshqa tillar o'z holicha.

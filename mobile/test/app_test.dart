@@ -41,7 +41,7 @@ void main() {
       expect(greeting(DateTime(2026, 1, 1, 13)), 'Xayrli kun!');
       expect(greeting(DateTime(2026, 1, 1, 21)), 'Xayrli keç!');
     });
-    test('money', () => expect(formatMoney(25000), '25 000 sóm'));
+    test('money', () => expect(formatMoney(25000), '25 000 söm'));
     test('backend UTC vaqti', () => expect(parseDate('2026-09-22T10:00:00')!.isUtc, isTrue));
   });
 
@@ -71,7 +71,7 @@ void main() {
   testWidgets('tizimga kirmagan foydalanuvchi Welcome ekranini ko\'radi', (tester) async {
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
-    expect(find.text('Ekinlaringiz soǵliǵi — çóntagingizda'), findsOneWidget);
+    expect(find.text('Ekinlaringiz soğliği — çöntagingizda'), findsOneWidget);
     expect(find.text('Email bilan davom etiş'), findsOneWidget);
   });
 
@@ -204,7 +204,7 @@ void main() {
         {'label': 'Grape_Black_rot', 'confidence': 30, 'disease_id': 'x', 'disease_name': 'Uzum qora chirishi'},
       ],
     });
-    expect(i.title, 'Soǵlom');
+    expect(i.title, 'Soğlom');
     expect(i.lowConfidence, isTrue);
     expect(i.alternatives.length, 2);
     expect(i.alternatives.first.healthy, isTrue);

@@ -5,7 +5,7 @@ import 'translit.dart';
 
 /// Ilova tillari. Manba matnlar o'zbek lotinida yoziladi va kalit sifatida ishlatiladi.
 enum AppLang {
-  uz('uz', 'Ózbekça (Lotin)', 'UZ'),
+  uz('uz', 'Özbekça (Lotin)', 'UZ'),
   uzCyrl('uz-Cyrl', 'Ўзбекча (Кирилл)', 'ЎЗ'),
   ru('ru', 'Русский', 'RU'),
   en('en', 'English', 'EN'),
@@ -35,7 +35,7 @@ class I18n {
 String tr(String s) {
   switch (I18n.lang) {
     case AppLang.uz:
-      // Manba matnlar eski yozuvda (kalit sifatida); ekranga yangi harflar bilan chiqadi: ó, ǵ, ş, ç
+      // Manba matnlar eski yozuvda (kalit sifatida); ekranga yangi harflar bilan chiqadi: ö, ğ, ş, ç
       return I18n._newCache.putIfAbsent(s, () => toNewLatin(s));
     case AppLang.uzCyrl:
       return I18n._cyrCache.putIfAbsent(s, () => toCyrillic(s));

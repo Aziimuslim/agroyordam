@@ -150,9 +150,9 @@ async def test_posts_comments_names_new_alphabet(client, user_headers):
     """Post, izoh va ism yangi lotin harflarida saqlanadi; login o'zgarmaydi."""
     p = (await client.post(f"{API}/posts", json={"title": "Shaftoli bog'ida shira", "content": "Ko'chatlar uchun nima qilish kerak? https://t.me/shop",
                                                 "category": "question"}, headers=user_headers)).json()
-    assert p["title"] == "Şaftoli boǵida şira"
-    assert p["content"] == "Kóçatlar uçun nima qiliş kerak? https://t.me/shop"
+    assert p["title"] == "Şaftoli boğida şira"
+    assert p["content"] == "Köçatlar uçun nima qiliş kerak? https://t.me/shop"
     c = (await client.post(f"{API}/posts/{p['id']}/comments", json={"content": "Choy qoldig'i bilan sug'oring"}, headers=user_headers)).json()
-    assert c["content"] == "Çoy qoldiǵi bilan suǵoring"
+    assert c["content"] == "Çoy qoldiği bilan suğoring"
     me = (await client.put(f"{API}/users/me", json={"full_name": "Shohruh Cho'liyev"}, headers=user_headers)).json()
-    assert me["full_name"] == "Şohruh Çóliyev"
+    assert me["full_name"] == "Şohruh Çöliyev"

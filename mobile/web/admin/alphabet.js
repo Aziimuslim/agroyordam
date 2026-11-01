@@ -1,4 +1,4 @@
-/* Admin paneldagi o'zbekcha matnni yangi lotin harflarida ko'rsatish: oʻ → ó, gʻ → ǵ, sh → ş, ch → ç.
+/* Admin paneldagi o'zbekcha matnni yangi lotin harflarida ko'rsatish: oʻ → ö, gʻ → ğ, sh → ş, ch → ç.
  * Faqat ko'rinadigan matn va placeholder/title/aria-label o'zgaradi; input qiymati, havola, kod, CSS klasslari va
  * API'ga yuboriladigan ma'lumot o'zgarmaydi. Qoidalar backend/app/core/alphabet.py va mobile translit.dart bilan bir xil. */
 'use strict';
@@ -9,7 +9,7 @@
     'csv', 'json', 'html', 'cpu', 'ssh']);
   const APOS = "'ʻʼ‘’`";
   const SKIP = /(https?:\/\/\S+|www\.\S+|[\w.+-]+@[\w-]+\.[\w.]+|\{\d+\}|@\w+)/;
-  const WORD = /[A-Za-zÓóǴǵŞşÇç'ʻʼ‘’`-]+/g;
+  const WORD = /[A-Za-zÖöĞğŞşÇç'ʻʼ‘’`-]+/g;
   const SCI = /(ph|th|rh|aceae|ae$)/i;
   const HAS_APOS = /['ʻʼ‘’`]/;
 
@@ -22,14 +22,16 @@
     let out = '';
     for (let i = 0; i < w.length; i++) {
       const c = w[i], nx = w[i + 1] || '', lc = c.toLowerCase(), isUp = c !== lc;
-      if ((lc === 'o' || lc === 'g') && nx && APOS.includes(nx)) { out += lc === 'o' ? (isUp ? 'Ó' : 'ó') : (isUp ? 'Ǵ' : 'ǵ'); i++; continue; }
+      if ((lc === 'o' || lc === 'g') && nx && APOS.includes(nx)) { out += lc === 'o' ? (isUp ? 'Ö' : 'ö') : (isUp ? 'Ğ' : 'ğ'); i++; continue; }
       if ((lc === 's' || lc === 'c') && nx.toLowerCase() === 'h') { out += lc === 's' ? (isUp ? 'Ş' : 'ş') : (isUp ? 'Ç' : 'ç'); i++; continue; }
       out += c;
     }
     return up ? out.toUpperCase() : out;
   }
   function toNewLatin(s) {
-    if (!s || !/[A-Za-z]/.test(s)) return s;
+    if (!s) return s;
+    s = s.replace(/ó/g, 'ö').replace(/Ó/g, 'Ö').replace(/ǵ/g, 'ğ').replace(/Ǵ/g, 'Ğ'); // eski xato harflar
+    if (!/[A-Za-z]/.test(s)) return s;
     return s.split(SKIP).map((part, k) => (k % 2 ? part : part.replace(WORD, word))).join('');
   }
   window.toNewLatin = toNewLatin;

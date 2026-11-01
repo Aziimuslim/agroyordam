@@ -12,13 +12,13 @@ const _single = {
 
 const _vowels = 'aeiouAEIOU';
 final _apos = RegExp("['ʻʼ‘’`]");
-final _token = RegExp(r"\{\d+\}|[A-Za-zÓóǴǵŞşÇç'ʻʼ‘’`\-]+|[^A-Za-zÓóǴǵŞşÇç'ʻʼ‘’`{]+|\{");
+final _token = RegExp(r"\{\d+\}|[A-Za-zÖöĞğŞşÇçÓóǴǵ'ʻʼ‘’`\-]+|[^A-Za-zÖöĞğŞşÇçÓóǴǵ'ʻʼ‘’`{]+|\{");
 
 String toCyrillic(String s) {
   final out = StringBuffer();
   for (final m in _token.allMatches(s)) {
     final w = m.group(0)!;
-    if (!RegExp('[A-Za-zÓóǴǵŞşÇç]').hasMatch(w) || w.startsWith('{') || _keep.contains(w) || _keep.contains(w.replaceAll(RegExp(r"[.,!?:;]+$"), ''))) {
+    if (!RegExp('[A-Za-zÖöĞğŞşÇç]').hasMatch(w) || w.startsWith('{') || _keep.contains(w) || _keep.contains(w.replaceAll(RegExp(r"[.,!?:;]+$"), ''))) {
       out.write(w);
     } else {
       out.write(_word(w));
@@ -47,8 +47,8 @@ String _word(String w) {
     final next = i + 1 < n ? w[i + 1] : '';
     final nl = next.toLowerCase();
     final prev = i > 0 ? w[i - 1] : '';
-    // Yangi harflar: ó ǵ ş ç
-    const nw = {'ó': 'ў', 'ǵ': 'ғ', 'ş': 'ш', 'ç': 'ч'};
+    // Yangi harflar: ö ğ ş ç
+    const nw = {'ö': 'ў', 'ğ': 'ғ', 'ş': 'ш', 'ç': 'ч', 'ó': 'ў', 'ǵ': 'ғ'};
     if (nw.containsKey(lc)) {
       b.write(cased(nw[lc]!, c));
       i += 1;
@@ -110,7 +110,7 @@ String _word(String w) {
 }
 
 // ---------------------------------------------------------------------------
-// Yangi o'zbek lotin harflari: oʻ → ó, gʻ → ǵ, sh → ş, ch → ç (backend/app/core/alphabet.py bilan bir xil).
+// Yangi o'zbek lotin harflari: oʻ → ö, gʻ → ğ, sh → ş, ch → ç (backend/app/core/alphabet.py bilan bir xil).
 
 const _keepNew = {
   'agroyordam', 'payme', 'click', 'telegram', 'whatsapp', 'google', 'chrome', 'android', 'iphone', 'push', 'fastapi',
@@ -118,7 +118,7 @@ const _keepNew = {
   'squash', 'trichoderma', 'cichoracearum', 'chrysanthemi', 'sclerotiorum', 'fusarium', 'erysiphe', 'pseudomonas', 'xanthomonas',
 };
 final _skipNew = RegExp(r"(https?://\S+|www\.\S+|[\w.+-]+@[\w-]+\.[\w.]+|\{\d+\}|@\w+)");
-final _wordNew = RegExp(r"[A-Za-zÓóǴǵŞşÇç'ʻʼ‘’`\-]+");
+final _wordNew = RegExp(r"[A-Za-zÖöĞğŞşÇç'ʻʼ‘’`\-]+");
 final _sciNew = RegExp(r'(ph|th|rh|aceae|ae$)', caseSensitive: false);
 final _hasApos = RegExp("['ʻʼ‘’`]");
 
@@ -136,7 +136,7 @@ String _newWord(String w) {
     final lc = c.toLowerCase();
     final isUp = c != lc;
     if ((lc == 'o' || lc == 'g') && nx.isNotEmpty && _isApos(nx)) {
-      out.write(lc == 'o' ? (isUp ? 'Ó' : 'ó') : (isUp ? 'Ǵ' : 'ǵ'));
+      out.write(lc == 'o' ? (isUp ? 'Ö' : 'ö') : (isUp ? 'Ğ' : 'ğ'));
       i += 2;
       continue;
     }
@@ -155,6 +155,8 @@ String _newWord(String w) {
 /// O'zbekcha matnni yangi lotin harflariga o'tkazadi. Havola, email, {0}, brend va lotincha ilmiy nomlar o'zgarmaydi.
 String toNewLatin(String s) {
   if (s.isEmpty) return s;
+  // 0.8.26–0.8.27 dagi ó/ǵ → rasmiy ö/ğ
+  s = s.replaceAll('ó', 'ö').replaceAll('Ó', 'Ö').replaceAll('ǵ', 'ğ').replaceAll('Ǵ', 'Ğ');
   final out = StringBuffer();
   var last = 0;
   for (final m in _skipNew.allMatches(s)) {

@@ -66,12 +66,12 @@ for _lbl in MODEL_LABELS + ["Cucumber_Powdery_mildew", "Cucumber_Root_rot", "Cuc
 ALL_LABELS = [lbl for labels in PLANT_LABELS.values() for lbl in labels]
 
 
-_OLD = str.maketrans({"ó": "o'", "Ó": "O'", "ǵ": "g'", "Ǵ": "G'", "ş": "sh", "Ş": "Sh", "ç": "ch", "Ç": "Ch",
+_OLD = str.maketrans({"ó": "o'", "Ó": "O'", "ǵ": "g'", "Ǵ": "G'", "ö": "o'", "Ö": "O'", "ğ": "g'", "Ğ": "G'", "ş": "sh", "Ş": "Sh", "ç": "ch", "Ç": "Ch",
                       "ʻ": "'", "‘": "'", "’": "'", "ʼ": "'", "`": "'"})
 
 
 def normalize_plant(name: str | None) -> str | None:
-    """Ekin nomi yangi lotin harflarida (Şaftoli, Makkajóxori) kelsa ham ichki nomga keltiriladi."""
+    """Ekin nomi yangi lotin harflarida (Şaftoli, Makkajöxori) kelsa ham ichki nomga keltiriladi."""
     return name.translate(_OLD) if name else name
 
 
