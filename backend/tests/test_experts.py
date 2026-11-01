@@ -1,6 +1,7 @@
 """Agronom roli: ariza → admin tasdig'i, tekshirish navbati, savollar, jamoat va bilimlar bazasi huquqlari."""
 from sqlalchemy import select
 
+from app.core.alphabet import to_new_latin
 from app.core.database import SessionLocal
 from app.models import Medicine, User
 from app.services.ai_client import Prediction
@@ -87,7 +88,7 @@ async def test_review_queue_correct_and_notify(client, user_headers, admin_heade
     assert d["ai_label"] == "Tomato_Late_blight"  # asl AI javobi saqlanadi
     assert d["expert_comment"].startswith("Bu alternarioz") and not d["low_confidence"]
     notes = (await client.get(f"{API}/notifications", headers=user_headers)).json()
-    assert any(n["type"] == "diagnosis_reviewed" and n["title"] == "Agronom tashxisni tuzatdi" for n in notes)
+    assert any(n["type"] == "diagnosis_reviewed" and n["title"] == to_new_latin("Agronom tashxisni tuzatdi") for n in notes)
 
     # Tasdiqlangan rasm datasetga tushadi
     stats = (await client.get(f"{API}/admin/dataset/stats", headers=admin_headers)).json()
@@ -276,7 +277,7 @@ async def test_claim_conflict_retake_and_conclusion_rules(client, user_headers, 
     dd = (await client.get(f"{API}/diagnoses/{d['id']}", headers=user_headers)).json()
     assert dd["review_status"] == "rejected" and dd["retake_reason"] == "blurry" and dd["expert_source"] is None
     notes = (await client.get(f"{API}/notifications", headers=user_headers)).json()
-    assert any(n["title"] == "Agronom: rasmni qayta oling" and n["body"].startswith("Rasm xira chiqqan") for n in notes)
+    assert any(n["title"] == to_new_latin("Agronom: rasmni qayta oling") and n["body"].startswith(to_new_latin("Rasm xira chiqqan")) for n in notes)
     s = (await client.get(f"{API}/experts/stats/me", headers=a)).json()
     assert s["reviewed_7d"] == 1 and s["today_new"] == 0
 

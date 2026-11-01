@@ -5,13 +5,29 @@ from sqlalchemy import delete, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.alphabet import search_variants
 from app.core.database import get_db
 from app.core.deps import require_admin, require_expert
 from app.models import CatalogChange, Disease, DiseaseMedicine, Medicine, Plant, User
-from app.repositories.catalog_repo import DiseaseRepository, MedicineRepository, PlantRepository
+from app.repositories.catalog_repo import (
+    DiseaseRepository,
+    MedicineRepository,
+    PlantRepository,
+)
 from app.schemas.catalog import (
-    DiseaseDetail, DiseaseIn, DiseaseUse, DiseaseMedicinesIn, DiseaseOut, DiseaseUpdate, MedicineIn, MedicineOut, MedicineUpdate,
-    MedicineRecommendation, PlantIn, PlantOut, PlantUpdate,
+    DiseaseDetail,
+    DiseaseIn,
+    DiseaseMedicinesIn,
+    DiseaseOut,
+    DiseaseUpdate,
+    DiseaseUse,
+    MedicineIn,
+    MedicineOut,
+    MedicineRecommendation,
+    MedicineUpdate,
+    PlantIn,
+    PlantOut,
+    PlantUpdate,
 )
 
 router = APIRouter(tags=["Katalog"])
@@ -48,7 +64,7 @@ def _404(what: str):
 # ---------- Plants ----------
 @router.get("/plants", response_model=list[PlantOut])
 async def list_plants(q: str | None = None, db: AsyncSession = Depends(get_db)):
-    where = [Plant.name.ilike(f"%{q}%")] if q else []
+    where = [or_(*[Plant.name.ilike(f"%{v}%") for v in search_variants(q)])] if q else []
     return await PlantRepository(db).list(*where, order_by=Plant.name, limit=500)
 
 
@@ -118,7 +134,7 @@ async def delete_plant(plant_id: uuid.UUID, user: User = Depends(require_admin),
 async def list_diseases(q: str | None = None, risk_level: str | None = None, db: AsyncSession = Depends(get_db)):
     where = []
     if q:
-        where.append(or_(Disease.name.ilike(f"%{q}%"), Disease.symptoms.ilike(f"%{q}%")))
+        where.append(or_(*[c.ilike(f"%{v}%") for v in search_variants(q) for c in (Disease.name, Disease.symptoms)]))
     if risk_level:
         where.append(Disease.risk_level == risk_level)
     items = await DiseaseRepository(db).list(*where, order_by=Disease.name, limit=500)
@@ -201,7 +217,7 @@ async def set_disease_medicines(disease_id: uuid.UUID, body: DiseaseMedicinesIn,
 # ---------- Medicines ----------
 @router.get("/medicines", response_model=list[MedicineOut])
 async def list_medicines(q: str | None = Query(default=None), db: AsyncSession = Depends(get_db)):
-    where = [Medicine.name.ilike(f"%{q}%")] if q else []
+    where = [or_(*[Medicine.name.ilike(f"%{v}%") for v in search_variants(q)])] if q else []
     return await MedicineRepository(db).list(*where, order_by=Medicine.name, limit=500)
 
 

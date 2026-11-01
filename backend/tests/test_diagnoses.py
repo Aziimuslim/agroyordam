@@ -58,9 +58,9 @@ async def test_care_plan_adds_diagnosis_to_garden(client, user_headers, fake_ai)
     plan = (await client.get(f"/api/v1/diagnoses/{d['id']}/care-plan", headers=user_headers)).json()
     assert plan["disease_name"].startswith("Fitoftoroz") and plan["duration_days"] == 21  # high risk
     titles = [t["title"] for t in plan["tasks"]]
-    sprays = [t for t in plan["tasks"] if "ishlov berish" in t["title"]]
+    sprays = [t for t in plan["tasks"] if "işlov beriş" in t["title"]]
     assert [t["day"] for t in sprays] == [0, 7, 14]  # "3 marta 7 kun oralig'ida"
-    assert sum(t == "Kunlik ko'rik" for t in titles) == 20
+    assert sum(t == "Kunlik kórik" for t in titles) == 20
     assert plan["tasks"][-1]["reminder_type"] == "recheck" and plan["tasks"][-1]["day"] == 21
     assert [t["day"] for t in plan["tasks"]] == sorted(t["day"] for t in plan["tasks"])
 
@@ -121,7 +121,7 @@ async def test_ai_chat(client, user_headers):
     assert r.status_code == 200
     assert "fitoftoroz" in r.json()["reply"]["content"].lower()
     r = await client.post("/api/v1/ai/chat", json={"message": "Qachon sug'orish kerak?"}, headers=user_headers)
-    assert "sug'or" in r.json()["reply"]["content"].lower()
+    assert "suǵor" in r.json()["reply"]["content"].lower()
     r = await client.post("/api/v1/ai/chat", json={"message": "Bordo suyuqligi haqida"}, headers=user_headers)
     assert "Bordo" in r.json()["reply"]["content"]
     r = await client.post("/api/v1/ai/chat", json={"message": "salom"}, headers=user_headers)

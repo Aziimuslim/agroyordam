@@ -9,6 +9,7 @@ from collections.abc import AsyncIterator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.alphabet import to_new_latin
 from app.models import Disease, Medicine, Plant
 from app.repositories.catalog_repo import DiseaseRepository
 
@@ -21,10 +22,15 @@ GENERAL_TIPS = {
 
 
 def _words(text: str) -> list[str]:
-    return [w for w in re.findall(r"[a-zA-Z'ʻʼ‘’]+", text.lower()) if len(w) > 3]
+    return [w for w in re.findall(r"[a-zA-ZóǵşçÓǴŞÇ'ʻʼ‘’]+", text.lower()) if len(w) > 3]
 
 
 async def answer(db: AsyncSession, question: str) -> str:
+    """Javob yangi lotin harflarida (ó, ǵ, ş, ç); savol eski yozuvda bo'lsa ham topiladi."""
+    return to_new_latin(await _answer(db, to_new_latin(question) or question)) or ""
+
+
+async def _answer(db: AsyncSession, question: str) -> str:
     q = question.lower()
     words = _words(question)
 
@@ -57,7 +63,7 @@ async def answer(db: AsyncSession, question: str) -> str:
             return f"{m.name}: {m.description or ''}\n\nQo'llash: {m.usage or '—'}\n\nEhtiyot choralari: {m.precautions or '—'}"
 
     for keys, tip in GENERAL_TIPS.items():
-        if any(k in q for k in keys):
+        if any(to_new_latin(k) in q for k in keys):
             return tip
 
     return ("Savolingizni aniqroq yozing: qaysi ekin, qanday belgilar (dog'lar rangi, barg sarg'ayishi, so'lish) "

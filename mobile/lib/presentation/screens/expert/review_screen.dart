@@ -7,6 +7,7 @@ import '../../../application/providers.dart';
 import '../../../core/catalog_images.dart';
 import '../../../core/config.dart';
 import '../../../core/i18n/i18n.dart';
+import '../../../core/i18n/translit.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
@@ -282,7 +283,7 @@ class _ReviewState extends ConsumerState<ReviewScreen> {
                     Padding(
                       padding: const EdgeInsets.all(8),
                       child: Text(
-                        i.plantName != null && CatalogImages.plantPrefix[i.plantName] == null
+                        i.plantName != null && CatalogImages.prefixOf(i.plantName) == null
                             ? tr("Qo'llab-quvvatlanmaydi: AI bu ekinni tanimaydi. «Boshqa kasallik» orqali tanlang.")
                             : tr("AI taxmini mavjud emas. «Boshqa kasallik» orqali tanlang."),
                         style: TextStyle(color: c.muted, height: 1.4),
@@ -1049,7 +1050,7 @@ class _OtherDiseaseSheetState extends ConsumerState<_OtherDiseaseSheet> {
     final c = context.c;
     final all = ref.watch(diseasesProvider);
     final plantName = _allPlants ? null : widget.plantName;
-    final prefix = CatalogImages.plantPrefix[widget.plantName];
+    final prefix = CatalogImages.prefixOf(widget.plantName);
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.85,
@@ -1062,7 +1063,7 @@ class _OtherDiseaseSheetState extends ConsumerState<_OtherDiseaseSheet> {
               list
                   .where(
                     (d) =>
-                        d.aiLabel != null && (plantName == null || d.plantName == plantName) && (_q.isEmpty || d.name.toLowerCase().contains(_q.toLowerCase())),
+                        d.aiLabel != null && (plantName == null || d.plantName == plantName) && (_q.isEmpty || searchKey(d.name).contains(searchKey(_q))),
                   )
                   .toList()
                 ..sort((a, b) => a.name.compareTo(b.name));

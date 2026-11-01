@@ -6,6 +6,7 @@ import '../../../application/providers.dart';
 import '../../../core/catalog_images.dart';
 import '../../../core/config.dart';
 import '../../../core/i18n/i18n.dart';
+import '../../../core/i18n/translit.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/blocks.dart';
 import '../../../core/widgets/widgets.dart';
@@ -51,7 +52,7 @@ class _SavedState extends ConsumerState<SavedScreen> {
       final shown = all
           .where((b) => !_removing.contains(b.key))
           .where((b) => _tab == 'all' || b.kind == _tab)
-          .where((b) => q.isEmpty || '${b.title ?? ''} ${b.subtitle ?? ''}'.toLowerCase().contains(q))
+          .where((b) => q.isEmpty || searchKey('${b.title ?? ''} ${b.subtitle ?? ''}').contains(searchKey(q)))
           .toList();
       if (all.isEmpty) {
         body = Column(children: [

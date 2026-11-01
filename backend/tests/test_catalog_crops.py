@@ -1,3 +1,6 @@
+from app.core.alphabet import to_new_latin
+
+
 async def test_public_catalog(client):
     plants = (await client.get("/api/v1/plants")).json()
     assert len(plants) >= 6
@@ -78,8 +81,8 @@ async def test_catalog_relations(client, user_headers):
     meds = (await client.get("/api/v1/medicines?q=Mis oksixlorid", headers=user_headers)).json()
     uses = (await client.get(f"/api/v1/medicines/{meds[0]['id']}/diseases", headers=user_headers)).json()
     names = {u["name"] for u in uses}
-    assert "Fitoftoroz (kech kuyish)" in names
-    late = next(u for u in uses if u["name"] == "Fitoftoroz (kech kuyish)")
+    assert to_new_latin("Fitoftoroz (kech kuyish)") in names
+    late = next(u for u in uses if u["name"] == to_new_latin("Fitoftoroz (kech kuyish)"))
     assert "40 g" in late["recommendation"] and late["plant_name"] == "Pomidor"
 
     plants = (await client.get("/api/v1/plants?q=Pomidor", headers=user_headers)).json()

@@ -16,7 +16,7 @@ from PIL import Image, ImageOps
 
 from app.inference.preprocess import to_tensor
 from app.inference.validation import vegetation_masks
-from app.models.labels import MODEL_LABELS, PLANT_LABELS, PLANT_PREFIX, plant_of
+from app.models.labels import MODEL_LABELS, PLANT_LABELS, PLANT_PREFIX, normalize_plant, plant_of
 
 log = logging.getLogger(__name__)
 
@@ -41,7 +41,8 @@ class StubClassifier:
     def predict_top(self, img: Image.Image, raw: bytes, plant_hint: str | None = None, k: int = 3) -> tuple[str | None, str, float, Top]:
         digest = hashlib.sha256(raw).digest()
         plants = list(PLANT_LABELS)
-        plant = plant_hint if plant_hint in PLANT_LABELS else plants[digest[0] % len(plants)]
+        hint = normalize_plant(plant_hint)
+        plant = hint if hint in PLANT_LABELS else plants[digest[0] % len(plants)]
         labels = PLANT_LABELS[plant]
         healthy = next((lbl for lbl in labels if lbl.endswith("healthy")), None)
         diseases = [lbl for lbl in labels if not lbl.endswith("healthy")] or labels
@@ -91,7 +92,7 @@ class OnnxClassifier:
 
     def predict_top(self, img: Image.Image, raw: bytes, plant_hint: str | None = None, k: int = 3) -> tuple[str | None, str, float, Top]:
         probs = self.probabilities_tta(img)
-        prefix = PLANT_PREFIX.get(plant_hint or "")
+        prefix = PLANT_PREFIX.get(normalize_plant(plant_hint) or "")
         mask = np.array([lbl.startswith(prefix + "_") for lbl in self.labels]) if prefix else None
         if mask is not None and mask.any():
             probs = np.where(mask, probs, 0)

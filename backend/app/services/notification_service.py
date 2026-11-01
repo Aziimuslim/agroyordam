@@ -4,6 +4,7 @@ import uuid
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.alphabet import to_new_latin
 from app.core.config import settings
 from app.models import Notification, User
 from app.websocket.manager import notifications_hub
@@ -40,7 +41,8 @@ async def notify(
         user = await db.get(User, user_id)
         if user is not None and not prefs_of(user).get(cat, True):
             return None  # foydalanuvchi bu turdagi bildirishnomani o'chirgan
-    n = Notification(user_id=user_id, type=type_, title=title, body=body, reference_id=reference_id)
+    # Tizim xabari yangi lotin harflarida (ó, ǵ, ş, ç)
+    n = Notification(user_id=user_id, type=type_, title=to_new_latin(title), body=to_new_latin(body), reference_id=reference_id)
     db.add(n)
     await db.flush()
     await notifications_hub.send(

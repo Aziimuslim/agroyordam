@@ -1,3 +1,5 @@
+import 'i18n/translit.dart';
+
 /// Katalog rasmlari ilova ichida (assets/catalog, internetsiz ham ochiladi).
 /// Manba — PlantVillage dataseti: AI modeli aynan shu rasmlarda o'qitilgan. Fayl nomi = kasallik sinfi (ai_label).
 class CatalogImages {
@@ -18,12 +20,17 @@ class CatalogImages {
     'Bodring': 'Cucumber',
   };
 
+  static final _prefixNorm = {for (final e in plantPrefix.entries) searchKey(e.key): e.value};
+
+  /// Ekin nomi (eski yoki yangi yozuvda) → sinf prefiksi yoki null.
+  static String? prefixOf(String? plantName) => plantName == null ? null : _prefixNorm[searchKey(plantName)];
+
   /// Kasallik rasmi (asset yo'li) yoki null.
   static String? disease(String? aiLabel) => aiLabel != null && _labels.contains(aiLabel) ? 'assets/catalog/$aiLabel.jpg' : null;
 
   /// Ekinning sog'lom barg rasmi yoki null.
   static String? plant(String? plantName) {
-    final p = plantPrefix[plantName];
+    final p = prefixOf(plantName);
     return p == null ? null : disease('${p}_healthy');
   }
 }

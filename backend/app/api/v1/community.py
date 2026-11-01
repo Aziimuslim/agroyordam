@@ -4,10 +4,18 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.alphabet import search_variants
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models import Comment, Follower, Like, Post, User
-from app.schemas.community import CommentIn, CommentOut, CommentUpdate, PostIn, PostOut, PostUpdate
+from app.schemas.community import (
+    CommentIn,
+    CommentOut,
+    CommentUpdate,
+    PostIn,
+    PostOut,
+    PostUpdate,
+)
 from app.services import block_service
 from app.services.block_service import hidden_ids
 from app.services.community_service import comment_out, post_out, remove_comment
@@ -37,7 +45,7 @@ async def list_posts(
     if user_id:
         stmt = stmt.where(Post.user_id == user_id)
     if q:
-        stmt = stmt.where(or_(Post.title.ilike(f"%{q}%"), Post.content.ilike(f"%{q}%")))
+        stmt = stmt.where(or_(*[c.ilike(f"%{v}%") for v in search_variants(q) for c in (Post.title, Post.content)]))
     if unanswered:
         expert_comment = select(Comment.id).join(User, User.id == Comment.user_id).where(
             Comment.post_id == Post.id, User.role == "agronomist")

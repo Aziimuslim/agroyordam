@@ -6,6 +6,7 @@ import '../../../application/providers.dart';
 import '../../../core/catalog_images.dart';
 import '../../../core/config.dart';
 import '../../../core/i18n/i18n.dart';
+import '../../../core/i18n/translit.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/blocks.dart';
@@ -140,7 +141,7 @@ class _PlantsTab extends ConsumerWidget {
       // Faqat katalogda bor toifalar chiqadi
       final cats = [for (final k in const ['vegetable', 'fruit', 'vine', 'grain', 'berry', 'melon']) if (list.any((p) => p.category == k)) k];
       final shown = list.where((p) => (filter == 'all' || p.category == filter) &&
-          (q.isEmpty || p.name.toLowerCase().contains(q) || (p.scientificName ?? '').toLowerCase().contains(q))).toList();
+          (q.isEmpty || searchKey(p.name).contains(searchKey(q)) || (p.scientificName ?? '').toLowerCase().contains(q))).toList();
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         ChipTabs(tabs: [('all', tr('Barchasi')), for (final k in cats) (k, plantCategoryLabel(k))], selected: filter, onSelect: onFilter),
         _count(context, shown.length, list.length, filter != 'all' || q.isNotEmpty, onClear),
@@ -212,7 +213,7 @@ class _DiseasesTab extends ConsumerWidget {
       final list = diseases.value!;
       final names = {for (final d in list) if (d.plantName != null) d.plantName!}.toList()..sort();
       final shown = list.where((d) => (filter == 'all' || d.plantName == filter) &&
-          (q.isEmpty || d.name.toLowerCase().contains(q) || (d.symptoms ?? '').toLowerCase().contains(q))).toList()
+          (q.isEmpty || searchKey(d.name).contains(searchKey(q)) || searchKey(d.symptoms ?? '').contains(searchKey(q)))).toList()
         ..sort((a, b) => a.name.compareTo(b.name));
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         ChipTabs(tabs: [('all', tr('Barchasi')), for (final n in names) (n, n)], selected: filter, onSelect: onFilter),
@@ -292,7 +293,7 @@ class _MedicinesTab extends ConsumerWidget {
       final list = meds.value!;
       final cats = [for (final k in const ['fungicide', 'insecticide', 'acaricide', 'biological']) if (list.any((m) => m.category == k)) k];
       final shown = list.where((m) => (filter == 'all' || m.category == filter) &&
-          (q.isEmpty || m.name.toLowerCase().contains(q) || (m.activeIngredient ?? '').toLowerCase().contains(q))).toList()
+          (q.isEmpty || searchKey(m.name).contains(searchKey(q)) || searchKey(m.activeIngredient ?? '').contains(searchKey(q)))).toList()
         ..sort((a, b) => a.name.compareTo(b.name));
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Semantics(

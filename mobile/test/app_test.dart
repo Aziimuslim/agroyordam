@@ -39,9 +39,9 @@ void main() {
     test('greeting', () {
       expect(greeting(DateTime(2026, 1, 1, 8)), 'Xayrli tong!');
       expect(greeting(DateTime(2026, 1, 1, 13)), 'Xayrli kun!');
-      expect(greeting(DateTime(2026, 1, 1, 21)), 'Xayrli kech!');
+      expect(greeting(DateTime(2026, 1, 1, 21)), 'Xayrli keç!');
     });
-    test('money', () => expect(formatMoney(25000), "25 000 so'm"));
+    test('money', () => expect(formatMoney(25000), '25 000 sóm'));
     test('backend UTC vaqti', () => expect(parseDate('2026-09-22T10:00:00')!.isUtc, isTrue));
   });
 
@@ -71,21 +71,21 @@ void main() {
   testWidgets('tizimga kirmagan foydalanuvchi Welcome ekranini ko\'radi', (tester) async {
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
-    expect(find.text("Ekinlaringiz sog'lig'i — cho'ntagingizda"), findsOneWidget);
-    expect(find.text('Email bilan davom etish'), findsOneWidget);
+    expect(find.text('Ekinlaringiz soǵliǵi — çóntagingizda'), findsOneWidget);
+    expect(find.text('Email bilan davom etiş'), findsOneWidget);
   });
 
   testWidgets('login formasi validatsiyasi', (tester) async {
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Email bilan davom etish')); // kichik ekranda pastda — scroll
+    await tester.ensureVisible(find.text('Email bilan davom etiş')); // kichik ekranda pastda — scroll
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Email bilan davom etish'));
+    await tester.tap(find.text('Email bilan davom etiş'));
     await tester.pumpAndSettle();
     expect(find.text('Hisobingizga kiring'), findsOneWidget);
-    await tester.tap(find.text('Kirish'));
+    await tester.tap(find.text('Kiriş'));
     await tester.pumpAndSettle();
-    expect(find.text('Email yoki foydalanuvchi nomini kiriting'), findsOneWidget);
+    expect(find.text('Email yoki foydalanuvçi nomini kiriting'), findsOneWidget);
     expect(find.text('Parolni kiriting'), findsOneWidget);
   });
 
@@ -204,7 +204,7 @@ void main() {
         {'label': 'Grape_Black_rot', 'confidence': 30, 'disease_id': 'x', 'disease_name': 'Uzum qora chirishi'},
       ],
     });
-    expect(i.title, "Sog'lom");
+    expect(i.title, 'Soǵlom');
     expect(i.lowConfidence, isTrue);
     expect(i.alternatives.length, 2);
     expect(i.alternatives.first.healthy, isTrue);
@@ -292,7 +292,7 @@ void main() {
     expect(trIn(AppLang.ru, 'Saqlash'), 'Сохранить');
     expect(trIn(AppLang.en, 'Saqlash'), 'Save');
     expect(trIn(AppLang.uzCyrl, 'Saqlash'), 'Сақлаш');
-    expect(tr('Saqlash'), 'Saqlash'); // global til o'zgarmadi
+    expect(tr('Saqlash'), 'Saqlaş'); // global til o'zgarmadi
   });
 
   test('Kirish: telefon E.164 va xavfsiz returnTo', () {

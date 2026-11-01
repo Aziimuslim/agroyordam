@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../application/providers.dart';
 import '../../../core/i18n/i18n.dart';
+import '../../../core/i18n/translit.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/widgets/blocks.dart';
@@ -94,7 +95,7 @@ class _GardenScreenState extends ConsumerState<GardenScreen> {
     } else if (list == null) {
       body = _grid(context, [for (var i = 0; i < 4; i++) const Skeleton(height: 230)]);
     } else {
-      var shown = list.where((x) => q.isEmpty || '${x.name} ${x.plantName ?? ''} ${x.variety ?? ''} ${x.location ?? ''}'.toLowerCase().contains(q)).toList();
+      var shown = list.where((x) => q.isEmpty || searchKey('${x.name} ${x.plantName ?? ''} ${x.variety ?? ''} ${x.location ?? ''}').contains(searchKey(q))).toList();
       if (_filter == 'care') shown = shown.where(_needsCare).toList();
       shown.sort((a, b) => cropStateRank(cropState(a)).compareTo(cropStateRank(cropState(b))));
       final filtered = q.isNotEmpty || _filter == 'care';

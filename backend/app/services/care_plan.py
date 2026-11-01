@@ -7,6 +7,7 @@ import re
 from dataclasses import dataclass
 from datetime import date, time, timedelta
 
+from app.core.alphabet import to_new_latin
 from app.models import Disease, Plant
 
 DURATION_BY_RISK = {"low": 10, "medium": 14, "high": 21}
@@ -14,7 +15,7 @@ HEALTHY_DAYS = 7
 DEFAULT_SPRAY_INTERVAL = 7
 WATER_EVERY = 2
 
-_INTERVAL_RE = re.compile(r"(\d+)\s*kun\s*oralig")
+_INTERVAL_RE = re.compile(r"(\d+)\s*kun\s*orali[gǵ]")
 _TIMES_RE = re.compile(r"(\d+)\s*marta")
 
 
@@ -42,6 +43,14 @@ def _spray_schedule(recommendation: str | None, duration: int) -> list[int]:
     return days[:times] if times else days
 
 
+def _new_alphabet(tasks: list[Task]) -> list[Task]:
+    """Vazifa matnlari yangi lotin harflarida; tartib: kun, vaqt."""
+    for t in tasks:
+        t.title = to_new_latin(t.title) or t.title
+        t.description = to_new_latin(t.description)
+    return sorted(tasks, key=lambda t: (t.day, t.at))
+
+
 def build_plan(disease: Disease | None, plant: Plant | None, medicines: list[tuple[str, str | None, bool]],
                healthy: bool) -> tuple[int, list[Task]]:
     """→ (davomiylik kunlarda, vazifalar). medicines: [(dori nomi, tavsiya, yorliq tasdiqlanganmi)]."""
@@ -55,7 +64,7 @@ def build_plan(disease: Disease | None, plant: Plant | None, medicines: list[tup
             tasks.append(Task(d, f"{plant_name}: sug'orish", care or "Ertalab ildiz ostidan sug'oring.", "watering", time(7, 0)))
         tasks.append(Task(3, "Barglarni ko'zdan kechirish", "Dog', sarg'ayish yoki zararkunanda bor-yo'qligini tekshiring.", "other", time(9, 0)))
         tasks.append(Task(duration, "Qayta AI tashxis", "Barg rasmini olib, holatini AI tashxis bilan tekshiring.", "recheck", time(10, 0)))
-        return duration, sorted(tasks, key=lambda t: (t.day, t.at))
+        return duration, _new_alphabet(tasks)
 
     duration = DURATION_BY_RISK.get(disease.risk_level or "medium", 14)
     name = disease.name
@@ -92,4 +101,4 @@ def build_plan(disease: Disease | None, plant: Plant | None, medicines: list[tup
                       "recheck", time(10, 0)))
     tasks.append(Task(duration, "Yakuniy AI tashxis",
                       f"{name} yo'qolganini tasdiqlang. Belgilar qolsa, rejani qayta tuzing.", "recheck", time(10, 0)))
-    return duration, sorted(tasks, key=lambda t: (t.day, t.at))
+    return duration, _new_alphabet(tasks)

@@ -1,6 +1,7 @@
 """0.8.14: S04 reja farqi, S08 fikr sababi, S26 takrorlashni tahrirlash, S24 kontaktni kod bilan o'zgartirish, chat shikoyati."""
 from datetime import date, timedelta
 
+from app.core.alphabet import to_new_latin
 from tests.conftest import auth, image_bytes, register
 
 API = "/api/v1"
@@ -90,4 +91,4 @@ async def test_report_chat_message(client, user_headers, admin_headers):
     assert h.status_code == 200
     msgs = (await client.get(f"{API}/conversations/{conv['id']}/messages", headers=user_headers)).json()
     assert [m["content"] for m in msgs] == ["salom"]
-    assert any(n["title"] == "Chatdagi xabaringiz olib tashlandi" for n in (await client.get(f"{API}/notifications", headers=other)).json())
+    assert any(n["title"] == to_new_latin("Chatdagi xabaringiz olib tashlandi") for n in (await client.get(f"{API}/notifications", headers=other)).json())

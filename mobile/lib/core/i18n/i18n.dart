@@ -5,7 +5,7 @@ import 'translit.dart';
 
 /// Ilova tillari. Manba matnlar o'zbek lotinida yoziladi va kalit sifatida ishlatiladi.
 enum AppLang {
-  uz('uz', "O'zbekcha (Lotin)", 'UZ'),
+  uz('uz', 'Ózbekça (Lotin)', 'UZ'),
   uzCyrl('uz-Cyrl', 'Ўзбекча (Кирилл)', 'ЎЗ'),
   ru('ru', 'Русский', 'RU'),
   en('en', 'English', 'EN'),
@@ -21,6 +21,7 @@ class I18n {
   I18n._();
   static AppLang lang = AppLang.uz;
   static final _cyrCache = <String, String>{};
+  static final _newCache = <String, String>{};
 
   static Map<String, String>? get _dict => switch (lang) {
         AppLang.ru => stringsRu,
@@ -34,7 +35,8 @@ class I18n {
 String tr(String s) {
   switch (I18n.lang) {
     case AppLang.uz:
-      return s;
+      // Manba matnlar eski yozuvda (kalit sifatida); ekranga yangi harflar bilan chiqadi: ó, ǵ, ş, ç
+      return I18n._newCache.putIfAbsent(s, () => toNewLatin(s));
     case AppLang.uzCyrl:
       return I18n._cyrCache.putIfAbsent(s, () => toCyrillic(s));
     default:
@@ -44,7 +46,7 @@ String tr(String s) {
 
 /// Matnni berilgan tilda qaytaradi (global tilni o'zgartirmasdan) — til tanlashda oldindan ko'rish uchun (TZ S32).
 String trIn(AppLang l, String s) => switch (l) {
-      AppLang.uz => s,
+      AppLang.uz => toNewLatin(s),
       AppLang.uzCyrl => toCyrillic(s),
       AppLang.ru => stringsRu[s] ?? s,
       AppLang.en => stringsEn[s] ?? s,
@@ -63,5 +65,9 @@ String trf(String s, List<Object?> args) {
 /// Serverdan kelgan o'zbekcha matn (ekin, kasallik nomi va h.k.): kirill rejimida o'giriladi, boshqa tillarda o'zgarmaydi.
 String trData(String? s) {
   if (s == null) return '';
-  return I18n.lang == AppLang.uzCyrl ? I18n._cyrCache.putIfAbsent(s, () => toCyrillic(s)) : s;
+  return switch (I18n.lang) {
+    AppLang.uzCyrl => I18n._cyrCache.putIfAbsent(s, () => toCyrillic(s)),
+    AppLang.uz => I18n._newCache.putIfAbsent(s, () => toNewLatin(s)),
+    _ => s,
+  };
 }

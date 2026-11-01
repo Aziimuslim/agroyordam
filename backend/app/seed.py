@@ -5,10 +5,20 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.alphabet import to_new_latin
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.core.security import hash_password
-from app.models import Comment, Disease, DiseaseMedicine, Like, Medicine, Plant, Post, User
+from app.models import (
+    Comment,
+    Disease,
+    DiseaseMedicine,
+    Like,
+    Medicine,
+    Plant,
+    Post,
+    User,
+)
 
 log = logging.getLogger(__name__)
 
@@ -223,6 +233,21 @@ MEDICINE_META = {
     "Abamektin": ("insecticide", "active"), "Tebukonazol": ("fungicide", "active"),
     "Azoksistrobin": ("fungicide", "active"), "Imidakloprid": ("insecticide", "active"),
 }
+
+
+def _to_new_alphabet() -> None:
+    """Katalog matnlari bazaga yangi lotin harflarida yoziladi (ó, ǵ, ş, ç). Ilmiy nomlar va ai_label o'zgarmaydi."""
+    global PLANTS, MEDICINES, DISEASES, PLANT_CATEGORY, MEDICINE_META
+    t = to_new_latin
+    PLANTS = [(t(n), sci, t(d), t(c)) for n, sci, d, c in PLANTS]
+    MEDICINES = [(t(n), t(ai), t(d), t(u), t(p), m) for n, ai, d, u, p, m in MEDICINES]
+    DISEASES = [(t(pl), lbl, t(n), risk, t(sym), t(cause), t(treat), t(prev), [(t(m), t(r)) for m, r in links])
+                for pl, lbl, n, risk, sym, cause, treat, prev, links in DISEASES]
+    PLANT_CATEGORY = {t(k): v for k, v in PLANT_CATEGORY.items()}
+    MEDICINE_META = {t(k): v for k, v in MEDICINE_META.items()}
+
+
+_to_new_alphabet()
 
 
 async def seed_catalog(db: AsyncSession) -> None:
