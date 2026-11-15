@@ -50,9 +50,13 @@ class _LandscapeBackdropState extends State<LandscapeBackdrop> with SingleTicker
   late final Timer _clock = Timer.periodic(const Duration(minutes: 2), (_) {
     if (mounted) setState(() {});
   });
-  ui.Image? _photo, _near;
+  ui.Image? _photo, _near, _sky;
   _DepthGrid? _depth;
-  ImageStream? _stream, _nearStream;
+  ImageStream? _stream, _nearStream, _skyStream;
+  late final ImageStreamListener _skyListener = ImageStreamListener((info, _) {
+    if (!mounted) return;
+    setState(() => _sky = info.image);
+  }, onError: (_, __) {});
   late final ImageStreamListener _listener = ImageStreamListener((info, _) {
     if (!mounted) return;
     setState(() => _photo = info.image);
@@ -115,6 +119,11 @@ class _LandscapeBackdropState extends State<LandscapeBackdrop> with SingleTicker
       _nearStream?.removeListener(_nearListener);
       _nearStream = ns..addListener(_nearListener);
     }
+    final ss = const AssetImage(orchardSkyAsset).resolve(cfgImg);
+    if (ss.key != _skyStream?.key) {
+      _skyStream?.removeListener(_skyListener);
+      _skyStream = ss..addListener(_skyListener);
+    }
     if (_depth == null) {
       (_depthLoad ??= _loadDepth()).then((g) {
         if (mounted && g != null) setState(() => _depth = g);
@@ -132,6 +141,7 @@ class _LandscapeBackdropState extends State<LandscapeBackdrop> with SingleTicker
   void dispose() {
     _stream?.removeListener(_listener);
     _nearStream?.removeListener(_nearListener);
+    _skyStream?.removeListener(_skyListener);
     _clock.cancel();
     _life.dispose();
     _ctl.dispose();
@@ -144,7 +154,8 @@ class _LandscapeBackdropState extends State<LandscapeBackdrop> with SingleTicker
     final w = widget.weather;
     _clock; // taymerni ishga tushiradi
     final now = landscapeClock();
-    final sun = sunElevation(now);
+    // Sinov: --dart-define=AGRO_SUN_ELEV=<gradus> quyosh balandligini qotirib qo'yadi
+    final sun = _sunOverride ?? sunElevation(now);
     // Ob-havo "kun/tun" bilan bir xil; ma'lumot bo'lmasa — quyosh balandligi bo'yicha
     final night = w != null ? !w.isDay : sun < -4;
     final scene = w == null ? SkyScene.clear : sceneFor(w.code);
@@ -157,7 +168,7 @@ class _LandscapeBackdropState extends State<LandscapeBackdrop> with SingleTicker
       child: RepaintBoundary(
         child: LayoutBuilder(builder: (context, box) {
           // Surat har qanday nisbatda "cover" bilan to'ldiriladi; yuklanmaguncha — kod bilan chizilgan manzara
-          final painter = photo != null ? _PhotoPainter(anim, cfg, _trees, photo, _near, _depth) : _ScenePainter(anim, cfg, _trees);
+          final painter = photo != null ? _PhotoPainter(anim, cfg, _trees, photo, _sky, _near, _depth) : _ScenePainter(anim, cfg, _trees);
           return CustomPaint(painter: painter, size: Size.infinite);
         }),
       ),
@@ -183,7 +194,10 @@ class _Cfg {
 }
 
 /// Manzara hozir to'qmi (shafaqdan keyin / tun): ustidagi matn oq rangda bo'lishi kerak.
-bool landscapeIsDark(Weather? w) => sunElevation(landscapeClock()) < -1;
+const _sunElevEnv = String.fromEnvironment('AGRO_SUN_ELEV');
+final double? _sunOverride = double.tryParse(_sunElevEnv);
+
+bool landscapeIsDark(Weather? w) => (_sunOverride ?? sunElevation(landscapeClock())) < -1;
 
 /// Vaqt manbai (sinovda almashtiriladi).
 DateTime Function() landscapeClock = DateTime.now;
@@ -639,7 +653,10 @@ class _ScenePainter extends CustomPainter {
 
 /// Bosh sahifa manzarasi surati (Tabiiy Agro maketi). Almashtirish uchun shu faylni yangilash kifoya;
 /// [_sunAt] — suratdagi quyosh joyi (0..1).
-const orchardAsset = 'assets/images/orchard_hd.jpg';
+const orchardAsset = 'assets/images/orchard_land.webp';
+
+/// Suratning o'z osmoni (yer qismi to'ldirilgan) — "oltin soat"da ko'rinadi.
+const orchardSkyAsset = 'assets/images/orchard_sky.jpg';
 
 /// Oldingi qatlam (olmali shoxlar, chapdagi daraxt) — shaffof fonli; qushlar shu qatlam ortidan uchadi.
 const orchardNearAsset = 'assets/images/orchard_near.webp';
@@ -666,7 +683,7 @@ class _DepthGrid {
     return (ch(0), ch(1), ch(2));
   }
 }
-const _sunAt = Offset(0.145, 0.24);
+const _sunAt = Offset(0.175, 0.29);
 
 /// Suratning rangi: kun vaqti (quyosh balandligi) va ob-havo. Barcha platformada bir xil ishlashi uchun
 /// rang matritsasi emas, oddiy aralashtirish qatlamlari: to'yinganlik, ko'paytma (tus), "screen" (nur), tuman.
@@ -731,17 +748,21 @@ double _smoothstep(double a, double b, double x) {
   return t * t * (3 - 2 * t);
 }
 
-/// Haqiqiy surat asosidagi "2.5D" sahna: chuqurlik to'ri bo'yicha har bir nuqta o'z uzoqligiga qarab siljiydi —
-/// kamera sekin aylanganda yaqin shoxlar ko'proq, tog'lar kamroq suriladi (parallaks). Shamol daraxtlar bo'ylab
-/// to'lqin bo'lib o'tadi, yaqin barglar kuchliroq tebranadi. Qushlarning bir qismi oldingi qatlam (shoxlar) ortidan
-/// uchadi — u qatlam qushlardan keyin, xuddi shu to'r bilan ustidan chiziladi.
+/// Haqiqiy surat asosidagi qatlamli ("2.5D") sahna. Surat uch qatlamga ajratilgan:
+///   1) osmon — kod bilan chiziladi (kun vaqtiga qarab rang, quyosh, oy, yulduzlar, bulutlar), "oltin soat"da
+///      ustiga suratning o'z osmoni chiqadi;
+///   2) yer — tog'lar va daraxtlar (osmon shaffof): quyosh tog' ortidan chiqadi/botadi, yulduzlar faqat osmonda;
+///   3) oldingi shoxlar — qushlar shu qatlam ortidan uchadi.
+/// To'r (mesh) tugunlari chuqurlik xaritasi bo'yicha siljiydi: kamera sekin aylanganda yaqin narsalar ko'proq
+/// suriladi (parallaks), shamol esa daraxtlar bo'ylab to'lqin bo'lib o'tadi.
 class _PhotoPainter extends _ScenePainter {
-  _PhotoPainter(super.t, super.cfg, super.cache, this.image, this.near, this.depth);
-  final ui.Image image;
-  final ui.Image? near;
+  _PhotoPainter(super.t, super.cfg, super.cache, this.image, this.sky, this.near, this.depth);
+  final ui.Image image; // yer (alfa bilan)
+  final ui.Image? sky, near;
   final _DepthGrid? depth;
 
-  static const _cols = 44, _rows = 18;
+  static const _cols = 48, _rows = 18;
+  static const _tau = _ScenePainter._tau;
 
   @override
   void paint(Canvas canvas, Size s) {
@@ -750,72 +771,116 @@ class _PhotoPainter extends _ScenePainter {
     final v = t.value;
     canvas.clipRect(band);
 
-    // Surat pastga tekislanadi: eni to'liq yoki balandlikning ~80% (tor ekranda tog' va daraxtlar kadrda qoladi).
-    // Surat ustida — suratning o'z osmoni rangida davom etuvchi osmon (keskin chegara yo'q).
+    // Surat pastga tekislanadi: eni to'liq yoki balandlikning ~2/3 qismi. Tor ekranda quyoshli chap qism ko'rinadi.
     final iw = image.width.toDouble(), ih = image.height.toDouble();
     final scale = math.max(band.width / iw, band.height * 0.66 / ih) * 1.05;
-    final zoom = 1.0 + 0.025 * (0.5 - 0.5 * math.cos(v * _ScenePainter._tau));
-    final k = scale * zoom;
+    final k = scale * (1.0 + 0.02 * (0.5 - 0.5 * math.cos(v * _tau)));
     final sw = math.min(iw, band.width / k);
-    final dh = math.min(band.height, ih * k); // ekrandagi surat balandligi
+    final dh = math.min(band.height, ih * k);
     final sh = dh / k;
-    final sx = ((iw - sw) * 0.42).clamp(0.0, math.max(0.0, iw - sw)).toDouble();
+    final sx = ((iw - sw) * (sw / iw < 0.7 ? 0.22 : 0.42)).clamp(0.0, math.max(0.0, iw - sw)).toDouble();
     final sy = ((ih - sh) * 0.92).clamp(0.0, math.max(0.0, ih - sh)).toDouble();
     final src = Rect.fromLTWH(sx, sy, sw, sh);
-    final photoRect = Rect.fromLTRB(band.left, band.bottom - dh, band.right, band.bottom);
-    final mesh = _mesh(photoRect, src, v);
+    final photo = Rect.fromLTRB(band.left, band.bottom - dh, band.right, band.bottom);
+    Offset at(double u, double w) => Offset(photo.left + (iw * u - src.left) / src.width * photo.width, photo.top + (ih * w - src.top) / src.height * photo.height);
+    final mesh = _mesh(photo, src, v);
 
-    final g = _grade(cfg);
     final e = cfg.sun;
     final open = cfg.scene == SkyScene.clear || cfg.scene == SkyScene.clouds;
     final day = e > 1 && open;
-    final paintImg = Paint()..shader = ImageShader(image, TileMode.clamp, TileMode.clamp, Matrix4.identity().storage, filterQuality: FilterQuality.medium);
+    final g = _grade(cfg);
+    final horizon = at(0.5, _ridgeY).dy;
+    // Suratning o'z osmoni: faqat "oltin soat"da (quyosh ufqqa yaqin) to'liq ko'rinadi
+    final golden = !open ? 0.0 : _smoothstep(-5, 0, e) * (1 - _smoothstep(5, 13, e)) * (cfg.scene == SkyScene.clouds ? 0.55 : 1.0);
 
-    canvas.saveLayer(band, Paint());
-    canvas.drawVertices(mesh, BlendMode.srcOver, paintImg);
-    // Bulutlar tog' ustida, oldingi shoxlar ortida
-    _softClouds(canvas, Rect.fromLTRB(band.left, band.top - band.height * 0.05, band.right, band.bottom), v);
-    if (day) _birds3d(canvas, photoRect, src, v, front: false);
-    final n = near;
-    if (n != null && n.width == image.width) {
-      canvas.drawVertices(
-          mesh, BlendMode.srcOver, Paint()..shader = ImageShader(n, TileMode.clamp, TileMode.clamp, Matrix4.identity().storage, filterQuality: FilterQuality.medium));
+    // ---- 1. Osmon ----
+    _procSky(canvas, band, horizon, e);
+    final starA = _smoothstep(-4, -11, e) * (cfg.scene == SkyScene.clear ? 1.0 : (cfg.scene == SkyScene.clouds ? 0.35 : 0.0));
+    if (starA > 0) _starField(canvas, Rect.fromLTRB(band.left, band.top, band.right, horizon), v, starA);
+    final sunBase = at(_sunAt.dx, _sunAt.dy);
+    if (open) {
+      // Shafaq: quyosh botgan joyda ufq yorishib turadi
+      final after = _smoothstep(-13, -2, e) * (1 - golden);
+      if (after > 0.01) {
+        final c0 = Offset(sunBase.dx, horizon), rr = band.width * 0.75;
+        canvas.drawCircle(
+            c0,
+            rr,
+            Paint()
+              ..shader = RadialGradient(colors: [
+                Color.lerp(const Color(0xFFB04A6A), const Color(0xFFFFA65C), _smoothstep(-10, -2, e))!.withValues(alpha: 0.75 * after),
+                const Color(0x00B04A6A),
+              ]).createShader(Rect.fromCircle(center: c0, radius: rr)));
+      }
+      // Quyosh diski: balandlikka qarab ko'tariladi, tog' ortidan chiqadi (yer qatlami ustidan yopadi)
+      final discA = e > -3 ? (1 - golden).clamp(0.0, 1.0) : 0.0;
+      if (discA > 0.02) {
+        final c0 = sunBase + Offset((e - 2.5) * photo.width * 0.0035, -(e - 2.5) * photo.height * 0.017);
+        _sunDisc(canvas, c0, math.max(7.0, photo.height * 0.034), e, discA);
+      }
+      final moonA = _smoothstep(-3, -9, e);
+      if (moonA > 0) {
+        final mc = Offset(band.left + band.width * 0.62, band.top + (horizon - band.top) * 0.42);
+        final mr = math.max(8.0, photo.height * 0.045);
+        canvas.saveLayer(Rect.fromCircle(center: mc, radius: mr * 4), Paint()..color = Color.fromRGBO(0, 0, 0, moonA));
+        _moon(canvas, mc, mr, v);
+        canvas.restore();
+      }
     }
-    if (day) _birds3d(canvas, photoRect, src, v, front: true);
-    if (photoRect.top > band.top + 0.5) {
-      // Surat tepasi osmonga silliq qo'shiladi, osmon esa suratning o'z rangida (orqaga — dstOver)
-      final fade = Rect.fromLTRB(band.left, photoRect.top, band.right, photoRect.top + photoRect.height * 0.22);
-      canvas.drawRect(
-          fade,
-          Paint()
-            ..blendMode = BlendMode.dstIn
-            ..shader = const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x00000000), Color(0xFF000000)]).createShader(fade));
-      final sky = Rect.fromLTRB(band.left, band.top, band.right, fade.bottom);
-      canvas.drawRect(
-          sky,
-          Paint()
-            ..blendMode = BlendMode.dstOver
-            ..shader = const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFFF1ECE2), Color(0xFFFCF7EF)]).createShader(sky));
-    }
-    _gradeLayers(canvas, band, g);
-    canvas.restore();
-    mesh.dispose();
-
-    // Quyosh, oy, yulduzlar
-    final sun = Offset(photoRect.left + (iw * _sunAt.dx - src.left) / src.width * photoRect.width, photoRect.top + (ih * _sunAt.dy - src.top) / src.height * photoRect.height);
-    final r = math.max(8.0, photoRect.height * 0.06);
-    final sunA = _smoothstep(-3, 3, e) * (cfg.scene == SkyScene.clear ? 1.0 : 0.0);
-    if (sunA > 0) _sunGlare(canvas, sun, r, v, sunA, _smoothstep(2, 18, e));
-    final starA = _smoothstep(-5, -12, e) * (cfg.scene == SkyScene.clear ? 1.0 : 0.0);
-    if (starA > 0) _starsIn(canvas, Rect.fromLTRB(band.left, band.top, band.right, band.top + band.height * 0.35), v, starA);
-    final moonA = _smoothstep(-2, -8, e) * (open || cfg.scene == SkyScene.fog ? 1.0 : 0.0);
-    if (moonA > 0) {
-      canvas.saveLayer(Rect.fromCircle(center: sun, radius: r * 4), Paint()..color = Color.fromRGBO(0, 0, 0, moonA));
-      _moon(canvas, sun, r * 0.85, v);
+    final skyImg = sky;
+    if (golden > 0.01 && skyImg != null && skyImg.width == image.width) {
+      final fadeTop = photo.top > band.top + 0.5;
+      canvas.saveLayer(photo, Paint()..color = Color.fromRGBO(0, 0, 0, golden));
+      canvas.drawVertices(mesh, BlendMode.srcOver, _imgPaint(skyImg));
+      if (fadeTop) {
+        final f = Rect.fromLTRB(photo.left, photo.top, photo.right, photo.top + photo.height * 0.2);
+        canvas.drawRect(
+            f,
+            Paint()
+              ..blendMode = BlendMode.dstIn
+              ..shader = const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x00000000), Color(0xFF000000)]).createShader(f));
+      }
       canvas.restore();
     }
-    if (day) _leaves(canvas, band, v);
-    if (e < -8 && cfg.scene == SkyScene.clear && cfg.warm) _fireflies(canvas, band, v);
+    _softClouds(canvas, Rect.fromLTRB(band.left, band.top, band.right, horizon), v, 1 - golden * 0.8);
+
+    // ---- 2. Yer: tog'lar va daraxtlar ----
+    canvas.saveLayer(photo, Paint());
+    canvas.drawVertices(mesh, BlendMode.srcOver, _imgPaint(image));
+    _gradeAtop(canvas, photo, g);
+    canvas.restore();
+
+    if (day) _flock(canvas, photo, v, front: false);
+
+    // ---- 3. Oldingi shoxlar ----
+    final n = near;
+    if (n != null && n.width == image.width) {
+      canvas.saveLayer(photo, Paint());
+      canvas.drawVertices(mesh, BlendMode.srcOver, _imgPaint(n));
+      _gradeAtop(canvas, photo, g);
+      canvas.restore();
+    }
+    mesh.dispose();
+
+    if (day) _flock(canvas, photo, v, front: true);
+    // Past quyosh: linza ustidagi iliq yog'du (daraxtlar orasidan "to'kiladi")
+    final bloom = (cfg.scene == SkyScene.clear ? 1.0 : 0.0) * _smoothstep(-2, 2, e) * (1 - _smoothstep(10, 22, e));
+    if (bloom > 0.01) {
+      final pulse = 0.5 + 0.5 * math.sin(v * _tau * 5);
+      final rr = photo.height * (0.55 + 0.04 * pulse);
+      canvas.drawCircle(
+          sunBase,
+          rr,
+          Paint()
+            ..blendMode = BlendMode.screen
+            ..shader = RadialGradient(colors: [
+              const Color(0xFFFFD08A).withValues(alpha: (0.55 + 0.1 * pulse) * bloom),
+              const Color(0xFFFFB25C).withValues(alpha: 0.18 * bloom),
+              const Color(0x00FFB25C),
+            ], stops: const [0, 0.45, 1]).createShader(Rect.fromCircle(center: sunBase, radius: rr)));
+    }
+    if (day) _leaves(canvas, photo, v);
+    if (e < -8 && cfg.scene == SkyScene.clear && cfg.warm) _fireflies(canvas, photo, v);
     switch (cfg.scene) {
       case SkyScene.rain:
         _rain(canvas, band, v);
@@ -827,43 +892,40 @@ class _PhotoPainter extends _ScenePainter {
         break;
     }
 
-    // Matn ostida yengil tuman (fon rangida) va pastda sahifaga silliq o'tish — keskin chegara yo'q
+    // Matn ostida yengil tuman va pastda sahifaga silliq o'tish
     final tc = cfg.topColor;
     if (tc != null) {
-      // Tunda matn ostidagi tuman to'q (oq matn uchun), kunduzi — sahifa rangida
-      final top = cfg.sun < -1 ? const Color(0xFF0C1220) : tc;
-      final h = band.height;
-      final textEnd = (cfg.skyTop / h).clamp(0.2, 0.75);
+      final dark = e < -1;
+      final top = dark ? const Color(0xFF0C1220) : tc;
+      final textEnd = (cfg.skyTop / band.height).clamp(0.2, 0.75);
       canvas.drawRect(
           band,
           Paint()
             ..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [
-              top.withValues(alpha: cfg.sun < -1 ? 0.62 : 0.86),
-              top.withValues(alpha: cfg.sun < -1 ? 0.38 : 0.55),
-              tc.withValues(alpha: 0.0),
+              top.withValues(alpha: dark ? 0.5 : 0.84),
+              top.withValues(alpha: dark ? 0.3 : 0.66),
+              top.withValues(alpha: 0.0),
               tc.withValues(alpha: 0.0),
               tc,
-            ], stops: [
-              0,
-              textEnd * 0.62,
-              textEnd + 0.06,
-              0.86,
-              1,
-            ]).createShader(band));
+            ], stops: [0, textEnd * 0.62, textEnd + 0.06, 0.88, 1]).createShader(band));
     }
   }
 
+  Paint _imgPaint(ui.Image img) =>
+      Paint()..shader = ImageShader(img, TileMode.clamp, TileMode.clamp, Matrix4.identity().storage, filterQuality: FilterQuality.medium);
+
+  /// Suratdagi tog' cho'qqilari chizig'ining o'rtacha balandligi (0..1) — ufq.
+  static const _ridgeY = 0.33;
+
   /// To'r: tugunlar ekranda qo'zg'almas, tekstura nuqtalari chuqurlik (parallaks) va shamol bilan siljiydi.
   ui.Vertices _mesh(Rect band, Rect src, double v) {
-    const tau = _ScenePainter._tau;
-    final t = v * tau;
+    final t = v * _tau;
     final px = src.width / band.width; // 1 ekran pikseli = shuncha surat pikseli
     final iw = image.width.toDouble(), ih = image.height.toDouble();
-    // Kamera: sekin aylana (60 s), parallaks kuchi ekran o'lchamiga bog'liq
     final camX = math.sin(t), camY = 0.5 * math.sin(t * 2 + 1.3);
-    final par = (band.width * 0.012).clamp(5.0, 18.0);
-    final dolly = 0.018 * math.sin(t + 0.6);
-    final wind = switch (cfg.scene) { SkyScene.rain => 1.8, SkyScene.snow => 1.1, SkyScene.fog => 0.45, _ => 1.0 };
+    final par = (band.width * 0.011).clamp(4.0, 16.0);
+    final dolly = 0.016 * math.sin(t + 0.6);
+    final wind = switch (cfg.scene) { SkyScene.rain => 1.8, SkyScene.snow => 1.1, SkyScene.fog => 0.4, _ => 1.0 };
     final pos = Float32List((_cols + 1) * (_rows + 1) * 2), tex = Float32List((_cols + 1) * (_rows + 1) * 2);
     var k = 0;
     for (var j = 0; j <= _rows; j++) {
@@ -873,18 +935,22 @@ class _PhotoPainter extends _ScenePainter {
         pos[k] = band.left + fx * band.width;
         pos[k + 1] = band.top + fy * band.height;
         final u = src.left + fx * src.width, w = src.top + fy * src.height;
-        final (d, nearW, leaf) = depth?.at(u / iw, w / ih) ?? (0.25 + 0.6 * fy, 0.0, _smoothstep(0.3, 0.9, fy));
-        // Parallaks: uzoq (d≈0) va yaqin (d≈1) qarama-qarshi tomonga — "3D" aylanish
-        final z = d - 0.42;
-        var dx = -camX * z * par, dy = -camY * z * par * 0.5;
-        dx += (fx - 0.5) * band.width * dolly * z;
-        dy += (fy - 0.5) * band.height * dolly * z;
-        // Shamol: daraxtlar bo'ylab o'tadigan to'lqin (shamol shiddati) + barglarning mayda titrashi
-        final gust = 0.55 + 0.45 * math.sin(t * 3 - fx * 5.0 - fy * 1.5) * math.sin(t * 2 + 0.7);
-        final sway = leaf * (0.35 + 0.65 * d) * wind;
-        final a = (1.4 + 2.6 * nearW) * sway;
-        dx += a * gust * (0.7 * math.sin(t * 17 + fx * 21 + fy * 9) + 0.3 * math.sin(t * 41 + fx * 37));
-        dy += a * gust * 0.45 * math.sin(t * 23 + fx * 13 + fy * 19);
+        final un = u / iw, wn = w / ih;
+        final (d, nearW, leaf) = depth?.at(un, wn) ?? (0.25 + 0.6 * fy, 0.0, _smoothstep(0.3, 0.9, fy));
+        // Parallaks: uzoq (d≈0) va yaqin (d≈1) qarama-qarshi tomonga siljiydi
+        final z = d - 0.4;
+        var dx = -camX * z * par + (fx - 0.5) * band.width * dolly * z;
+        var dy = -camY * z * par * 0.5 + (fy - 0.5) * band.height * dolly * z;
+        // Shamol. (a) shiddat — bog' bo'ylab chapdan o'ngga sekin o'tadigan to'lqin;
+        // (b) shox tebranishi — har daraxt o'z fazasida, sekin (4–7 s); (c) barg titrashi — mayda va tez.
+        final gust = 0.5 + 0.5 * math.sin(t * 4 - un * 9.0) * math.sin(t * 3 + un * 4.0 + 1.0);
+        final amp = leaf * (0.3 + 0.7 * d) * wind * (0.35 + 0.65 * gust);
+        final tree = un * 31.0 + wn * 7.0; // qo'shni tugunlar birga harakatlanadi — butun shox egiladi
+        final sway = math.sin(t * 9 + tree) + 0.5 * math.sin(t * 14 + tree * 1.7 + 2.0);
+        final flutter = math.sin(t * 37 + un * 190 + wn * 70) + math.sin(t * 53 + un * 130 - wn * 110);
+        final a = (1.6 + 3.2 * nearW) * amp;
+        dx += a * (sway + 0.22 * flutter);
+        dy += a * (0.35 * math.sin(t * 11 + tree * 1.3) + 0.2 * flutter);
         tex[k] = (u + dx * px).clamp(0.0, iw);
         tex[k + 1] = (w + dy * px).clamp(0.0, ih);
         k += 2;
@@ -902,182 +968,268 @@ class _PhotoPainter extends _ScenePainter {
     return ui.Vertices.raw(VertexMode.triangles, pos, textureCoordinates: tex, indices: idx);
   }
 
-  // Rang: to'yinganlik → tus (ko'paytma) → nur (screen) → tuman. Android/web'da bir xil
-  void _gradeLayers(Canvas canvas, Rect band, _Grade g) {
+  // Rang (faqat qatlamning chizilgan joyiga — shaffof joy shaffof qoladi): xiralashtirish → tus → nur → tuman
+  void _gradeAtop(Canvas canvas, Rect r, _Grade g) {
     if (g.sat < 0.99) {
-      canvas.drawRect(band, Paint()
-        ..blendMode = BlendMode.saturation
-        ..color = Color.fromRGBO(128, 128, 128, (1 - g.sat).clamp(0.0, 1.0)));
+      canvas.drawRect(r, Paint()
+        ..blendMode = BlendMode.srcATop
+        ..color = Color.fromRGBO(120, 122, 128, ((1 - g.sat) * 0.4).clamp(0.0, 1.0)));
     }
     if (g.mul.any((m) => m < 0.995)) {
-      canvas.drawRect(band, Paint()
-        ..blendMode = BlendMode.multiply
+      canvas.drawRect(r, Paint()
+        ..blendMode = BlendMode.modulate
         ..color = Color.from(alpha: 1, red: g.mul[0].clamp(0.0, 1.0), green: g.mul[1].clamp(0.0, 1.0), blue: g.mul[2].clamp(0.0, 1.0)));
     }
     if (g.glow[3] > 0.005) {
       canvas.drawRect(
-          band,
+          r,
           Paint()
-            ..blendMode = BlendMode.screen
+            ..blendMode = BlendMode.srcATop
             ..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [
-              Color.from(alpha: g.glow[3], red: g.glow[0], green: g.glow[1], blue: g.glow[2]),
-              Color.from(alpha: g.glow[3] * 0.55, red: g.glow[0], green: g.glow[1], blue: g.glow[2]),
-            ]).createShader(band));
+              Color.from(alpha: g.glow[3] * 0.3, red: g.glow[0], green: g.glow[1], blue: g.glow[2]),
+              Color.from(alpha: g.glow[3] * 0.1, red: g.glow[0], green: g.glow[1], blue: g.glow[2]),
+            ]).createShader(r));
     }
     if (g.haze[3] > 0) {
       canvas.drawRect(
-          band,
+          r,
           Paint()
+            ..blendMode = BlendMode.srcATop
             ..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [
               Color.from(alpha: g.haze[3], red: g.haze[0], green: g.haze[1], blue: g.haze[2]),
               Color.from(alpha: g.haze[3] * 0.45, red: g.haze[0], green: g.haze[1], blue: g.haze[2]),
-            ]).createShader(band));
+            ]).createShader(r));
     }
   }
 
-  // Qushlar: uzoqdagi gala (kichik, sekin), daraxtlar orasidan o'tadiganlar (oldingi shoxlar ortida) va
-  // ba'zan kameraga yaqin uchib o'tadigan bitta katta qush (shoxlar oldida). Qanot qoqish + sirpanish.
-  void _birds3d(Canvas canvas, Rect b, Rect src, double v, {required bool front}) {
-    final list = front
-        // (boshlanish, sikldagi tezlik, balandlik 0..1, o'lcham, yo'nalish, to'lqin)
-        ? const [(0.62, 2, 0.30, 15.0, -1, 0.10)]
-        : const [
-            (0.00, 3, 0.20, 4.5, 1, 0.03),
-            (0.02, 3, 0.23, 4.0, 1, 0.03),
-            (0.035, 3, 0.18, 3.6, 1, 0.03),
-            (0.30, 4, 0.48, 7.0, -1, 0.06),
-            (0.55, 3, 0.56, 8.5, 1, 0.07),
-            (0.80, 5, 0.42, 6.0, 1, 0.05),
-          ];
-    final col = Color.lerp(const Color(0xFF2F2C24), const Color(0xFF4A4436), _smoothstep(10, 30, cfg.sun))!;
-    for (final (i, (start, speed, h, size0, dir, wave)) in list.indexed) {
-      final run = (start + v * speed) % 1.0;
-      // Kadrdan tashqarida ham uchadi — har sikl boshida qayta ko'rinadi
-      final span = b.width + 160;
-      final x = dir > 0 ? b.left - 80 + span * run : b.right + 80 - span * run;
-      final y = b.top + b.height * (h + wave * math.sin(run * _ScenePainter._tau * 2 + i));
-      final size = size0 * (b.height / 260).clamp(0.8, 1.6);
-      // Qanot: 0.25 s qoqish, so'ng sirpanish
-      final phase = (v * 200 + i * 0.37) % 1.0;
-      final flap = phase < 0.6 ? math.sin(phase / 0.6 * _ScenePainter._tau * 2) : 0.15;
-      final wy = size * 0.75 * flap;
-      final p = Paint()
-        ..color = col.withValues(alpha: front ? 0.92 : 0.78)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = math.max(1.3, size * 0.16)
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round;
-      final body = Paint()..color = col.withValues(alpha: front ? 0.92 : 0.78);
-      canvas.save();
-      canvas.translate(x, y);
-      if (dir < 0) canvas.scale(-1, 1);
-      final path = Path()
-        ..moveTo(-size, -wy)
-        ..quadraticBezierTo(-size * 0.45, -wy * 0.3 - size * 0.18, 0, 0)
-        ..quadraticBezierTo(size * 0.45, -wy * 0.3 - size * 0.18, size, -wy);
-      canvas.drawPath(path, p);
-      canvas.drawOval(Rect.fromCenter(center: Offset(size * 0.08, size * 0.06), width: size * 0.55, height: size * 0.2), body);
-      canvas.restore();
+  // (quyosh balandligi, tepa, o'rta, ufq)
+  static const _skyKeys = <(double, int, int, int)>[
+    (-18, 0xFF050916, 0xFF0A1024, 0xFF131B34),
+    (-9, 0xFF0C1634, 0xFF22346A, 0xFF4F5A8E),
+    (-4, 0xFF1F2E66, 0xFF6C5A92, 0xFFE08A6E),
+    (0, 0xFF45659F, 0xFFD9A088, 0xFFFFC27A),
+    (7, 0xFF5F92CF, 0xFFB9D0E8, 0xFFFFE3B4),
+    (22, 0xFF3C82D4, 0xFF86B8EA, 0xFFD9E9F5),
+  ];
+
+  void _procSky(Canvas canvas, Rect band, double horizon, double e) {
+    var lo = _skyKeys.first, hi = _skyKeys.last;
+    if (e <= lo.$1) {
+      hi = lo;
+    } else if (e >= hi.$1) {
+      lo = hi;
+    } else {
+      for (var i = 0; i < _skyKeys.length - 1; i++) {
+        if (e >= _skyKeys[i].$1 && e <= _skyKeys[i + 1].$1) {
+          lo = _skyKeys[i];
+          hi = _skyKeys[i + 1];
+          break;
+        }
+      }
     }
+    final f = hi.$1 == lo.$1 ? 0.0 : (e - lo.$1) / (hi.$1 - lo.$1);
+    var c = [Color.lerp(Color(lo.$2), Color(hi.$2), f)!, Color.lerp(Color(lo.$3), Color(hi.$3), f)!, Color.lerp(Color(lo.$4), Color(hi.$4), f)!];
+    // Bulutli/yomg'irli havo: kulrang osmon (tunda to'q)
+    final grey = switch (cfg.scene) { SkyScene.clear => 0.0, SkyScene.clouds => 0.45, SkyScene.fog => 0.8, _ => 0.85 };
+    if (grey > 0) {
+      final l = _smoothstep(-8, 6, e);
+      final o = Color.lerp(const Color(0xFF1B1F29), cfg.scene == SkyScene.snow ? const Color(0xFFCFD5DB) : const Color(0xFF8B949C), l)!;
+      c = [for (final x in c) Color.lerp(x, o, grey)!];
+    }
+    final r = Rect.fromLTRB(band.left, band.top, band.right, math.max(horizon, band.top + 1));
+    canvas.drawRect(band, Paint()..color = c[2]);
+    canvas.drawRect(r, Paint()..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: c, stops: const [0, 0.55, 1]).createShader(r));
   }
 
-  /// [a] — ko'rinish (ufqda so'nadi), [high] — 0 past quyosh (to'q sariq), 1 baland (och sariq).
-  void _sunGlare(Canvas canvas, Offset c, double r, double v, double a, double high) {
-    canvas.saveLayer(Rect.fromCircle(center: c, radius: r * 12), Paint()..color = Color.fromRGBO(0, 0, 0, a));
-    _sunGlareInner(canvas, c, r * (1.25 - 0.25 * high), v, Color.lerp(const Color(0xFFFFB25C), const Color(0xFFFFF1C4), high)!);
-    canvas.restore();
-  }
-
-  void _sunGlareInner(Canvas canvas, Offset c, double r, double v, Color tint) {
-    final pulse = 0.5 + 0.5 * math.sin(v * _ScenePainter._tau * 6);
-    final glowR = r * (3.6 + 0.4 * pulse);
+  void _sunDisc(Canvas canvas, Offset c, double r, double e, double a) {
+    final high = _smoothstep(0, 22, e);
+    final core = Color.lerp(const Color(0xFFFFB061), const Color(0xFFFFFBEA), high)!;
+    final halo = Color.lerp(const Color(0xFFFF8A3D), const Color(0xFFFFF2C8), high)!;
+    final gr = r * (7 - 2 * high);
     canvas.drawCircle(
         c,
-        glowR,
+        gr,
         Paint()
-          ..blendMode = BlendMode.screen
-          ..shader = RadialGradient(colors: [tint.withValues(alpha: 0.75 + 0.2 * pulse), tint.withValues(alpha: 0)]).createShader(Rect.fromCircle(center: c, radius: glowR)));
-    final ray = Paint()
-      ..blendMode = BlendMode.screen
-      ..strokeCap = StrokeCap.round;
-    final rot = v * _ScenePainter._tau * 2;
-    for (var i = 0; i < 14; i++) {
-      final a = rot + i * _ScenePainter._tau / 14;
-      final len = r * (i.isEven ? 2.6 : 1.7) * (0.85 + 0.15 * math.sin(v * _ScenePainter._tau * 9 + i));
-      final dir = Offset(math.cos(a), math.sin(a));
-      ray
-        ..strokeWidth = math.max(1.2, r * (i.isEven ? 0.16 : 0.1))
-        ..shader = LinearGradient(colors: [tint.withValues(alpha: 0.67), tint.withValues(alpha: 0)]).createShader(Rect.fromPoints(c + dir * r * 0.9, c + dir * (r * 0.9 + len)));
-      canvas.drawLine(c + dir * r * 0.9, c + dir * (r * 0.9 + len), ray);
+          ..shader = RadialGradient(colors: [halo.withValues(alpha: 0.55 * a), halo.withValues(alpha: 0.12 * a), halo.withValues(alpha: 0)], stops: const [0, 0.4, 1])
+              .createShader(Rect.fromCircle(center: c, radius: gr)));
+    canvas.drawCircle(
+        c,
+        r * 1.25,
+        Paint()..shader = RadialGradient(colors: [core.withValues(alpha: a), core.withValues(alpha: a), core.withValues(alpha: 0)], stops: const [0, 0.72, 1]).createShader(Rect.fromCircle(center: c, radius: r * 1.25)));
+  }
+
+  // Yulduzlar: turli yorqinlik va tus, sekin miltillash, xira Somon yo'li; ba'zan yulduz uchadi
+  static final List<(double, double, double, int, double, int)> _starList = () {
+    final rnd = math.Random(20261);
+    const tints = [0xFFFFFFFF, 0xFFFFFFFF, 0xFFDDE8FF, 0xFFFFF1DC, 0xFFCFDcFF, 0xFFFFE4C4];
+    return [
+      for (var i = 0; i < 260; i++)
+        (rnd.nextDouble(), math.pow(rnd.nextDouble(), 1.3).toDouble(), math.pow(rnd.nextDouble(), 4).toDouble(), tints[rnd.nextInt(tints.length)], rnd.nextDouble(), 14 + rnd.nextInt(40)),
+    ];
+  }();
+
+  void _starField(Canvas canvas, Rect area, double v, double alpha) {
+    // Somon yo'li: qiya, juda xira yorug' tasma
+    canvas.save();
+    canvas.translate(area.left + area.width * 0.58, area.top + area.height * 0.38);
+    canvas.rotate(-0.5);
+    final mw = Rect.fromCenter(center: Offset.zero, width: area.width * 1.25, height: area.height * 0.5);
+    canvas.drawOval(mw, Paint()..shader = RadialGradient(colors: [const Color(0xFFBFCBFF).withValues(alpha: 0.13 * alpha), const Color(0x00BFCBFF)]).createShader(mw));
+    canvas.restore();
+    final dens = (area.width * area.height / 2600).clamp(40, 260).toInt();
+    final p = Paint();
+    for (var i = 0; i < dens; i++) {
+      final (x, y, mag, tint, ph, sp) = _starList[i];
+      // Ufqqa yaqinlashganda yulduzlar xiralashadi (atmosfera)
+      final low = 1 - _smoothstep(0.7, 1.0, y);
+      final tw = 0.72 + 0.28 * math.sin((v * sp + ph) * _tau);
+      final a = (0.35 + 0.65 * mag) * tw * low * alpha;
+      final c = Offset(area.left + x * area.width, area.top + y * area.height);
+      final r = 0.55 + 1.25 * mag;
+      p.color = Color(tint).withValues(alpha: a.clamp(0.0, 1.0));
+      canvas.drawCircle(c, r, p);
+      if (mag > 0.55) {
+        // Yorqin yulduz atrofida yumshoq yog'du
+        p.color = Color(tint).withValues(alpha: (a * 0.22).clamp(0.0, 1.0));
+        canvas.drawCircle(c, r * 3.2, p);
+      }
     }
-    // Linza yolqini — quyoshdan pastga-o'ngga, nafas oladi
-    for (final (k, rr, a) in const [(1.8, 0.35, 0.22), (2.9, 0.6, 0.14), (4.2, 0.25, 0.2)]) {
-      final p = c + Offset(r * k * 1.4, r * k * 0.55);
-      canvas.drawCircle(p, r * rr, Paint()
-        ..blendMode = BlendMode.screen
-        ..color = const Color(0xFFFFE9B0).withValues(alpha: a * (0.6 + 0.4 * pulse)));
+    if (alpha > 0.7) _meteors(canvas, area, v);
+  }
+
+  // Uchar yulduz: bir daqiqada uch marta, har biri ~0,9 s; boshi yorqin, dumi so'nib boradi
+  void _meteors(Canvas canvas, Rect area, double v) {
+    const events = [(0.10, 0.22, 0.10, 0.34, 0.20), (0.46, 0.78, 0.06, -0.28, 0.24), (0.79, 0.45, 0.18, 0.30, 0.15)];
+    const dur = 0.015;
+    for (final (t0, x0, y0, dx, dy) in events) {
+      final k = (v - t0) / dur;
+      if (k < 0 || k > 1) continue;
+      final ease = Curves.easeIn.transform(k);
+      final head = Offset(area.left + (x0 + dx * ease) * area.width, area.top + (y0 + dy * ease) * area.height);
+      final dir = Offset(dx * area.width, dy * area.height);
+      final len = dir.distance == 0 ? Offset.zero : dir / dir.distance;
+      final tail = head - len * (area.width * 0.13 * math.sin(k * math.pi).clamp(0.15, 1.0));
+      final a = math.sin(k * math.pi);
+      canvas.drawLine(
+          tail,
+          head,
+          Paint()
+            ..strokeWidth = 1.8
+            ..strokeCap = StrokeCap.round
+            ..shader = LinearGradient(colors: [const Color(0x00FFFFFF), Color.fromRGBO(255, 250, 235, a)]).createShader(Rect.fromPoints(tail, head)));
+      canvas.drawCircle(head, 1.8, Paint()..color = Color.fromRGBO(255, 252, 240, a));
+      canvas.drawCircle(head, 5.5, Paint()..color = Color.fromRGBO(255, 244, 214, a * 0.25));
     }
   }
 
-  void _starsIn(Canvas canvas, Rect area, double v, double alpha) {
-    final rnd = math.Random(11);
-    final n = (area.width / 26).clamp(10, 60).toInt();
-    for (var i = 0; i < n; i++) {
-      final p = Offset(area.left + rnd.nextDouble() * area.width, area.top + rnd.nextDouble() * area.height);
-      final speed = 3 + rnd.nextInt(6);
-      final tw = 0.2 + 0.8 * (0.5 + 0.5 * math.sin((v * speed + rnd.nextDouble()) * _ScenePainter._tau));
-      canvas.drawCircle(p, rnd.nextDouble() < 0.2 ? 1.6 : 1.0, Paint()..color = Color.fromRGBO(243, 238, 221, tw * alpha));
-    }
-    if (alpha > 0.8) _shootingStar(canvas, area, v);
-  }
-
-  // Yumshoq (xira) bulutlar suratning osmon qismida suzadi
-  void _softClouds(Canvas canvas, Rect b, double v) {
+  // Yumshoq bulutlar osmonda sekin suzadi
+  void _softClouds(Canvas canvas, Rect b, double v, double strength) {
     final List<(double, double, double, int, double)> list = switch (cfg.scene) {
-      SkyScene.clear => [(0.30, 0.10, 0.7, 1, 0.35), (0.75, 0.04, 0.5, 2, 0.28)],
-      SkyScene.clouds => [(0.0, 0.10, 1.1, 1, 0.75), (0.35, 0.02, 0.9, 2, 0.7), (0.62, 0.16, 1.2, 1, 0.75), (0.9, 0.06, 0.8, 3, 0.65)],
-      SkyScene.rain || SkyScene.snow => [(0.0, -0.04, 1.6, 1, 0.9), (0.28, 0.06, 1.4, 2, 0.85), (0.55, -0.06, 1.7, 1, 0.9), (0.8, 0.08, 1.3, 2, 0.85)],
+      SkyScene.clear => [(0.30, 0.18, 0.8, 1, 0.5), (0.78, 0.42, 0.55, 2, 0.4)],
+      SkyScene.clouds => [(0.0, 0.25, 1.2, 1, 0.8), (0.35, 0.08, 1.0, 2, 0.75), (0.62, 0.45, 1.3, 1, 0.8), (0.9, 0.2, 0.9, 3, 0.7)],
+      SkyScene.rain || SkyScene.snow => [(0.0, 0.1, 1.7, 1, 0.9), (0.28, 0.3, 1.5, 2, 0.85), (0.55, 0.05, 1.8, 1, 0.9), (0.8, 0.35, 1.4, 2, 0.85)],
       SkyScene.fog => const [],
     };
-    if (list.isEmpty) return;
+    if (list.isEmpty || strength <= 0.02) return;
     final dayC = switch (cfg.scene) { SkyScene.rain => const Color(0xFF7A8388), SkyScene.snow => const Color(0xFFE9ECEF), _ => const Color(0xFFFFFFFF) };
-    // Kunduzi oq, quyosh botganda pushti-to'q sariq, tunda to'q kulrang
     final e = cfg.sun;
     final base = e >= 8
         ? dayC
         : e >= 0
             ? Color.lerp(const Color(0xFFF6C9A8), dayC, e / 8)!
-            : Color.lerp(const Color(0xFF4E566C), const Color(0xFFD9A0A8), _smoothstep(-9, 0, e))!;
+            : Color.lerp(const Color(0xFF2A3145), const Color(0xFFD9A0A8), _smoothstep(-9, 0, e))!;
     for (final (x0, fy, k, sp, a) in list) {
-      final r = math.max(8.0, b.height * 0.09 * k);
+      final r = math.max(8.0, b.height * 0.11 * k);
       final span = b.width + r * 8;
       final x = ((x0 + v * sp) * span) % span - r * 4;
-      final c = Offset(x, b.top + b.height * (fy + 0.12) + r);
+      final c = Offset(b.left + x, b.top + b.height * fy + r);
       final p = Paint()
-        ..color = base.withValues(alpha: a)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * 0.35);
-      canvas.drawOval(Rect.fromCenter(center: c, width: r * 5.4, height: r * 1.5), p);
-      canvas.drawCircle(c.translate(-r * 0.9, -r * 0.3), r * 0.85, p);
-      canvas.drawCircle(c.translate(r * 0.5, -r * 0.55), r * 1.1, p);
+        ..color = base.withValues(alpha: a * strength)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * 0.4);
+      canvas.drawOval(Rect.fromCenter(center: c, width: r * 5.4, height: r * 1.3), p);
+      canvas.drawCircle(c.translate(-r * 0.9, -r * 0.3), r * 0.8, p);
+      canvas.drawCircle(c.translate(r * 0.5, -r * 0.5), r * 1.05, p);
+    }
+  }
+
+  // Qushlar: uzoqda "V" shaklidagi gala, daraxtlar orasidan o'tadigan yakka qushlar (oldingi shoxlar ortida) va
+  // ba'zan kameraga yaqin uchib o'tadigan bitta qush. Qanot qoqadi, so'ng biroz sirpanadi.
+  void _flock(Canvas canvas, Rect b, double v, {required bool front}) {
+    final col = Color.lerp(const Color(0xFF241F1A), const Color(0xFF3A342B), _smoothstep(8, 30, cfg.sun))!;
+    final unit = (b.height / 300).clamp(0.7, 1.7);
+    void bird(double x, double y, double size, double phase, int dir, double alpha, double tilt) {
+      // 62% vaqt qanot qoqadi (2 marta), qolganida sirpanadi
+      final flap = phase < 0.62 ? math.sin(phase / 0.62 * _tau * 2) : 0.22 * math.cos((phase - 0.62) / 0.38 * math.pi);
+      final wy = size * 0.8 * flap;
+      final p = Paint()..color = col.withValues(alpha: alpha);
+      canvas.save();
+      canvas.translate(x, y - wy * 0.12); // qanot pastga urganda gavda biroz ko'tariladi
+      canvas.rotate(tilt * dir);
+      if (dir < 0) canvas.scale(-1, 1);
+      for (final sgn in const [-1.0, 1.0]) {
+        // Uzoqdagi (orqa) qanot biroz qisqa — hajm hissi
+        final s = size * (sgn < 0 ? 0.86 : 1.0);
+        canvas.drawPath(
+            Path()
+              ..moveTo(size * 0.1, 0)
+              ..quadraticBezierTo(sgn * s * 0.42 + size * 0.05, -wy * 0.95 - s * 0.26, sgn * s, -wy)
+              ..quadraticBezierTo(sgn * s * 0.5, -wy * 0.42 + s * 0.06, -size * 0.12, size * 0.1)
+              ..close(),
+            p);
+      }
+      canvas.drawOval(Rect.fromCenter(center: Offset(size * 0.02, size * 0.05), width: size * 0.78, height: size * 0.24), p);
+      canvas.drawCircle(Offset(size * 0.42, 0), size * 0.11, p); // bosh
+      canvas.drawPath(
+          Path()
+            ..moveTo(-size * 0.3, size * 0.04)
+            ..lineTo(-size * 0.62, -size * 0.03)
+            ..lineTo(-size * 0.6, size * 0.14)
+            ..close(),
+          p); // dum
+      canvas.restore();
+    }
+
+    if (front) {
+      final run = (0.55 + v * 2) % 1.0;
+      if (run < 0.45) {
+        final k = run / 0.45;
+        bird(b.right + 60 - (b.width + 120) * k, b.top + b.height * (0.34 + 0.07 * math.sin(k * _tau)), 17 * unit, (v * 150) % 1.0, -1, 0.94, 0.06 * math.cos(k * _tau));
+      }
+      return;
+    }
+    // Uzoq gala: 7 ta qush, "V" shaklida, sekin
+    final fr = (0.05 + v * 2) % 1.0;
+    final fx = b.left - 90 + (b.width + 180) * fr, fy = b.top + b.height * (0.13 + 0.03 * math.sin(fr * _tau));
+    for (var i = 0; i < 7; i++) {
+      final side = i == 0 ? 0 : (i.isOdd ? -1 : 1), rank = (i + 1) ~/ 2;
+      bird(fx - rank * 13.0 * unit, fy + side * rank * 6.5 * unit + math.sin((v * 9 + i * 0.37) * _tau) * 1.5, 4.6 * unit, (v * 170 + i * 0.19) % 1.0, 1, 0.8, 0);
+    }
+    // Daraxtlar orasidan o'tadigan yakka qushlar
+    for (final (i, (start, speed, h, size, dir, wave)) in const [(0.30, 3, 0.36, 8.0, -1, 0.05), (0.62, 2, 0.47, 9.5, 1, 0.06), (0.86, 3, 0.29, 7.0, 1, 0.04)].indexed) {
+      final run = (start + v * speed) % 1.0;
+      final span = b.width + 140;
+      final x = dir > 0 ? b.left - 70 + span * run : b.right + 70 - span * run;
+      final y = b.top + b.height * (h + wave * math.sin(run * _tau * 2 + i));
+      bird(x, y, size * unit, (v * 190 + i * 0.41) % 1.0, dir, 0.86, 0.1 * math.cos(run * _tau * 2 + i));
     }
   }
 
   // Shamolda uchayotgan barglar (kunduzi)
   void _leaves(Canvas canvas, Rect b, double v) {
     final rnd = math.Random(9);
-    final n = (b.width / 90).clamp(3, 12).toInt();
+    final n = (b.width / 110).clamp(3, 10).toInt();
     final colors = [const Color(0xFF7FA03A), const Color(0xFFA8B845), const Color(0xFFC9A23C)];
     for (var i = 0; i < n; i++) {
       final speed = 2 + rnd.nextInt(3);
       final k = (rnd.nextDouble() + v * speed) % 1.0;
       final x = b.left - 20 + (b.width + 40) * ((rnd.nextDouble() + k * 0.6) % 1.0);
-      final y = b.top + b.height * (0.25 + 0.75 * k) + math.sin((k * 3 + i) * _ScenePainter._tau) * 6;
-      final a = (k < 0.1 ? k / 0.1 : (k > 0.9 ? (1 - k) / 0.1 : 1.0)) * 0.9;
-      final size = 3.0 + rnd.nextDouble() * 3;
+      final y = b.top + b.height * (0.3 + 0.7 * k) + math.sin((k * 3 + i) * _tau) * 6;
+      final a = (k < 0.1 ? k / 0.1 : (k > 0.9 ? (1 - k) / 0.1 : 1.0)) * 0.85;
+      final size = 2.5 + rnd.nextDouble() * 3;
       canvas.save();
       canvas.translate(x, y);
-      canvas.rotate((v * speed * 6 + i) * _ScenePainter._tau);
-      canvas.scale(1, 0.45 + 0.55 * math.cos((v * speed * 8 + i) * _ScenePainter._tau).abs());
+      canvas.rotate((v * speed * 6 + i) * _tau);
+      canvas.scale(1, 0.45 + 0.55 * math.cos((v * speed * 8 + i) * _tau).abs());
       canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: size * 2, height: size), Paint()..color = colors[i % 3].withValues(alpha: a));
       canvas.restore();
     }
@@ -1085,5 +1237,5 @@ class _PhotoPainter extends _ScenePainter {
 
   @override
   bool shouldRepaint(covariant _ScenePainter o) =>
-      o is! _PhotoPainter || o.image != image || o.near != near || o.depth != depth || super.shouldRepaint(o);
+      o is! _PhotoPainter || o.image != image || o.sky != sky || o.near != near || o.depth != depth || super.shouldRepaint(o);
 }

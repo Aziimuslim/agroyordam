@@ -5,6 +5,13 @@ Web ilova: https://agroyordam.duckdns.org
 O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
 Ilova https://agroyordam.duckdns.org serveriga o'zi ulanadi. Eski versiya o'rnatilgan bo'lsa, ustidan yangilanadi.
 
+## 0.8.33 — yangi tiniq manzara va tabiiy osmon
+- Bosh sahifada yangi, yuqori sifatli bog' surati (2000 px): tog'lar, daraxtlar va olmalar aniq ko'rinadi.
+- Osmon haqiqiy vaqtga qarab o'zgaradi: quyosh tog' ortidan chiqadi va botadi, shafaqda ufq qizaradi.
+- Tunda yulduzlar (turli yorqinlikda, miltillaydi), Somon yo'li, oy va vaqti-vaqti bilan uchar yulduz.
+- Daraxtlar tabiiyroq tebranadi: shamol bog' bo'ylab to'lqin bo'lib o'tadi, shoxlar sekin egiladi, barglar mayda titraydi.
+- Qushlar: uzoqda "V" shaklidagi gala, daraxtlar orasidan o'tadigan qushlar va ba'zan yaqindan uchib o'tadigani.
+
 ## 0.8.32 — jonli interfeys (harakat tizimi)
 - Kartalar va ro'yxatlar navbat bilan yumshoq paydo bo'ladi; bosilganda karta va tugmalar biroz "cho'kib" qaytadi.
 - Bo'limlar orasida silliq o'tish; pastki menyuda faol bo'lim belgisi kengayib chiqadi, tekshirish tugmasi "nafas oladi".
