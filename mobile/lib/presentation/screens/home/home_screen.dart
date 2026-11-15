@@ -112,6 +112,11 @@ class _Header extends ConsumerWidget {
     final topPad = MediaQuery.paddingOf(context).top;
     final desktop = Breakpoints.isDesktop(context);
     final landscapeH = desktop ? 250.0 : 190.0;
+    // Kechqurun/tunda manzara to'q — sarlavha matni oq bo'ladi (aks holda o'qilmaydi)
+    final onDarkSky = landscapeIsDark(weather.value);
+    final hText = onDarkSky ? const Color(0xFFFDFBF4) : c.text;
+    final hMuted = onDarkSky ? const Color(0xE6FDFBF4) : c.muted;
+    final hShadow = onDarkSky ? const [Shadow(color: Color(0x99000000), blurRadius: 8, offset: Offset(0, 1))] : null;
 
     return SizedBox(
       // matn qismi + ko'rinadigan manzara
@@ -142,7 +147,7 @@ class _Header extends ConsumerWidget {
                                 'AgroYordam',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: c.text, letterSpacing: -0.2),
+                                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: hText, letterSpacing: -0.2, shadows: hShadow),
                               ),
                             ),
                           ],
@@ -154,7 +159,7 @@ class _Header extends ConsumerWidget {
                               isLabelVisible: unread > 0,
                               backgroundColor: c.primary,
                               smallSize: 9,
-                              child: Icon(Icons.notifications_none_rounded, color: c.text, size: 26),
+                              child: Icon(Icons.notifications_none_rounded, color: hText, size: 26),
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -183,7 +188,7 @@ class _Header extends ConsumerWidget {
                                 firstName.isEmpty ? tr('Salom!') : trf('Salom, {0}!', [firstName]),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 30, height: 36 / 30, fontWeight: FontWeight.w800, color: c.text, letterSpacing: -0.4),
+                                style: TextStyle(fontSize: 30, height: 36 / 30, fontWeight: FontWeight.w800, color: hText, letterSpacing: -0.4, shadows: hShadow),
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -191,7 +196,7 @@ class _Header extends ConsumerWidget {
                               tr("Bugun ham bog'ingizda unumli kun bo'lsin!"),
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 15, height: 1.35, color: c.muted),
+                              style: TextStyle(fontSize: 15, height: 1.35, color: hMuted, fontWeight: onDarkSky ? FontWeight.w600 : null, shadows: hShadow),
                             ),
                           ],
                         );

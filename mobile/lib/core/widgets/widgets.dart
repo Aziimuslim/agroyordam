@@ -7,10 +7,14 @@ import 'package:go_router/go_router.dart';
 import '../config.dart';
 import '../i18n/i18n.dart';
 import 'bottom_nav.dart';
+import 'motion.dart';
+import '../theme/app_motion.dart';
 import '../network/api_exception.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
+
+export 'motion.dart';
 
 void showToast(BuildContext context, String msg) {
   final m = ScaffoldMessenger.maybeOf(context);
@@ -162,7 +166,8 @@ class AppCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: margin,
-      child: Container(
+      // Motion: karta navbat bilan paydo bo'ladi; bosiladigan karta bosilganda biroz "cho'kadi"
+      child: Appear(child: Pressable(enabled: onTap != null, scale: 0.985, child: Container(
         width: expand ? double.infinity : null,
         // "Yashil dala": oq kartalar 1px chegara bilan, soyasiz; rangli (color berilgan) kartalar chegarasiz
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(radius)),
@@ -175,7 +180,7 @@ class AppCard extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: InkWell(onTap: onTap, child: Padding(padding: padding, child: child)),
         ),
-      ),
+      ))),
     );
   }
 }
@@ -278,7 +283,9 @@ class PillButton extends StatelessWidget {
     );
     return SizedBox(
       width: block ? double.infinity : null,
-      child: TextButton(
+      child: Pressable(
+        enabled: !disabled && !loading,
+        child: TextButton(
         onPressed: loading ? null : onPressed,
         style: TextButton.styleFrom(
           backgroundColor: bg,
@@ -287,7 +294,7 @@ class PillButton extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md), side: border ?? BorderSide.none),
         ),
         child: child,
-      ),
+      )),
     );
   }
 }
@@ -418,16 +425,30 @@ class ChipTabs extends StatelessWidget {
           for (final (id, label) in tabs)
             Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: Material(
-                color: selected == id ? c.olive : c.card,
-                shape: StadiumBorder(side: selected == id ? BorderSide.none : BorderSide(color: c.border)),
-                child: InkWell(
-                  customBorder: const StadiumBorder(),
-                  onTap: () => onSelect(id),
-                  child: Padding(
-                    // Bosiladigan maydon ≥44 px (TZ 2.2)
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Text(label, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: selected == id ? c.onOlive : c.text)),
+              child: Pressable(
+                scale: 0.95,
+                child: AnimatedContainer(
+                  duration: AppMotion.base,
+                  curve: AppMotion.standard,
+                  decoration: ShapeDecoration(
+                    color: selected == id ? c.olive : c.card,
+                    shape: StadiumBorder(side: BorderSide(color: selected == id ? c.olive : c.border)),
+                  ),
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: InkWell(
+                      customBorder: const StadiumBorder(),
+                      onTap: () => onSelect(id),
+                      child: Padding(
+                        // Bosiladigan maydon ≥44 px (TZ 2.2)
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        child: AnimatedDefaultTextStyle(
+                          duration: AppMotion.base,
+                          style: DefaultTextStyle.of(context).style.copyWith(fontWeight: FontWeight.w700, fontSize: 14, color: selected == id ? c.onOlive : c.text),
+                          child: Text(label),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -444,12 +465,22 @@ class EmptyNote extends StatelessWidget {
   final IconData? icon;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 10),
-        child: Column(children: [
-          if (icon != null) ...[Icon(icon, size: 36, color: context.c.muted), const SizedBox(height: 10)],
-          Text(text, textAlign: TextAlign.center, style: TextStyle(color: context.c.muted, fontSize: 13.5)),
-        ]),
+  Widget build(BuildContext context) => Appear(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 10),
+          child: Column(children: [
+            if (icon != null) ...[
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(color: context.c.cream2, shape: BoxShape.circle),
+                child: Icon(icon, size: 30, color: context.c.muted),
+              ),
+              const SizedBox(height: 12),
+            ],
+            Text(text, textAlign: TextAlign.center, style: TextStyle(color: context.c.muted, fontSize: 13.5, height: 1.4)),
+          ]),
+        ),
       );
 }
 
@@ -493,15 +524,20 @@ class HealthRing extends StatelessWidget {
       height: size,
       child: Stack(alignment: Alignment.center, children: [
         SizedBox.expand(
-          child: CircularProgressIndicator(
-            value: pct / 100,
+          // Halqa 0 dan to'ladi
+          child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: pct / 100),
+          duration: (MediaQuery.maybeDisableAnimationsOf(context) ?? false) ? Duration.zero : const Duration(milliseconds: 800),
+          curve: Curves.easeOutCubic,
+          builder: (context, k, _) => CircularProgressIndicator(
+            value: k,
             strokeWidth: size * 0.12,
             backgroundColor: c.cream2,
             color: c.health(pct),
             strokeCap: StrokeCap.round,
-          ),
+          )),
         ),
-        Text('$pct%', style: TextStyle(fontWeight: FontWeight.w800, fontSize: size * 0.24, color: c.primaryDark)),
+        CountUp(pct, suffix: '%', style: TextStyle(fontWeight: FontWeight.w800, fontSize: size * 0.24, color: c.primaryDark)),
       ]),
     );
   }

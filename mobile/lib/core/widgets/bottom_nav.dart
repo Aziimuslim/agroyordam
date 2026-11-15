@@ -5,6 +5,8 @@ import '../i18n/i18n.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_icons.dart';
 import 'brand.dart';
+import '../theme/app_motion.dart';
+import 'motion.dart';
 
 /// TZ 2.3 o'lcham chegaralari: telefon < 600, planshet 600–1023, desktop ≥ 1024.
 abstract final class Breakpoints {
@@ -49,8 +51,25 @@ class AppBottomNav extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 56),
               child: Column(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(active ? it.$4 : it.$3, size: 24, color: color),
-                const SizedBox(height: 4),
+                // Faol bo'lim: ikonka ortida yumshoq "tabletka" kengayadi, ikonka biroz kattalashadi
+                AnimatedContainer(
+                  duration: AppMotion.slow,
+                  curve: AppMotion.enter,
+                  width: active ? 52 : 28,
+                  height: 30,
+                  decoration: BoxDecoration(color: active ? c.primaryLight : c.primaryLight.withValues(alpha: 0), borderRadius: BorderRadius.circular(15)),
+                  alignment: Alignment.center,
+                  child: AnimatedScale(
+                    scale: active ? 1.08 : 1,
+                    duration: AppMotion.slow,
+                    curve: Curves.easeOutBack,
+                    child: AnimatedSwitcher(
+                      duration: AppMotion.base,
+                      child: Icon(active ? it.$4 : it.$3, key: ValueKey(active), size: 24, color: color),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 2),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(it.$2,
@@ -100,14 +119,21 @@ class _ScanButton extends StatelessWidget {
         child: Tooltip(
           message: tr('Ekinni tekshirish'),
           child: Center(
-            child: Material(
+            child: Breathing(
               color: c.primary,
-              shape: const CircleBorder(),
-              elevation: 0,
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: () => context.push('/diagnose'),
-                child: SizedBox(width: 56, height: 56, child: Icon(AppIcons.scan, color: c.onPrimary, size: 28)),
+              child: Pressable(
+                scale: 0.92,
+                child: Material(
+                  color: c.primary,
+                  shape: const CircleBorder(),
+                  elevation: 3,
+                  shadowColor: c.primary.withValues(alpha: 0.5),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => context.push('/diagnose'),
+                    child: SizedBox(width: 56, height: 56, child: Icon(AppIcons.scan, color: c.onPrimary, size: 28)),
+                  ),
+                ),
               ),
             ),
           ),

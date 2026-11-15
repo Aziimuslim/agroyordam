@@ -68,9 +68,12 @@ class Skeleton extends StatelessWidget {
   const Skeleton({super.key, required this.height});
   final double height;
   @override
-  Widget build(BuildContext context) => Container(
-        height: height,
-        decoration: BoxDecoration(color: context.c.cream2, borderRadius: BorderRadius.circular(16)),
+  Widget build(BuildContext context) => Shimmer(
+        highlight: context.c.card,
+        child: Container(
+          height: height,
+          decoration: BoxDecoration(color: context.c.cream2, borderRadius: BorderRadius.circular(16)),
+        ),
       );
 }
 

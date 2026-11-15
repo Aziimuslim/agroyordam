@@ -427,7 +427,7 @@ class _Row extends StatelessWidget {
     final c = context.c;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
+      child: Appear(child: Pressable(scale: 0.985, child: Material(
         color: c.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg), side: BorderSide(color: c.border)),
         child: InkWell(
@@ -449,7 +449,7 @@ class _Row extends StatelessWidget {
             ]),
           ),
         ),
-      ),
+      ))),
     );
   }
 }

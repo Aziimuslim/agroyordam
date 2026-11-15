@@ -5,6 +5,13 @@ Web ilova: https://agroyordam.duckdns.org
 O'rnatish: APK faylni telefonga yuklab oling va oching ("Noma'lum manbalardan o'rnatish"ga ruxsat bering).
 Ilova https://agroyordam.duckdns.org serveriga o'zi ulanadi. Eski versiya o'rnatilgan bo'lsa, ustidan yangilanadi.
 
+## 0.8.32 — jonli interfeys (harakat tizimi)
+- Kartalar va ro'yxatlar navbat bilan yumshoq paydo bo'ladi; bosilganda karta va tugmalar biroz "cho'kib" qaytadi.
+- Bo'limlar orasida silliq o'tish; pastki menyuda faol bo'lim belgisi kengayib chiqadi, tekshirish tugmasi "nafas oladi".
+- Yuklanish paytida jilvalanuvchi joy tutuvchilar; sog'liq halqasi va foizlar sanab to'ladi; filtrlar rangi silliq almashadi.
+- Kechqurun va tunda bosh sahifadagi "Salom" matni oq rangda — endi manzara ustida aniq o'qiladi.
+- "Harakatni kamaytirish" sozlamasi yoqilgan telefonlarda animatsiyalar o'chadi.
+
 ## 0.8.31 — til barcha qurilmalarda bir xil
 - Bir akkauntda til (masalan, "Lotin (yangi)") bir qurilmada tanlansa, telefon va kompyuterda ham shu til qo'llanadi —
   oxirgi tanlov ustun. Ilova qayta ochilganda yoki fondan qaytganda tekshiriladi.

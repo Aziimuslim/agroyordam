@@ -182,6 +182,9 @@ class _Cfg {
   int get hashCode => Object.hash(scene, night, warm, skyTop, topColor, sun);
 }
 
+/// Manzara hozir to'qmi (shafaqdan keyin / tun): ustidagi matn oq rangda bo'lishi kerak.
+bool landscapeIsDark(Weather? w) => sunElevation(landscapeClock()) < -1;
+
 /// Vaqt manbai (sinovda almashtiriladi).
 DateTime Function() landscapeClock = DateTime.now;
 
@@ -827,14 +830,16 @@ class _PhotoPainter extends _ScenePainter {
     // Matn ostida yengil tuman (fon rangida) va pastda sahifaga silliq o'tish — keskin chegara yo'q
     final tc = cfg.topColor;
     if (tc != null) {
+      // Tunda matn ostidagi tuman to'q (oq matn uchun), kunduzi — sahifa rangida
+      final top = cfg.sun < -1 ? const Color(0xFF0C1220) : tc;
       final h = band.height;
       final textEnd = (cfg.skyTop / h).clamp(0.2, 0.75);
       canvas.drawRect(
           band,
           Paint()
             ..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [
-              tc.withValues(alpha: 0.86),
-              tc.withValues(alpha: 0.55),
+              top.withValues(alpha: cfg.sun < -1 ? 0.62 : 0.86),
+              top.withValues(alpha: cfg.sun < -1 ? 0.38 : 0.55),
               tc.withValues(alpha: 0.0),
               tc.withValues(alpha: 0.0),
               tc,
